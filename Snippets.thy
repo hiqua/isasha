@@ -13,6 +13,9 @@ by (metis atLeastLessThan_iff le0 zero_less_numeral)
 typedef bit = "{0::nat, 1}" apply auto done
 
 
+class bounded = ord +
+fixes max :: "'a"
+
 type_synonym data = "int alphabet"
 definition A :: bit where "A \<equiv> Abs_bit 0"
 definition B :: data where "B \<equiv> Abs_alphabet {0}"
