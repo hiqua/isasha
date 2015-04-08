@@ -8,11 +8,30 @@ datatype dbit = B bit | D
 (*typedef letter = "{0::nat..9}" by auto*)
 type_synonym letter = nat
 typedef ll = "{0::nat..<10}"
-by (metis atLeastLessThan_iff le0 zero_less_numeral) 
+by (metis atLeastLessThan_iff le0 zero_less_numeral)
 
-class bounded =
-fixes bou :: "'a \<Rightarrow> int"
-assumes "\<exists>n. \<forall>xa
+
+(*
+Definition of the class of coded types, that is, types for which there is an
+encoding and decoding function.
+We assign a length to our type, this will be the length of the words we consider
+(constant).
+In practice, 'a will represent a D-ary alphabet, i.e. a finite set.
+For now, there are only guarantees of well-defined functions if the sizes
+match.
+What if they don't?
+*)
+
+class coded = len +
+fixes enc :: "'a list \<Rightarrow> bit list"
+fixes dec :: "bit list \<Rightarrow> 'a list"
+assumes "\<forall>x. (length x) = len_of TYPE ('a) \<Longrightarrow>  dec (enc x) = x"
+
+class block_coded = coded +
+fixes block_enc :: "'a list \<Rightarrow> bit list"
+fixes block_dec :: "bit list \<Rightarrow> 'a list"
+assumes "\<forall>x.\<forall>xs. (length x) = len_of TYPE('a) \<Longrightarrow>
+block_dec (block_enc (x @ xs)) = x @ block_dec (block_enc xs) \<and> block_enc x = enc x"
 
 type_synonym word = "letter list"
 type_synonym dbword = "dbit list"
