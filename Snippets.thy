@@ -1,4 +1,4 @@
-(* This file contains only snippets I found useful to write, just to get to 
+(* This file contains only snippets I found useful to write, just to get to
 know Isabelle a little more, and to enshrine the syntax I sometimes had a hard
 time to grasp. *)
 theory Snippets
@@ -8,7 +8,7 @@ begin
 typedef 'a alphabet = "{A :: 'a set. (finite A \<and> \<not> ( A = {} ))}" by auto
 
 typedef alph = "{0::nat..<9}"
-by (metis atLeastLessThan_iff le0 zero_less_numeral) 
+by (metis atLeastLessThan_iff le0 zero_less_numeral)
 
 typedef bit = "{0::nat, 1}" apply auto done
 
@@ -42,7 +42,7 @@ lemma ds : "n = 0 \<longrightarrow> n \<in> {0::nat..<3}"
 apply auto+
 done
 (*
-typedef ggggggcode = "{D :: (letter list\<Rightarrow> letter list) . D [] = [] \<and> (\<forall>x. \<forall> xs. D (x#xs) = (D [x]) @ (D xs))}" 
+typedef ggggggcode = "{D :: (letter list\<Rightarrow> letter list) . D [] = [] \<and> (\<forall>x. \<forall> xs. D (x#xs) = (D [x]) @ (D xs))}"
 by auto
 
 type_synonym 'a discret_source = "(nat \<Rightarrow> ('a \<Rightarrow> letter)) set"
@@ -64,6 +64,49 @@ unfolding intset_def
 by simp
 
 
+locale dummy =
+fixes a::nat
+fixes b::'b
+fixes bc::"'b list"
+assumes "a = length bc"
+print_locale dummy
+
+(*
+Definition of the class of coded types, that is, types for which there is an
+encoding and decoding function.
+We assign a length to our type, this will be the length of the words we consider
+(constant).
+In practice, 'a will represent a D-ary alphabet, i.e. a finite set.
+For now, there are only guarantees of well-defined functions if the sizes
+match.
+What if they don't?
+*)
+
+class coded = len +
+fixes enc :: "'a list \<Rightarrow> bit list"
+fixes dec :: "bit list \<Rightarrow> 'a list"
+assumes "\<forall>x. (length x) \<le> len_of TYPE ('a) \<Longrightarrow>  dec (enc x) = x"
+
+class block_coded = coded +
+fixes block_enc :: "'a list \<Rightarrow> bit list"
+fixes block_dec :: "bit list \<Rightarrow> 'a list"
+assumes block_corresp1:
+"\<forall>x.\<forall>xs. (length x) = len_of TYPE('a) \<Longrightarrow>
+block_dec (block_enc (x @ xs)) = x @ block_dec (block_enc xs)"
+assumes block_corresp2:
+"\<forall>x. (length x) \<le> len_of TYPE('a) \<Longrightarrow>
+block_enc x = enc x \<and> block_dev enc x = x"
+
+type_synonym bword = "bit list"
+datatype dbit = B bit | D
+type_synonym dbword = "dbit list"
+(* this function cleans the dirty bword of all dummy characters *)
+fun d_clean :: "dbword \<Rightarrow> bword" where
+"d_clean [] = []"|
+"d_clean (B b # xs) = b # (d_clean xs)"|
+"d_clean (D # xs) = d_clean xs"
+
+
 
 locale fake =
 fixes zn::nat
@@ -71,7 +114,11 @@ begin
 (* quotient_type 'a fssset = "'a list" / "(\<lambda>xs ys. set xs = set ys)" *)
 
 fun arbitrary_take :: "'a list \<Rightarrow> 'a list" where
-  "arbitrary_take l = take zn l"  
+  "arbitrary_take l = take zn l"
+
+
+
+
 
 end
 end
