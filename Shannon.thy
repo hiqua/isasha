@@ -1,5 +1,5 @@
 theory Shannon
-imports Information
+imports Information Finite_Set
 begin
 (*
 AIM: Formalize Shannon's theorems
@@ -99,10 +99,31 @@ definition kraft_sum :: "code \<Rightarrow> real" where
 definition kraft_inequality :: "code \<Rightarrow> bool" where
   "kraft_inequality c = (kraft_sum c \<le> 1)"
 
-fun dumm :: "nat \<Rightarrow> nat" where
-  "dumm 0 = 1"|
-  "dumm (Suc n) = 3"
 
+lemma sum_transform:
+  assumes bounded: "\<forall>x \<in> H. f x < m"
+  shows "finite H \<Longrightarrow> (\<Sum>x\<in>H. f x) = (\<Sum> i=0..<m. (i * card ((f-`{i}) \<inter> H)))"
+proof (induct  rule: finite_induct)
+case empty
+then show ?case by simp
+next
+  case (insert x F)
+  have first_case: "f x \<noteq> i \<Longrightarrow>  card (f -` {i} \<inter> insert x F) =  card (f -` {i} \<inter> F)" by auto
+  have "\<lbrakk>f x = i ; \<not>x \<in> F \<rbrakk>  \<Longrightarrow>
+(f -` {i} \<inter> insert x F) =  (f -`  {i} \<inter> F) \<union> {x} "  by auto
+  from this have  second_case: "\<lbrakk>f x = i ; \<not>x \<in> F \<rbrakk>  \<Longrightarrow>
+card (f -` {i} \<inter> insert x F) =  card (f -`  {i} \<inter> F) + 1 "  by blast
+  assume "finite F" "\<not>x\<in>F"
+  have  "(\<Sum>i = 0..<m. i * card (f -` {i} \<inter> insert x F)) =  (\<Sum>i = 0..<m. i * card
+  (f -` {i} \<inter> F) + f x)" using first_case second_case try
+
+
+ sorry
+
+
+(*
+lemma sum_power : "finite A \<Rightarrow> (\<Sum>x\<in>A.x)^k = \<Sum>x\<in>(A^k). x "
+*)
 lemma kraft_sum_power_k :
   assumes "real_code c"
   shows "kraft_sum c ^ k \<le> k * max_len c"
