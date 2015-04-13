@@ -117,6 +117,31 @@ fun arbitrary_take :: "'a list \<Rightarrow> 'a list" where
   "arbitrary_take l = take zn l"
 
 
+lemma azerazr :
+  fixes H
+  fixes m
+  assumes finite: "finite H"
+  assumes bounded: "\<forall>x \<in> H. f x \<le> m"
+  (* shows "(\<Sum>x\<in>H. f x) = (\<Sum> i=0..<m. (i * card {x \<in>H. f x = i}))" *)
+shows "(\<Sum>x\<in>H. f x) = (\<Sum> i=0..<(Suc m). (i * card ((f-`{i}) \<inter> H)))"
+proof (cases "m = 0")
+assume as: "m = 0"
+then have "\<forall>x \<in> H. f x \<le> 0" using bounded by auto
+then have zer: "\<forall>x\<in> H. f x = 0" by auto
+then have zers: "setsum f H = 0" by auto
+moreover have zers2 : " (\<Sum>i = 0..<Suc m. i * card ((f -` {i}) \<inter> H)) = 0" using zer as
+unfolding setsum_1 by auto
+then show ?thesis using zers zers2 by auto
+
+ then show ?case
+ultimately have "setsum f H = (\<Sum>i = 0..<Suc m. i * card (f -` {i} \<inter> H))" by auto
+next
+
+show "?case" by using 
+
+
+
+
 
 
 
