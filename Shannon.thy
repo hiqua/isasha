@@ -78,8 +78,7 @@ fixes input_block_size::nat
 begin
 
 definition lossless_code :: "code \<Rightarrow> bool" where
-"lossless_code c = (\<forall>x.  snd c (fst c x) = Some
-x)"
+"lossless_code c = (\<forall>x. snd c (fst c x) = Some x)"
 
 definition non_singular_code :: "code \<Rightarrow> bool" where
   "non_singular_code c = (\<forall>x. \<forall>y. length x \<le> input_block_size \<and> length y \<le> input_block_size \<longrightarrow> snd c (fst c x) = snd c (fst c y) \<longrightarrow> x =y)"
@@ -149,10 +148,7 @@ lemma max_len_concat :
   "\<forall>w. w\<in> (k_words k) \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
 proof sorry
 
-definition set_of_k_words_length_m :: "code \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> word set" where
-  (* "set_of_k_words_length_m c k m = { xk. xk \<in> k_words k \<and> cw_len_concat c xk =
-   m}" *)
-"set_of_k_words_length_m c k m = { xk. xk \<in> k_words k} \<inter> (cw_len_concat c)-`{m}"
+
 
 lemma bound_len_concat:
   "w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
@@ -193,8 +189,29 @@ ultimately show ?thesis using finite_k_words sum_vimage[where f=
 (k*max_len c)"] by metis
 qed
 
-lemma am_maj :
-  "real (card (set_of_k_words_length_m c k m))  \<le> b^m "
+definition set_of_k_words_length_m :: "code \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> word set" where
+"set_of_k_words_length_m c k m = { xk. xk \<in> k_words k} \<inter> (cw_len_concat c)-`{m}"
+
+(*
+Uses the fact that the code is an injection from k_words_length_m into m-lists
+*)
+lemma am_maj_aux:
+  assumes lossless: "lossless_code c"
+  shows "inj_on (fst c) (set_of_k_words_length_m c k m)" (is "inj_on ?enc ?s")
+proof -
+fix x y
+let ?dec = "snd c"
+(* assume "x \<in> ?r \<and> y \<in> ?r \<and> ?l x = ?l y" *)
+  have "x \<in> ?s \<and> y \<in> ?s \<and> ?enc x = ?enc y \<longrightarrow> ?dec (?enc x) = ?dec (?enc y)" using
+  assms lossless_code_def by auto
+then show ?thesis using inj_on_def[where f="?enc" and A="?s"]
+by (metis lossless lossless_code_def option.inject)
+qed
+
+
+lemma am_maj:
+  assumes lossless: "lossless c"
+  shows "card (set_of_k_words_length_m c k m)  \<le> b^m "
 proof sorry
 
 
