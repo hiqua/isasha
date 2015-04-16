@@ -89,8 +89,14 @@ A code is uniquely decodable iff its concatenation is non-singular
 definition u_decodable :: "code \<Rightarrow> bool" where
   "u_decodable c = (\<forall>x. \<forall>y. snd c (fst c x) = snd c (fst c y) \<longrightarrow> x = y)"
 
+
+inductive real_word:: "word \<Rightarrow> bool" where
+"real_word []"|
+rw_induct: "real_word l \<and> n <input_bound \<Longrightarrow> real_word (n#l)"
+
+
 definition k_words :: "nat \<Rightarrow> word set" where
-  "k_words k = {w. length w = k}"
+  "k_words k = {w. length w = k \<and> real_word w}"
 
 (*
 Is the code a real source encoding code?
@@ -156,59 +162,52 @@ lemma sum_vimage:
   shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=1..<bound. (card ((f-`{m}) \<inter> H))* g m)"
 proof sorry
 
+lemma finite_k_words: "finite (k_words k)" using bounded_input by blast
 
 (*
 5.54
 *)
 lemma kraft_sum_rewrite :
-fixes k
-fixes c
-  assumes "k \<noteq> 0"
-  shows "(\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w)) =
+   "(\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w)) =
 (\<Sum>m=1..<Suc (k*max_len c). card (k_words k \<inter> ((cw_len_concat c) -` {m})) * (1 /
 b^m))" (is "?L = ?R")
 proof -
 have "w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
 using bound_len_concat by simp
 then have "w \<in> k_words k \<Longrightarrow> cw_len_concat c w < Suc ( k * max_len c)" by auto
-moreover have "finite (k_words k)" sorry
- (* by (metis bounded_input order_refl) *)
 moreover have "?R = (\<Sum>m = 1..<Suc (k * max_len c). real (
 card (cw_len_concat c -` {m} \<inter> k_words k)) * (1 / b ^ m)
 )"
 using Set.Int_commute[where A ="k_words k"] by auto
-ultimately show ?thesis using  Set.Int_commute[where A ="cw_len_concat c -` {m}"] sum_vimage[where f=
+ultimately show ?thesis using finite_k_words sum_vimage[where f=
 "cw_len_concat c" and g = "(\<lambda>i. 1/ (b^i))" and H ="k_words k" and bound = "Suc
 (k*max_len c)"] by metis
 qed
 
 lemma am_maj :
-  "card (set_of_k_words_length_m c k m) \<le> b^m"
+  "real (card (set_of_k_words_length_m c k m)) / b^m \<le> b^m / b^m"
 proof sorry
 
 
 lemma kraft_sum_rewrite2:
 fixes c
 assumes "0 < max_len c"
-shows "real (\<Sum>m=1..<Suc (k*max_len c). real (card (set_of_k_words_length_m c k m))  / b^m) \<le> real (k * max_len c)"
+shows " (\<Sum>m=1..<Suc (k*max_len c). real (card (set_of_k_words_length_m c k m))  / b^m) \<le> real (k * max_len c)"
 proof -
-have 0: "(\<Sum>m=1..<Suc (k*max_len c). (card (set_of_k_words_length_m c k m) / b^m)) \<le> (\<Sum>m=1..<Suc(k * max_len c). b^m / b^m)"
-using am_maj
-(* from try *)
-proof -
-  have "\<And>x\<^sub>5 u. (\<Sum>R = Suc 0..<Suc 0. real_of_nat (card {Ra \<in> k_words 0. cw_len_concat x\<^sub>5 Ra = R})) / b ^ u = (\<Sum>R\<in>k_words 0. 1 / b ^ cw_len_concat x\<^sub>5 R)" by (metis (no_types) One_nat_def kraft_sum_rewrite mult_zero_left real_of_nat_def real_of_nat_setsum)
-  thus "(\<Sum>m = 1..<Suc (k * max_len c). real (card (set_of_k_words_length_m c k m)) / b ^ m) \<le> (\<Sum>m = 1..<Suc (k * max_len c). b ^ m / b ^ m)" by (metis (no_types) divide_zero_left kraft_sum_power one_neq_zero power_0 setsum_op_ivl_Suc zero_less_Suc)
-qed
+have 0: " (\<Sum>m=1..<Suc (k*max_len c). (card (set_of_k_words_length_m c k m) / b^m)) \<le> (\<Sum>m=1..<Suc(k * max_len c). b^m / b^m)"
+using am_maj[where c="c" and k="k" and m="m"] binary_space
+Groups_Big.setsum_mono[ where K="{1..<Suc(k*max_len c)}" and f="(\<lambda>m. real (card
+(set_of_k_words_length_m c k m))/b^m)"
+and g="\<lambda>m. b ^ m /b^m"]
+ by (metis am_maj)
 have 1: "(\<Sum>m=1..<Suc(k * max_len c). b^m / b^m) = (\<Sum>m=1..<Suc(k
 *max_len c). 1)" using binary_space by auto
  have 2: "(\<Sum>m=1..<Suc(k*max_len c). 1) =  (k * max_len c)" using assms by simp
-from 0 1 2 show ?thesis
-(*from try *)
-proof -
-  have "\<And>u w x. real_of_nat (\<Sum>uub = 1..<Suc (u * max_len w). card {uuc \<in> k_words u. cw_len_concat w uuc = uub}) / b ^ x = kraft_sum w ^ u" using kraft_sum_power kraft_sum_rewrite real_of_nat_def by auto
-  hence "\<And>w. real_of_nat (\<Sum>uub = 1..<1. card {uuc \<in> k_words 0. cw_len_concat w uuc = uub}) = 1" by (metis (no_types) One_nat_def divide_divide_eq_right monoid_mult_class.mult.right_neutral mult_zero_left power_0 times_divide_eq_right)
-  thus "real (\<Sum>m = 1..<Suc (k * max_len c). real (card (set_of_k_words_length_m c k m)) / b ^ m) \<le> real (k * max_len c)" by simp
-qed
+ from 0 1 2 have 3: "(\<Sum>m = 1..<Suc (k * max_len c). real (card (set_of_k_words_length_m c k
+   m)) / b ^ m) \<le>  (k * max_len c)"
+by (metis One_nat_def card_atLeastLessThan card_eq_setsum diff_Suc_Suc
+  real_of_card)
+from 3 show ?thesis  by auto
 qed
 
 lemma kraft_sum_power_bound :
