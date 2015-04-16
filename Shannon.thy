@@ -208,8 +208,7 @@ using am_maj[where c="c" and k="k" and m="m"] binary_space
 Groups_Big.setsum_mono[ where K="{1..<Suc(k*max_len c)}" and f="(\<lambda>m. real (card
 (set_of_k_words_length_m c k m))/b^m)"
 and g="\<lambda>m. b ^ m /b^m"]
- using  am_maj
-   Fields.linordered_field_inverse_zero_class.divide_le_cancel by simp
+ using  am_maj by simp
 have 1: "(\<Sum>m=1..<Suc(k * max_len c). b^m / b^m) = (\<Sum>m=1..<Suc(k
 *max_len c). 1)" using binary_space by auto
  have 2: "(\<Sum>m=1..<Suc(k*max_len c). 1) =  (k * max_len c)" using assms by simp
