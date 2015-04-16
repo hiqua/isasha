@@ -22,6 +22,13 @@ X is the input, Y is the output.
 They are not independent (if they are, all of this serves no purpose)
 We fix N, N' the measures (TODO: should I? Can we have two different bit measures?)
 The input is only correlated to the corresponding output.
+From a code, we consider:
+_its extension: the code obtained when we encode each
+letter and concatenate the result (and fortunately decode it if it has some good
+properties).
+_its block code, with a natural parameter, that takes mentioned number of
+letters, consider it as a single character (of a new alphabet), and encode it.
+TODO: explain a lil more
 *)
 
 type_synonym prob = "letter \<Rightarrow> real"
@@ -62,14 +69,16 @@ print_locale information_space_discrete
 TODO: Have some predicates to
 allow reasonings about codes. Keep the input_block_size that limits the size of the input, and use it.
 *)
-(* We will generalize the type "code" to any input by splitting the input in piece of length below a constant *)
+(*
+ We will generalize the type "code" to any input by splitting the input in piece of length below a constant
+*)
 subsection{* locale specific to the source coding theorem *}
 locale information_space_discrete_source = information_space_discrete +
 fixes input_block_size::nat
 begin
 
 definition lossless_code :: "code \<Rightarrow> bool" where
-"lossless_code c = (\<forall>x. length x \<le> input_block_size \<longrightarrow> snd c (fst c x) = Some
+"lossless_code c = (\<forall>x.  snd c (fst c x) = Some
 x)"
 
 definition non_singular_code :: "code \<Rightarrow> bool" where
