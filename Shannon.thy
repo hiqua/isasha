@@ -55,6 +55,7 @@ assumes mutual_info:
 "\<I>(Input n ; Output n) > 0"
 (* According to RAHM, this should be a rat, I'll look into this later *)
 fixes source_entropy::real
+
 (*
 The entropy depends on the value of b, which is the cardinal of the available
 output symbols.
@@ -155,6 +156,7 @@ lemma bound_len_concat:
   "w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
 proof sorry
 
+subsection{* Inequality of the kraft sum (source coding theorem, direct) *}
 (*
 g i = 1/b^i
 f  = cw_len_concat c
@@ -182,6 +184,7 @@ F)) * g m) + g (f x)" by simp
  qed
 *)
 
+
 lemma sum_vimage:
   fixes f::"nat list \<Rightarrow>nat"
   fixes g::"nat \<Rightarrow> real"
@@ -203,14 +206,15 @@ b^m))" (is "?L = ?R")
 proof -
 have "w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
 using bound_len_concat by simp
-then have "w \<in> k_words k \<Longrightarrow> cw_len_concat c w < Suc ( k * max_len c)" by auto
+hence "w \<in> k_words k \<Longrightarrow> cw_len_concat c w < Suc ( k * max_len c)" by auto
 moreover have "?R = (\<Sum>m = 1..<Suc (k * max_len c). real (
 card (cw_len_concat c -` {m} \<inter> k_words k)) * (1 / b ^ m)
 )"
 using Set.Int_commute[where A ="k_words k"] by auto
-ultimately show ?thesis using finite_k_words sum_vimage[where f=
-"cw_len_concat c" and g = "(\<lambda>i. 1/ (b^i))" and H ="k_words k" and bound = "Suc
-(k*max_len c)"] by metis
+ultimately show ?thesis
+using finite_k_words sum_vimage[where f="cw_len_concat c" and g = "(\<lambda>i. 1/ (b^i))" and H ="k_words k" and bound = "Suc
+(k*max_len c)"]
+by metis
 qed
 
 definition set_of_k_words_length_m :: "code \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> word set" where
@@ -226,10 +230,10 @@ proof -
 fix x y
 let ?dec = "snd c"
 (* assume "x \<in> ?r \<and> y \<in> ?r \<and> ?l x = ?l y" *)
-  have "x \<in> ?s \<and> y \<in> ?s \<and> ?enc x = ?enc y \<longrightarrow> ?dec (?enc x) = ?dec (?enc y)" using
-  assms lossless_code_def by auto
-then show ?thesis using inj_on_def[where f="?enc" and A="?s"]
-by (metis lossless lossless_code_def option.inject)
+  have "x \<in> ?s \<and> y \<in> ?s \<and> ?enc x = ?enc y \<longrightarrow> ?dec (?enc x) = ?dec (?enc y)"
+using assms lossless_code_def by auto
+thus ?thesis
+using inj_on_def[where f="?enc" and A="?s"]by (metis lossless lossless_code_def option.inject)
 qed
 
 lemma am_maj_aux12:
@@ -245,62 +249,54 @@ lemma am_maj_aux2:
 using assms am_maj_aux binary_space am_maj_aux12
 by (metis card_image finite_imageD)
 
-
 lemma am_maj:
   assumes lossless: "lossless_code c"
   shows "card (set_of_k_words_length_m c k m)  \<le> b^m" (is "?c \<le> ?b")
 proof -
 have "set_of_k_words_length_m c k m \<subseteq> (cw_len_concat c)-`{m}" using
 set_of_k_words_length_m_def by simp
-then have "card (set_of_k_words_length_m c k m) \<le> card ((cw_len_concat c)-`{m})"
+hence "card (set_of_k_words_length_m c k m) \<le> card ((cw_len_concat c)-`{m})"
 using assms am_maj_aux2 Finite_Set.card_mono by blast
-then show ?thesis using assms am_maj_aux2[where c="c" and m="m" ] by simp
+thus ?thesis
+using assms am_maj_aux2[where c="c" and m="m" ] by simp
 qed
 
 (* let ?s="set_of_k_words_length_m c k m" and ?enc="fst c" *)
 
 
 lemma kraft_sum_rewrite2:
-fixes c
-assumes "0 < max_len c"
 assumes lossless: "lossless_code c"
-shows " (\<Sum>m=1..<Suc (k*max_len c). real (card (set_of_k_words_length_m c k m))  / b^m) \<le> real (k * max_len c)"
+shows "(\<Sum>m=1..<Suc (k*max_len c). real (card (set_of_k_words_length_m c k m))  / b^m) \<le> real (k * max_len c)"
 proof -
-have 0: " (\<Sum>m=1..<Suc (k*max_len c). (card (set_of_k_words_length_m c k m) / b^m)) \<le> (\<Sum>m=1..<Suc(k * max_len c). b^m / b^m)"
+have "(\<Sum>m=1..<Suc (k*max_len c). (card (set_of_k_words_length_m c k m) / b^m)) \<le> (\<Sum>m=1..<Suc(k * max_len c). b^m / b^m)"
 using assms am_maj[where c="c" and k="k" and m="m"] binary_space
 Groups_Big.setsum_mono[ where K="{1..<Suc(k*max_len c)}" and f="(\<lambda>m. real (card
 (set_of_k_words_length_m c k m))/b^m)" and g="\<lambda>m. b^m /b^m"]
-by (metis am_maj divide_le_eq_1_pos divide_self_if linorder_not_le order_refl zero_less_numeral zero_less_power) 
-have 1: "(\<Sum>m=1..<Suc(k * max_len c). b^m / b^m) = (\<Sum>m=1..<Suc(k
-*max_len c). 1)" using binary_space by auto
- have 2: "(\<Sum>m=1..<Suc(k*max_len c). 1) =  (k * max_len c)" using assms by simp
- from 0 1 2 have 3: "(\<Sum>m = 1..<Suc (k * max_len c). real (card (set_of_k_words_length_m c k
+by (metis am_maj divide_le_eq_1_pos divide_self_if linorder_not_le order_refl zero_less_numeral zero_less_power)
+moreover have  "(\<Sum>m=1..<Suc(k * max_len c). b^m / b^m) = (\<Sum>m=1..<Suc(k
+*max_len c). 1)"
+  using binary_space by auto
+moreover have "(\<Sum>m=1..<Suc(k*max_len c). 1) =  (k * max_len c)"
+  using assms by simp
+ultimately have "(\<Sum>m = 1..<Suc (k * max_len c). real (card (set_of_k_words_length_m c k
    m)) / b ^ m) \<le>  (k * max_len c)"
 by (metis One_nat_def card_atLeastLessThan card_eq_setsum diff_Suc_Suc
   real_of_card)
-from 3 show ?thesis  by auto
+then show ?thesis  by auto
 qed
 
 lemma kraft_sum_power_bound :
-  fixes c
-  assumes "0 < max_len c"
   shows "(kraft_sum c)^k \<le> real (k * max_len c)"
 proof -
 show ?thesis using assms kraft_sum_def kraft_sum_power kraft_sum_rewrite
 kraft_sum_rewrite2
 (* TODO: really strange... *)
-using bounded_input by blast 
+using bounded_input by blast
 qed
-
-
-
-
 
 lemma partition:
   assumes bounded: "\<forall>x \<in> H. f x < (Suc m::nat)"
   shows "finite H \<Longrightarrow> H = (\<Union>i \<in> {0..m}. ( H\<inter>f-`{i}))" using bounded by auto
-
-(* lemma partition_sum: *)
 
 lemma sum_transform_aux:
   assumes bounded: "\<forall>x \<in> H. f x < (Suc m::nat)"
@@ -320,18 +316,6 @@ lemma sum_transform_aux2:
   shows "finite H \<Longrightarrow>(\<Sum>x\<in>H\<inter>{x. f x < Suc m} . f x) = (\<Sum>i=0..<(Suc m) .
   (\<Sum>x\<in>H\<inter>f-`{i}.f x))"
 proof sorry
-
-(*
-proof (induct m)
-case 0 then show ?case  using  sum_transform_aux by auto
-next
-case (Suc n)
-then have recur_right: "(\<Sum>i = 0..<Suc (Suc m). setsum f (H \<inter> f -` {i})) = (\<Sum>i = 0..< (Suc m).
-setsum f (H \<inter> f -` {i})) + setsum f (H\<inter>f-`{Suc m})"
-by auto
-*)
-
-
 
 lemma sum_transform:
   assumes bounded: "\<forall>x \<in> H. f x < m"
@@ -353,7 +337,6 @@ by (metis (erased, hide_lams) Int_iff One_nat_def Un_commute add.commute add_Suc
   have second_case_imp :  "\<lbrakk>f x = i ; \<not>x \<in> F \<rbrakk>  \<Longrightarrow>
   i*card (f -` {i} \<inter> insert x F) =  i * card (f -`  {i} \<inter> F) + i"
   by auto
-
   have "finite F \<Longrightarrow> \<not>x\<in>F \<Longrightarrow> (\<Sum>y \<in> (insert x F). f y) = ((\<Sum>y \<in> F. f y) + f x)"
   by auto
 
