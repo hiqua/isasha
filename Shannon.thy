@@ -29,6 +29,7 @@ properties).
 _its block code, with a natural parameter, that takes mentioned number of
 letters, consider it as a single character (of a new alphabet), and encode it.
 TODO: explain a lil more
+TODO: link between bword and the variable b
 *)
 
 type_synonym prob = "letter \<Rightarrow> real"
@@ -197,7 +198,7 @@ Uses the fact that the code is an injection from k_words_length_m into m-lists
 *)
 lemma am_maj_aux:
   assumes lossless: "lossless_code c"
-  shows "inj_on (fst c) (set_of_k_words_length_m c k m)" (is "inj_on ?enc ?s")
+  shows "inj_on (fst c) ((cw_len_concat c)-`{m})" (is "inj_on ?enc ?s")
 proof -
 fix x y
 let ?dec = "snd c"
@@ -208,24 +209,45 @@ then show ?thesis using inj_on_def[where f="?enc" and A="?s"]
 by (metis lossless lossless_code_def option.inject)
 qed
 
+lemma am_maj_aux12:
+  assumes lossless: "lossless_code c"
+  shows "finite ((fst c)`(((cw_len_concat c)-`{m}))) \<and> card ((fst c)`(((cw_len_concat c)-`{m}))) \<le> b^m"
+proof -
+show ?thesis sorry
+qed
+
+lemma am_maj_aux2:
+  assumes lossless: "lossless_code c"
+  shows "finite ((cw_len_concat c)-`{m}) \<and> real (card ((cw_len_concat c)-`{m})) \<le> b^m"
+using assms am_maj_aux binary_space am_maj_aux12
+by (metis card_image finite_imageD)
+
 
 lemma am_maj:
-  assumes lossless: "lossless c"
-  shows "card (set_of_k_words_length_m c k m)  \<le> b^m "
-proof sorry
+  assumes lossless: "lossless_code c"
+  shows "card (set_of_k_words_length_m c k m)  \<le> b^m" (is "?c \<le> ?b")
+proof -
+have "set_of_k_words_length_m c k m \<subseteq> (cw_len_concat c)-`{m}" using
+set_of_k_words_length_m_def by simp
+then have "card (set_of_k_words_length_m c k m) \<le> card ((cw_len_concat c)-`{m})"
+using assms am_maj_aux2 Finite_Set.card_mono by blast
+then show ?thesis using assms am_maj_aux2[where c="c" and m="m" ] by simp
+qed
+
+(* let ?s="set_of_k_words_length_m c k m" and ?enc="fst c" *)
 
 
 lemma kraft_sum_rewrite2:
 fixes c
 assumes "0 < max_len c"
+assumes lossless: "lossless_code c"
 shows " (\<Sum>m=1..<Suc (k*max_len c). real (card (set_of_k_words_length_m c k m))  / b^m) \<le> real (k * max_len c)"
 proof -
 have 0: " (\<Sum>m=1..<Suc (k*max_len c). (card (set_of_k_words_length_m c k m) / b^m)) \<le> (\<Sum>m=1..<Suc(k * max_len c). b^m / b^m)"
-using am_maj[where c="c" and k="k" and m="m"] binary_space
+using assms am_maj[where c="c" and k="k" and m="m"] binary_space
 Groups_Big.setsum_mono[ where K="{1..<Suc(k*max_len c)}" and f="(\<lambda>m. real (card
-(set_of_k_words_length_m c k m))/b^m)"
-and g="\<lambda>m. b ^ m /b^m"]
- using  am_maj by simp
+(set_of_k_words_length_m c k m))/b^m)" and g="\<lambda>m. b^m /b^m"]
+by (metis am_maj divide_le_eq_1_pos divide_self_if linorder_not_le order_refl zero_less_numeral zero_less_power) 
 have 1: "(\<Sum>m=1..<Suc(k * max_len c). b^m / b^m) = (\<Sum>m=1..<Suc(k
 *max_len c). 1)" using binary_space by auto
  have 2: "(\<Sum>m=1..<Suc(k*max_len c). 1) =  (k * max_len c)" using assms by simp
@@ -241,7 +263,11 @@ lemma kraft_sum_power_bound :
   assumes "0 < max_len c"
   shows "(kraft_sum c)^k \<le> real (k * max_len c)"
 proof -
-show ?thesis using kraft_sum_power kraft_sum_rewrite kraft_sum_rewrite2
+show ?thesis using assms kraft_sum_def kraft_sum_power kraft_sum_rewrite
+kraft_sum_rewrite2
+(* TODO: really strange... *)
+using bounded_input by blast 
+qed
 
 
 
@@ -315,15 +341,6 @@ by (metis (erased, hide_lams) Int_iff One_nat_def Un_commute add.commute add_Suc
  qed
 
 
-
-(*
-lemma sum_power : "finite A \<Rightarrow> (\<Sum>x\<in>A.x)^k = \<Sum>x\<in>(A^k). x "
-*)
-lemma kraft_sum_power_k :
-  assumes "real_code c"
-  shows "kraft_sum c ^ k \<le> k * max_len c"
-sorry
-
 theorem McMillan : "real_code c \<Longrightarrow> kraft_inequality c"
 sorry
 
@@ -333,14 +350,16 @@ _Kraft inequality for uniquely decodable codes using the McMillan theorem
 theorem rate_lower_bound : "real_code c \<Longrightarrow> source_entropy \<le> code_rate c"
 sorry
 
+(*
 theorem kraft_theorem :
   assumes "(\<Sum> k\<in>{0..< input_bound}. (1 / b^(lengthk k))) \<le> 1"
-  shows "\<exists>c. real_code c \<and> (k\<in>{0..<input_bound} \<longrightarrow> cw_len c [k] = lengthk k)"
-sorry
+  shows "\<exists>c. real_code c \<and> (k\<in>{0..<input_bound} \<longrightarrow> (cw_len c k) = lengthk k)"
+proof sorry
 
 theorem rate_upper_bound : "0 < \<epsilon> \<Longrightarrow> (\<exists>n. \<exists>c. n \<le> input_block_size \<Longrightarrow> (real_code c
 \<and> code_rate c \<le> source_entropy + \<epsilon>))"
 sorry
+*)
 
 end
 end
