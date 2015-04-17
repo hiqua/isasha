@@ -159,6 +159,29 @@ proof sorry
 g i = 1/b^i
 f  = cw_len_concat c
 *)
+(*
+lemma sum_vimage_proof:
+  fixes f::"nat list \<Rightarrow>nat"
+  fixes g::"nat \<Rightarrow> real"
+  fixes H
+  fixes bound
+  assumes bounded: "w \<in> H \<Longrightarrow> f w < bound"
+  shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=1..<bound. (card ((f-`{m}) \<inter> H))* g m)"
+proof (induct  rule: finite_induct)
+  case empty
+  thus ?case by simp
+next
+  case (insert x F)
+ moreover then have " (\<Sum>w\<in>insert x F. g (f w)) =  ((\<Sum>w\<in> F. g (f w)) + g (f x))"
+ by auto
+ultimately have " (\<Sum>w\<in>insert x F. g (f w)) = (\<Sum>m = 1..<bound. real (card (f -` {m} \<inter>
+F)) * g m) + g (f x)" by simp
+ have "f x < bound \<Longrightarrow> (\<Sum>m = 1..<bound. real (card (f -` {m} \<inter> F)) * g m) =
+((\<Sum>m \<in> ({1..<bound} - {f x}). real (card (f -` {m} \<inter> F)) * g m) +  ((card (f
+-` {f x} \<inter> F )) * g (f x)))"
+ qed
+*)
+
 lemma sum_vimage:
   fixes f::"nat list \<Rightarrow>nat"
   fixes g::"nat \<Rightarrow> real"
@@ -334,21 +357,24 @@ by (metis (erased, hide_lams) Int_iff One_nat_def Un_commute add.commute add_Suc
   have "finite F \<Longrightarrow> \<not>x\<in>F \<Longrightarrow> (\<Sum>y \<in> (insert x F). f y) = ((\<Sum>y \<in> F. f y) + f x)"
   by auto
 
-  assume "finite F" "\<not>x\<in>F"
-  have  "(\<Sum>i = 0..<m. i * card (f -` {i} \<inter> insert x F)) =  (\<Sum>i = 0..<m. i * card
-  (f -` {i} \<inter> F) + f x)" using first_case second_case_imp sorry
-  thus ?case by simp
+  (* assume "finite F" "\<not>x\<in>F" *)
+
+  have  "(\<Sum>i = 0..<m. i * card (f -` {i} \<inter> insert x F)) =  ((\<Sum>i = 0..<m. i * card
+  (f -` {i} \<inter> F)) + f x)" using first_case second_case_imp sorry
+
  qed
 
 
-theorem McMillan : "real_code c \<Longrightarrow> kraft_inequality c"
-sorry
+theorem McMillan :
+shows "real_code c \<Longrightarrow> kraft_inequality c"
+proof sorry
 
 (*
 _Kraft inequality for uniquely decodable codes using the McMillan theorem
 *)
-theorem rate_lower_bound : "real_code c \<Longrightarrow> source_entropy \<le> code_rate c"
-sorry
+theorem rate_lower_bound :
+shows "real_code c \<Longrightarrow> source_entropy \<le> code_rate c"
+proof sorry
 
 (*
 theorem kraft_theorem :
