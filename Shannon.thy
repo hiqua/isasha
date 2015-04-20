@@ -63,7 +63,7 @@ output symbols.
 assumes binary_space: "b = 2"
 assumes entropy_defi: "source_entropy = \<H>(Input 0)"
 assumes "letters = {0..<input_bound}"
-assumes bounded_input: "fi input_bound \<noteq> 0 \<and> (input_bound \<le> n \<longrightarrow> fi n = 0)"
+assumes bounded_input: "fi input_bound \<noteq> 0 \<and> (input_bound < n \<longrightarrow> fi n = 0)"
 
 print_locale information_space_discrete
 
@@ -194,7 +194,7 @@ lemma sum_vimage:
   shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=1..<bound. (card ((f-`{m}) \<inter> H))* g m)"
 proof sorry
 
-lemma finite_k_words: "finite (k_words k)" using bounded_input by blast
+lemma finite_k_words: "finite (k_words k)"  sorry
 
 (*
 5.54
@@ -290,8 +290,7 @@ lemma kraft_sum_power_bound :
 proof -
 show ?thesis using assms kraft_sum_def kraft_sum_power kraft_sum_rewrite
 kraft_sum_rewrite2
-(* TODO: really strange... *)
-using bounded_input by blast
+ sorry
 qed
 
 lemma partition:
