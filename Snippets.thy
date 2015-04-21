@@ -2,7 +2,7 @@
 know Isabelle a little more, and to enshrine the syntax I sometimes had a hard
 time to grasp. *)
 theory Snippets
-imports Main "~~/src/HOL/Library/Quotient_List"
+imports Main "~~/src/HOL/Library/Quotient_List" Real
 begin
 (*p174 tutorial.pdf: lemmas and rules introduced by typedef *)
 typedef 'a alphabet = "{A :: 'a set. (finite A \<and> \<not> ( A = {} ))}" by auto
@@ -117,29 +117,26 @@ fun arbitrary_take :: "'a list \<Rightarrow> 'a list" where
   "arbitrary_take l = take zn l"
 
 
-lemma azerazr :
-  fixes H
-  fixes m
-  assumes finite: "finite H"
-  assumes bounded: "\<forall>x \<in> H. f x \<le> m"
-  (* shows "(\<Sum>x\<in>H. f x) = (\<Sum> i=0..<m. (i * card {x \<in>H. f x = i}))" *)
-shows "(\<Sum>x\<in>H. f x) = (\<Sum> i=0..<(Suc m). (i * card ((f-`{i}) \<inter> H)))"
-proof (cases "m = 0")
-assume as: "m = 0"
-then have "\<forall>x \<in> H. f x \<le> 0" using bounded by auto
-then have zer: "\<forall>x\<in> H. f x = 0" by auto
-then have zers: "setsum f H = 0" by auto
-moreover have zers2 : " (\<Sum>i = 0..<Suc m. i * card ((f -` {i}) \<inter> H)) = 0" using zer as
-unfolding setsum_1 by auto
-then show ?thesis using zers zers2 by auto
-
- then show ?case
-ultimately have "setsum f H = (\<Sum>i = 0..<Suc m. i * card (f -` {i} \<inter> H))" by auto
-next
-
-show "?case" by using 
 
 
+
+lemma sum_vimage_proof_aux2:
+" ((n::nat) + 1) * g = (n* g + g)"
+apply auto
+done
+
+
+lemma sum_vimage_proof_aux22:
+"real ((n::int) + 1) * g = (n* g + g)"
+apply auto+
+apply algebra
+done
+
+lemma sum_vimage_proof_aux222:
+"real ((n::nat) + 1) * g = (n* g + g)"
+apply auto
+apply (metis comm_monoid_mult_class.mult.right_neutral distrib_left mult.commute real_of_nat_Suc)
+done
 
 
 
