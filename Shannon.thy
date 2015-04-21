@@ -1,5 +1,5 @@
 theory Shannon
-imports Information Finite_Set
+imports Information
 begin
 (*
 AIM: Formalize Shannon's theorems
@@ -162,37 +162,93 @@ g i = 1/b^i
 f  = cw_len_concat c
 *)
 (*
-lemma sum_vimage_proof:
-  fixes f::"nat list \<Rightarrow>nat"
-  fixes g::"nat \<Rightarrow> real"
-  fixes H
-  fixes bound
-  assumes bounded: "w \<in> H \<Longrightarrow> f w < bound"
-  shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=1..<bound. (card ((f-`{m}) \<inter> H))* g m)"
-proof (induct  rule: finite_induct)
-  case empty
-  thus ?case by simp
-next
-  case (insert x F)
- moreover then have " (\<Sum>w\<in>insert x F. g (f w)) =  ((\<Sum>w\<in> F. g (f w)) + g (f x))"
- by auto
-ultimately have " (\<Sum>w\<in>insert x F. g (f w)) = (\<Sum>m = 1..<bound. real (card (f -` {m} \<inter>
-F)) * g m) + g (f x)" by simp
- have "f x < bound \<Longrightarrow> (\<Sum>m = 1..<bound. real (card (f -` {m} \<inter> F)) * g m) =
-((\<Sum>m \<in> ({1..<bound} - {f x}). real (card (f -` {m} \<inter> F)) * g m) +  ((card (f
--` {f x} \<inter> F )) * g (f x)))"
- qed
+ (card (f -` {m} \<inter>  F))
+= card (f -` {m} \<inter> insert x F))
+*)
+(*
+lemma sum_vimage_proof_aux_proof:
+assumes "f x = m"
+shows "x \<notin>F \<Longrightarrow> finite F \<Longrightarrow> (card (f -` {f x} \<inter> insert x F) = 1 + card (f -` {f x} \<inter> F))"
+apply simp
+done
+
+lemma sum_vimage_proof_aux_proof2:
+assumes "f x \<noteq> m"
+shows "x \<notin>F \<Longrightarrow> finite F \<Longrightarrow> (card (f -` {f x} \<inter> insert x F) = 1 + card (f -` {f x} \<inter> F))"
+apply simp
+
 *)
 
 
-lemma sum_vimage:
-  fixes f::"nat list \<Rightarrow>nat"
+lemma sum_vimage_proof_aux:
+"x\<notin>F \<Longrightarrow>finite F \<Longrightarrow> card (f -` {m} \<inter> insert x F) =
+(if f x = m then 1 + card (f -` {m} \<inter> F) else card (f -` {m} \<inter>  F))"
+by simp
+
+
+lemma sum_vimage_proof_aux2:
+"real ((n::nat) + 1) * g = (n* g + g)"
+apply auto
+apply (metis comm_monoid_mult_class.mult.right_neutral distrib_left mult.commute real_of_nat_Suc)
+done
+
+
+lemma sum_vimage_proof:
   fixes g::"nat \<Rightarrow> real"
-  fixes H
-  fixes bound
-  assumes bounded: "w \<in> H \<Longrightarrow> f w < bound"
-  shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=1..<bound. (card ((f-`{m}) \<inter> H))* g m)"
-proof sorry
+  assumes bounded: "\<And>w. f w < bound"
+  shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bound. (card ((f-`{m}) \<inter> H) )* g m)" (is "?f \<Longrightarrow> ?l = ?r")
+proof (induct H rule: finite_induct )
+case empty
+show ?case by simp
+next
+case (insert x F)
+note cas = this
+let ?rr = "(\<Sum>m = 0..<bound. real (card (f -` {m} \<inter> (insert x F))) * g m)"
+ from cas have lefthandterm: "(\<Sum>w\<in>insert x F. g (f w)) = (\<Sum>w\<in>F. g (f w)) + g (f x)" by simp
+(* now focusing of the right hand term *)
+ have "finite F \<Longrightarrow> card (f -` {m} \<inter> insert x F) = (if f x = m then 1 + card (f -` {m} \<inter> F) else card (f -` {m} \<inter>  F))"
+using cas sum_vimage_proof_aux[where F="F" and f="f" and m="m" and x="x"] by simp
+ have "(f x) \<in> {0..<bound}" using assms by simp
+ then have "\<forall>h::(nat \<Rightarrow> real). (setsum h {0..<bound})- h (f x) = (setsum h ({0..<bound} - {f x})) "
+by (metis finite_atLeastLessThan setsum_diff1_ring)
+then have sum_reord: "\<And> h::(nat \<Rightarrow> real). (setsum h {0..<bound}) = (setsum h ({0..<bound} - {f x}) + h (f x))"
+by (metis diff_add_cancel)
+have "?rr = (\<Sum>m \<in> ({0..<bound} - {f x}). (card (f -` {m} \<inter> insert x F)) * g m) +
+ (card (f -` {f x} \<inter> insert x F)) * g (f x)" using sum_reord
+by simp
+moreover then have
+"(\<Sum>m\<in>{0..<bound} - {f x}.  (card (f -` {m} \<inter> insert x F)) * g m) = (\<Sum>m\<in>{0..<bound} - {f x}.  (card (f -` {m} \<inter>  F)) * g m)"
+by simp
+moreover from cas have " (card (f -` {f x} \<inter> insert x F)) * g (f x) =  (card (f -` {f x} \<inter>  F) + 1) * g (f x)"
+by simp
+ultimately have 1:
+"(\<Sum>m = 0..<bound. (card (f -` {m} \<inter> insert x F)) * g m)
+= (\<Sum>m\<in>{0..<bound} - {f x}.  (card (f -` {m} \<inter> F)) * g m) + (card (f -` {f x} \<inter>  F) + 1) * g (f x)"
+by simp
+
+have "(\<Sum>m\<in>{0..<bound} - {f x}.  (card (f -` {m} \<inter> F)) * g m) +  (card (f -` {f x} \<inter> F) + 1) * g (f x) =
+(\<Sum>m\<in>{0..<bound} -  {f x}.  (card (f -` {m} \<inter> F)) * g m) +  (card (f -` {f x} \<inter> F)) * g (f x) + g (f x)"
+using
+sum_vimage_proof_aux2[where n="card (f -` {f x} \<inter> F)" and g="g (f x)"] by simp
+from this 1 have firsteq: "(\<Sum>m = 0..<bound.  (card (f -` {m} \<inter> insert x F)) * g m)
+= (\<Sum>m\<in>{0..<bound} - {f x}.  (card (f -` {m} \<inter> F)) * g m) +  (card (f -` {f x} \<inter>  F)) * g (f x) + g (f x)"
+by simp
+have secondeq: "(\<Sum>m\<in>{0..<bound} - {f x}. real (card (f -` {m} \<inter> F)) * g m) +
+    real (card (f -` {f x} \<inter> F)) * g (f x) =(\<Sum>m\<in>{0..<bound}. real (card (f -` {m} \<inter> F)) * g m)"
+using cas assms(1)[where w="x"] sum_reord[where h="(\<lambda>m. real (card (f -` {m} \<inter> F)) * g m)"]
+by simp
+from this firsteq have"(\<Sum>m = 0..<bound. real (card (f -` {m} \<inter> insert x F)) * g m) =
+(\<Sum>m\<in>{0..<bound}. real (card (f -` {m} \<inter> F)) * g m) + g (f x)" by simp
+thus ?case using lefthandterm cas by simp
+qed
+
+
+lemma sum_vimage:
+  fixes g::"nat \<Rightarrow> real"
+  assumes bounded: "\<And>w. f w < bound"
+shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bound. (card ((f-`{m}) \<inter> H) )* g m)"
+using  local.sum_vimage_proof assms by blast
+
 
 lemma finite_k_words: "finite (k_words k)"  sorry
 
@@ -212,9 +268,9 @@ card (cw_len_concat c -` {m} \<inter> k_words k)) * (1 / b ^ m)
 )"
 using Set.Int_commute[where A ="k_words k"] by auto
 ultimately show ?thesis
-using finite_k_words sum_vimage[where f="cw_len_concat c" and g = "(\<lambda>i. 1/ (b^i))" and H ="k_words k" and bound = "Suc
+using finite_k_words[where k="k"] sum_vimage[where f="cw_len_concat c" and g = "(\<lambda>i. 1/ (b^i))" and H ="k_words k" and bound = "Suc
 (k*max_len c)"]
-by metis
+sorry
 qed
 
 definition set_of_k_words_length_m :: "code \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> word set" where
@@ -310,11 +366,12 @@ by auto
 qed
 
 
-
+(*
 lemma sum_transform_aux2:
   shows "finite H \<Longrightarrow>(\<Sum>x\<in>H\<inter>{x. f x < Suc m} . f x) = (\<Sum>i=0..<(Suc m) .
   (\<Sum>x\<in>H\<inter>f-`{i}.f x))"
 proof sorry
+*)
 
 lemma sum_transform:
   assumes bounded: "\<forall>x \<in> H. f x < m"
