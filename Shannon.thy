@@ -196,7 +196,7 @@ done
 lemma sum_vimage_proof:
   fixes g::"nat \<Rightarrow> real"
   assumes bounded: "\<And>w. f w < bound"
-  shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bound. (card ((f-`{m}) \<inter> H) )* g m)" (is "?f \<Longrightarrow> ?l = ?r")
+  shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bound. (card ((f-`{m}) \<inter> H) )* g m)"
 proof (induct H rule: finite_induct )
 case empty
 show ?case by simp
