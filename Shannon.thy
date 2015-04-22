@@ -180,10 +180,6 @@ apply simp
 *)
 
 
-lemma sum_vimage_proof_aux:
-"x\<notin>F \<Longrightarrow>finite F \<Longrightarrow> card (f -` {m} \<inter> insert x F) =
-(if f x = m then 1 + card (f -` {m} \<inter> F) else card (f -` {m} \<inter>  F))"
-by simp
 
 
 lemma sum_vimage_proof_aux2:
@@ -207,7 +203,7 @@ let ?rr = "(\<Sum>m = 0..<bound. real (card (f -` {m} \<inter> (insert x F))) * 
  from cas have lefthandterm: "(\<Sum>w\<in>insert x F. g (f w)) = (\<Sum>w\<in>F. g (f w)) + g (f x)" by simp
 (* now focusing of the right hand term *)
  have "finite F \<Longrightarrow> card (f -` {m} \<inter> insert x F) = (if f x = m then 1 + card (f -` {m} \<inter> F) else card (f -` {m} \<inter>  F))"
-using cas sum_vimage_proof_aux[where F="F" and f="f" and m="m" and x="x"] by simp
+using cas by simp
  have "(f x) \<in> {0..<bound}" using assms by simp
  then have "\<forall>h::(nat \<Rightarrow> real). (setsum h {0..<bound})- h (f x) = (setsum h ({0..<bound} - {f x})) "
 by (metis finite_atLeastLessThan setsum_diff1_ring)
