@@ -83,7 +83,7 @@ definition lossless_code :: "code \<Rightarrow> bool" where
 "lossless_code c = (\<forall>x. snd c (fst c x) = Some x)"
 
 definition non_singular_code :: "code \<Rightarrow> bool" where
-  "non_singular_code c = (\<forall>x. \<forall>y. length x \<le> input_block_size \<and> length y \<le> input_block_size \<longrightarrow> snd c (fst c x) = snd c (fst c y) \<longrightarrow> x =y)"
+"non_singular_code c = (\<forall>x. \<forall>y. length x \<le> input_block_size \<and> length y \<le> input_block_size \<longrightarrow> snd c (fst c x) = snd c (fst c y) \<longrightarrow> x =y)"
 
 (*
 The definition automatically provides us with the extension of the code, we make
@@ -97,7 +97,7 @@ c) x @ (fst c) xs))"
 A code is uniquely decodable iff its concatenation is non-singular
 *)
 definition u_decodable :: "code \<Rightarrow> bool" where
-  "u_decodable c = (\<forall>x. \<forall>y. snd c (fst c x) = snd c (fst c y) \<longrightarrow> x = y)"
+"u_decodable c = (\<forall>x. \<forall>y. snd c (fst c x) = snd c (fst c y) \<longrightarrow> x = y)"
 
 
 inductive real_word:: "word \<Rightarrow> bool" where
@@ -106,7 +106,7 @@ rw_induct: "real_word l \<and> n <input_bound \<Longrightarrow> real_word (n#l)"
 
 
 definition k_words :: "nat \<Rightarrow> word set" where
-  "k_words k = {w. length w = k \<and> real_word w}"
+"k_words k = {w. length w = k \<and> real_word w}"
 
 (*
 Is the code a real source encoding code?
@@ -127,144 +127,123 @@ code) [(Input 0) a])))"
 length of the codeword associated with the letter
 *)
 definition cw_len :: "code \<Rightarrow> letter \<Rightarrow> nat" where
-  "cw_len c l = length ((fst c) [l])"
+"cw_len c l = length ((fst c) [l])"
 
 fun cw_len_concat :: "code \<Rightarrow> word \<Rightarrow> nat" where
-  "cw_len_concat c [] = 0" |
-  "cw_len_concat c (x#xs) = cw_len c x + cw_len_concat c xs"
+"cw_len_concat c [] = 0" |
+"cw_len_concat c (x#xs) = cw_len c x + cw_len_concat c xs"
 
  definition max_len :: "code \<Rightarrow> nat" where
-  "max_len c = Max ((\<lambda>x. cw_len c x) ` {n. n \<le> input_bound})"
+"max_len c = Max ((\<lambda>x. cw_len c x) ` {n. n \<le> input_bound})"
 
 definition kraft_sum :: "code \<Rightarrow> real" where
-  "kraft_sum c = (\<Sum>i\<in>letters. 1 / b^(cw_len c i))"
+"kraft_sum c = (\<Sum>i\<in>letters. 1 / b^(cw_len c i))"
 
 definition kraft_inequality :: "code \<Rightarrow> bool" where
-  "kraft_inequality c = (kraft_sum c \<le> 1)"
+"kraft_inequality c = (kraft_sum c \<le> 1)"
 
 lemma kraft_sum_power :
-  "(kraft_sum c) ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w))"
+"(kraft_sum c) ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w))"
 proof sorry
 
 lemma max_len_concat :
-  "\<forall>w. w\<in> (k_words k) \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
+"\<forall>w. w\<in> (k_words k) \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
 proof sorry
 
 
 
 lemma bound_len_concat:
-  "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
+"\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
 proof sorry
 
 subsection{* Inequality of the kraft sum (source coding theorem, direct) *}
-(*
-g i = 1/b^i
-f  = cw_len_concat c
-*)
-(*
- (card (f -` {m} \<inter>  F))
-= card (f -` {m} \<inter> insert x F))
-*)
-(*
-lemma sum_vimage_proof_aux_proof:
-assumes "f x = m"
-shows "x \<notin>F \<Longrightarrow> finite F \<Longrightarrow> (card (f -` {f x} \<inter> insert x F) = 1 + card (f -` {f x} \<inter> F))"
-apply simp
-done
-
-lemma sum_vimage_proof_aux_proof2:
-assumes "f x \<noteq> m"
-shows "x \<notin>F \<Longrightarrow> finite F \<Longrightarrow> (card (f -` {f x} \<inter> insert x F) = 1 + card (f -` {f x} \<inter> F))"
-apply simp
-
-*)
-
-
 
 
 lemma sum_vimage_proof_aux2:
-"real ((n::nat) + 1) * g = (n* g + g)"
+"real ((n::nat) + 1) * r = (n* r + r)"
 by (metis Suc_eq_plus1 add.commute comm_semiring_1_class.normalizing_semiring_rules(3) real_of_nat_Suc)
 
-
 lemma sum_vimage_proof:
-  fixes g::"nat \<Rightarrow> real"
-  assumes bounded: "\<And>w. f w < bound"
-  shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bound. (card ((f-`{m}) \<inter> H) )* g m)"
+fixes g::"nat \<Rightarrow> real"
+assumes bounded: "\<And>w. f w < bound"
+shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bound. (card ((f-`{m}) \<inter> H) )* g
+m)" (is "?fin \<Longrightarrow> ?s1 = (\<Sum> m=0..<bound. ?ff m H)")
 proof (induct H rule: finite_induct)
 case empty
 show ?case by simp
 next
 case (insert x F)
-note cas = this
-let ?rr = "(\<Sum>m = 0..<bound. real (card (f -` {m} \<inter> (insert x F))) * g m)"
- from cas have lefthandterm: "(\<Sum>w\<in>insert x F. g (f w)) = (\<Sum>w\<in>F. g (f w)) + g (f x)" by simp
+let ?rr = "(\<Sum>m = 0..<bound. ?ff m (insert x F))"
+have lefthandterm: "(\<Sum>w\<in>insert x F. g (f w)) = (\<Sum>w\<in>F. g (f w)) + g (f x)"
+using insert.hyps by simp
 (* now focusing of the right hand term *)
- have "finite F \<Longrightarrow> card (f -` {m} \<inter> insert x F) = (if f x = m then 1 + card (f -` {m} \<inter> F) else card (f -` {m} \<inter>  F))"
-using cas by simp
- have "(f x) \<in> {0..<bound}" using assms by simp
- then have "\<forall>h::(nat \<Rightarrow> real). (setsum h {0..<bound})- h (f x) = (setsum h ({0..<bound} - {f x})) "
+have "finite F \<Longrightarrow> card (f -` {m} \<inter> insert x F) = (if f x = m then 1 + card (f -` {m} \<inter> F) else card (f -` {m} \<inter>F))"
+using insert.hyps by simp
+have "(f x) \<in> {0..<bound}" using assms by simp
+hence "\<forall>h::(nat \<Rightarrow> real). (\<Sum>m=0..<bound. h m)- h (f x) = (\<Sum> m \<in> ({0..<bound} - {f x}). h m)"
 by (metis finite_atLeastLessThan setsum_diff1_ring)
-then have sum_reord: "\<And> h::(nat \<Rightarrow> real). (setsum h {0..<bound}) = (setsum h ({0..<bound} - {f x}) + h (f x))"
+hence sum_reord: "\<And> h::(nat \<Rightarrow> real). (\<Sum>m=0..<bound. h m) = (setsum h ({0..<bound} - {f x}) + h (f x))"
 by (metis diff_add_cancel)
-have "?rr = (\<Sum>m \<in> ({0..<bound} - {f x}). (card (f -` {m} \<inter> insert x F)) * g m) +
- (card (f -` {f x} \<inter> insert x F)) * g (f x)" using sum_reord
+have "?rr = (\<Sum>m \<in> ({0..<bound} - {f x}). ?ff m (insert x F)) + ?ff (f x) (insert x F)"
+using sum_reord by simp
+moreover hence
+"(\<Sum>m\<in>{0..<bound} - {f x}. ?ff m (insert x F)) = (\<Sum>m\<in>{0..<bound} - {f x}.?ff m (insert x F))"
 by simp
-moreover then have
-"(\<Sum>m\<in>{0..<bound} - {f x}.  (card (f -` {m} \<inter> insert x F)) * g m) = (\<Sum>m\<in>{0..<bound} - {f x}.  (card (f -` {m} \<inter>  F)) * g m)"
+moreover have "?ff (f x) (insert x F) = (card (f-` {f x} \<inter>F) + 1) * g (f x)"
+using insert.hyps
 by simp
-moreover from cas have " (card (f -` {f x} \<inter> insert x F)) * g (f x) =  (card (f -` {f x} \<inter>  F) + 1) * g (f x)"
+ultimately have
+"(\<Sum>m = 0..<bound.  ?ff m (insert x F))
+= (\<Sum>m\<in>{0..<bound} - {f x}.(card (f -` {m} \<inter> F)) * g m) + (card (f -` {f x} \<inter>F) + 1) * g (f x)"
 by simp
-ultimately have 1:
-"(\<Sum>m = 0..<bound. (card (f -` {m} \<inter> insert x F)) * g m)
-= (\<Sum>m\<in>{0..<bound} - {f x}.  (card (f -` {m} \<inter> F)) * g m) + (card (f -` {f x} \<inter>  F) + 1) * g (f x)"
+also have "(\<Sum>m\<in>{0..<bound} - {f x}. ?ff m F) +(card (f -` {f x} \<inter> F) + 1) * g (f x) =
+(\<Sum>m\<in>{0..<bound} -{f x}.?ff m F) +?ff (f x) F + g (f x)"
+using sum_vimage_proof_aux2[where n="card (f -` {f x} \<inter> F)" and r="g (f x)"]
 by simp
-
-have "(\<Sum>m\<in>{0..<bound} - {f x}.  (card (f -` {m} \<inter> F)) * g m) +  (card (f -` {f x} \<inter> F) + 1) * g (f x) =
-(\<Sum>m\<in>{0..<bound} -  {f x}.  (card (f -` {m} \<inter> F)) * g m) +  (card (f -` {f x} \<inter> F)) * g (f x) + g (f x)"
-using
-sum_vimage_proof_aux2[where n="card (f -` {f x} \<inter> F)" and g="g (f x)"] by simp
-from this 1 have firsteq: "(\<Sum>m = 0..<bound.  (card (f -` {m} \<inter> insert x F)) * g m)
-= (\<Sum>m\<in>{0..<bound} - {f x}.  (card (f -` {m} \<inter> F)) * g m) +  (card (f -` {f x} \<inter>  F)) * g (f x) + g (f x)"
+finally have firsteq: "(\<Sum>m = 0..<bound. ?ff m (insert x F))
+= (\<Sum>m\<in>{0..<bound} - {f x}. ?ff m (insert x F)) + card (f -` {f x} \<inter>
+F) * g (f x) + g (f x)"
 by simp
-have secondeq: "(\<Sum>m\<in>{0..<bound} - {f x}. real (card (f -` {m} \<inter> F)) * g m) +
-    real (card (f -` {f x} \<inter> F)) * g (f x) =(\<Sum>m\<in>{0..<bound}. real (card (f -` {m} \<inter> F)) * g m)"
-using cas assms(1)[where w="x"] sum_reord[where h="(\<lambda>m. real (card (f -` {m} \<inter> F)) * g m)"]
+have "(\<Sum>m\<in>{0..<bound} - {f x}. card (f -` {m} \<inter> F) * g m) +
+ (card (f -` {f x} \<inter> F)) * g (f x) =(\<Sum>m\<in>{0..<bound}. card (f -` {m} \<inter> F) * g m)"
+using assms(1)[where w="x"] sum_reord[where h="\<lambda>m. card (f -` {m} \<inter> F) * g m"]
 by simp
-from this firsteq have"(\<Sum>m = 0..<bound. real (card (f -` {m} \<inter> insert x F)) * g m) =
-(\<Sum>m\<in>{0..<bound}. real (card (f -` {m} \<inter> F)) * g m) + g (f x)" by simp
-thus ?case using lefthandterm cas by simp
+hence "(\<Sum>m = 0..<bound. ?ff m (insert x F)) =
+(\<Sum>m\<in>{0..<bound}. ?ff m F) + g (f x)"
+using firsteq
+by simp
+thus ?case using lefthandterm insert.hyps by simp
 qed
 
 
 lemma sum_vimage:
-  fixes g::"nat \<Rightarrow> real"
-  assumes bounded: "\<And>w. w \<in> H \<Longrightarrow> f w < bound" and "0 < bound"
+fixes g::"nat \<Rightarrow> real"
+assumes bounded: "\<And>w. w \<in> H \<Longrightarrow> f w < bound" and "0 < bound"
 shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bound. (card ((f-`{m}) \<inter> H) ) * g m)"
 (is "?fin \<Longrightarrow> ?s1 = ?s2")
 proof -
 let ?ff = "(\<lambda>x. if x\<in>H then f x else 0)"
 let ?ss1 = "(\<Sum>w\<in>H. g (?ff w))"
-have eq1: "?s1 =  ?ss1" by simp
+have eq1: "?s1 =?ss1" by simp
 let ?ss2 = "(\<Sum> m=0..<bound. (card ((?ff-`{m}) \<inter> H) ) * g m)"
-have  "\<And>m. ?ff -`{m} \<inter> H = f-`{m} \<inter> H" by auto
-then have eq2: "?s2 = ?ss2" by simp
-have boundedff: "\<And>w . ?ff w < bound"using assms by simp
-then have "?fin \<Longrightarrow> ?ss1 = ?ss2"
+have"\<And>m. ?ff -`{m} \<inter> H = f-`{m} \<inter> H" by auto
+hence eq2: "?s2 = ?ss2" by simp
+have boundedff: "\<And>w . ?ff w < bound" using assms by simp
+hence "?fin \<Longrightarrow> ?ss1 = ?ss2"
 using boundedff local.sum_vimage_proof[where H="H" and f="?ff" and bound="bound"
-  and g="g"] assms by simp
-then show "?fin \<Longrightarrow> ?s1 = ?s2" using eq1 eq2 assms boundedff
+and g="g"] assms by simp
+thus "?fin \<Longrightarrow> ?s1 = ?s2" using eq1 eq2 assms boundedff
 by metis
 qed
 
 
-lemma finite_k_words: "finite (k_words k)"  sorry
+lemma finite_k_words: "finite (k_words k)"sorry
 
 (*
 5.54
 *)
 lemma kraft_sum_rewrite :
-   "(\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w)) =
+ "(\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w)) =
 (\<Sum>m=0..<Suc (k*max_len c). card (k_words k \<inter> ((cw_len_concat c) -` {m})) * (1 /
 b^m))" (is "?L = ?R")
 proof -
@@ -291,34 +270,34 @@ definition set_of_k_words_length_m :: "code \<Rightarrow> nat \<Rightarrow> nat 
 Uses the fact that the code is an injection from k_words_length_m into m-lists
 *)
 lemma am_maj_aux:
-  assumes lossless: "lossless_code c"
-  shows "inj_on (fst c) ((cw_len_concat c)-`{m})" (is "inj_on ?enc ?s")
+assumes lossless: "lossless_code c"
+shows "inj_on (fst c) ((cw_len_concat c)-`{m})" (is "inj_on ?enc ?s")
 proof -
 fix x y
 let ?dec = "snd c"
 (* assume "x \<in> ?r \<and> y \<in> ?r \<and> ?l x = ?l y" *)
-  have "x \<in> ?s \<and> y \<in> ?s \<and> ?enc x = ?enc y \<longrightarrow> ?dec (?enc x) = ?dec (?enc y)"
+have "x \<in> ?s \<and> y \<in> ?s \<and> ?enc x = ?enc y \<longrightarrow> ?dec (?enc x) = ?dec (?enc y)"
 using assms lossless_code_def by auto
 thus ?thesis
 using inj_on_def[where f="?enc" and A="?s"]by (metis lossless lossless_code_def option.inject)
 qed
 
 lemma am_maj_aux12:
-  assumes lossless: "lossless_code c"
-  shows "finite ((fst c)`(((cw_len_concat c)-`{m}))) \<and> card ((fst c)`(((cw_len_concat c)-`{m}))) \<le> b^m"
+assumes lossless: "lossless_code c"
+shows "finite ((fst c)`(((cw_len_concat c)-`{m}))) \<and> card ((fst c)`(((cw_len_concat c)-`{m}))) \<le> b^m"
 proof -
 show ?thesis sorry
 qed
 
 lemma am_maj_aux2:
-  assumes lossless: "lossless_code c"
-  shows "finite ((cw_len_concat c)-`{m}) \<and> real (card ((cw_len_concat c)-`{m})) \<le> b^m"
+assumes lossless: "lossless_code c"
+shows "finite ((cw_len_concat c)-`{m}) \<and> real (card ((cw_len_concat c)-`{m})) \<le> b^m"
 using assms am_maj_aux binary_space am_maj_aux12
 by (metis card_image finite_imageD)
 
 lemma am_maj:
-  assumes lossless: "lossless_code c"
-  shows "card (set_of_k_words_length_m c k m)  \<le> b^m" (is "?c \<le> ?b")
+assumes lossless: "lossless_code c"
+shows "card (set_of_k_words_length_m c k m)\<le> b^m" (is "?c \<le> ?b")
 proof -
 have "set_of_k_words_length_m c k m \<subseteq> (cw_len_concat c)-`{m}" using
 set_of_k_words_length_m_def by simp
@@ -333,27 +312,27 @@ qed
 
 lemma kraft_sum_rewrite2:
 assumes lossless: "lossless_code c"
-shows "(\<Sum>m=1..<Suc (k*max_len c). real (card (set_of_k_words_length_m c k m))  / b^m) \<le> real (k * max_len c)"
+shows "(\<Sum>m=1..<Suc (k*max_len c). real (card (set_of_k_words_length_m c k m))/ b^m) \<le> real (k * max_len c)"
 proof -
 have "(\<Sum>m=1..<Suc (k*max_len c). (card (set_of_k_words_length_m c k m) / b^m)) \<le> (\<Sum>m=1..<Suc(k * max_len c). b^m / b^m)"
 using assms am_maj[where c="c" and k="k" and m="m"] binary_space
-Groups_Big.setsum_mono[ where K="{1..<Suc(k*max_len c)}" and f="(\<lambda>m. real (card
+Groups_Big.setsum_mono[ where K="{1..<Suc(k*max_len c)}" and f="(\<lambda>m.  (card
 (set_of_k_words_length_m c k m))/b^m)" and g="\<lambda>m. b^m /b^m"]
 by (metis am_maj divide_le_eq_1_pos divide_self_if linorder_not_le order_refl zero_less_numeral zero_less_power)
-moreover have  "(\<Sum>m=1..<Suc(k * max_len c). b^m / b^m) = (\<Sum>m=1..<Suc(k
+moreover have"(\<Sum>m=1..<Suc(k * max_len c). b^m / b^m) = (\<Sum>m=1..<Suc(k
 *max_len c). 1)"
-  using binary_space by auto
-moreover have "(\<Sum>m=1..<Suc(k*max_len c). 1) =  (k * max_len c)"
-  using assms by simp
-ultimately have "(\<Sum>m = 1..<Suc (k * max_len c). real (card (set_of_k_words_length_m c k
-   m)) / b ^ m) \<le>  (k * max_len c)"
+using binary_space by auto
+moreover have "(\<Sum>m=1..<Suc(k*max_len c). 1) =(k * max_len c)"
+using assms by simp
+ultimately have "(\<Sum>m = 1..<Suc (k * max_len c).  (card (set_of_k_words_length_m c k
+ m)) / b ^ m) \<le>(k * max_len c)"
 by (metis One_nat_def card_atLeastLessThan card_eq_setsum diff_Suc_Suc
-  real_of_card)
-then show ?thesis  by auto
+real_of_card)
+then show ?thesis by auto
 qed
 
 lemma kraft_sum_power_bound :
-  shows "(kraft_sum c)^k \<le> real (k * max_len c)"
+shows "(kraft_sum c)^k \<le> real (k * max_len c)"
 proof -
 show ?thesis using assms kraft_sum_def kraft_sum_power kraft_sum_rewrite
 kraft_sum_rewrite2
@@ -361,12 +340,12 @@ kraft_sum_rewrite2
 qed
 
 lemma partition:
-  assumes bounded: "\<forall>x \<in> H. f x < (Suc m::nat)"
-  shows "finite H \<Longrightarrow> H = (\<Union>i \<in> {0..m}. ( H\<inter>f-`{i}))" using bounded by auto
+assumes bounded: "\<forall>x \<in> H. f x < (Suc m::nat)"
+shows "finite H \<Longrightarrow> H = (\<Union>i \<in> {0..m}. ( H\<inter>f-`{i}))" using bounded by auto
 
 lemma sum_transform_aux:
-  assumes bounded: "\<forall>x \<in> H. f x < (Suc m::nat)"
-  shows "finite H \<Longrightarrow> (\<Sum>x\<in>H\<inter>f-`{i}.f x) = i * card (f-`{i} \<inter> H)"
+assumes bounded: "\<forall>x \<in> H. f x < (Suc m::nat)"
+shows "finite H \<Longrightarrow> (\<Sum>x\<in>H\<inter>f-`{i}.f x) = i * card (f-`{i} \<inter> H)"
 proof auto
 assume "finite H"
 hence "card (H \<inter> (f -` {i})) = card ((f -` {i}) \<inter> H)"
@@ -377,40 +356,34 @@ by auto
 qed
 
 
-(*
-lemma sum_transform_aux2:
-  shows "finite H \<Longrightarrow>(\<Sum>x\<in>H\<inter>{x. f x < Suc m} . f x) = (\<Sum>i=0..<(Suc m) .
-  (\<Sum>x\<in>H\<inter>f-`{i}.f x))"
-proof sorry
-*)
 
 lemma sum_transform:
-  assumes bounded: "\<forall>x \<in> H. f x < m"
-  shows "finite H \<Longrightarrow> (\<Sum>x\<in>H. f x) = (\<Sum> i=0..<m. (i * card ((f-`{i}) \<inter> H)))"
-proof (induct  rule: finite_induct)
+assumes bounded: "\<forall>x \<in> H. f x < m"
+shows "finite H \<Longrightarrow> (\<Sum>x\<in>H. f x) = (\<Sum> i=0..<m. (i * card ((f-`{i}) \<inter> H)))"
+proof (inductrule: finite_induct)
 case empty
 thus ?case by simp
 next
-  case (insert x F)
-  have first_case: "f x \<noteq> i \<Longrightarrow>  card (f -` {i} \<inter> insert x F) =  card (f -` {i} \<inter> F)"
-  by auto
-  have "\<lbrakk>f x = i ; \<not>x \<in> F \<rbrakk>  \<Longrightarrow>
-(f -` {i} \<inter> insert x F) =  (f -`  {i} \<inter> F) \<union> {x} "
-  by auto
-  hence second_case: "\<lbrakk>f x = i ; \<not>x \<in> F \<rbrakk>  \<Longrightarrow>
-  card (f -` {i} \<inter> insert x F) =  card (f -`  {i} \<inter> F) + 1"
+case (insert x F)
+have first_case: "f x \<noteq> i \<Longrightarrow>card (f -` {i} \<inter> insert x F) =card (f -` {i} \<inter> F)"
+by auto
+have "\<lbrakk>f x = i ; \<not>x \<in> F \<rbrakk>\<Longrightarrow>
+(f -` {i} \<inter> insert x F) =(f -`{i} \<inter> F) \<union> {x} "
+by auto
+hence second_case: "\<lbrakk>f x = i ; \<not>x \<in> F \<rbrakk>\<Longrightarrow>
+card (f -` {i} \<inter> insert x F) =card (f -`{i} \<inter> F) + 1"
 by (metis (erased, hide_lams) Int_iff One_nat_def Un_commute add.commute add_Suc card_insert_disjoint finite_Int insert.hyps(1) insert_is_Un monoid_add_class.add.left_neutral)
-  from second_case
-  have second_case_imp :  "\<lbrakk>f x = i ; \<not>x \<in> F \<rbrakk>  \<Longrightarrow>
-  i*card (f -` {i} \<inter> insert x F) =  i * card (f -`  {i} \<inter> F) + i"
-  by auto
-  have "finite F \<Longrightarrow> \<not>x\<in>F \<Longrightarrow> (\<Sum>y \<in> (insert x F). f y) = ((\<Sum>y \<in> F. f y) + f x)"
-  by auto
+from second_case
+have second_case_imp :"\<lbrakk>f x = i ; \<not>x \<in> F \<rbrakk>\<Longrightarrow>
+i*card (f -` {i} \<inter> insert x F) =i * card (f -`{i} \<inter> F) + i"
+by auto
+have "finite F \<Longrightarrow> \<not>x\<in>F \<Longrightarrow> (\<Sum>y \<in> (insert x F). f y) = ((\<Sum>y \<in> F. f y) + f x)"
+by auto
 
-  (* assume "finite F" "\<not>x\<in>F" *)
+(* assume "finite F" "\<not>x\<in>F" *)
 
-  have  "(\<Sum>i = 0..<m. i * card (f -` {i} \<inter> insert x F)) =  ((\<Sum>i = 0..<m. i * card
-  (f -` {i} \<inter> F)) + f x)" using first_case second_case_imp sorry
+have"(\<Sum>i = 0..<m. i * card (f -` {i} \<inter> insert x F)) =((\<Sum>i = 0..<m. i * card
+(f -` {i} \<inter> F)) + f x)" using first_case second_case_imp sorry
 
  qed
 
@@ -428,8 +401,8 @@ proof sorry
 
 (*
 theorem kraft_theorem :
-  assumes "(\<Sum> k\<in>{0..< input_bound}. (1 / b^(lengthk k))) \<le> 1"
-  shows "\<exists>c. real_code c \<and> (k\<in>{0..<input_bound} \<longrightarrow> (cw_len c k) = lengthk k)"
+assumes "(\<Sum> k\<in>{0..< input_bound}. (1 / b^(lengthk k))) \<le> 1"
+shows "\<exists>c. real_code c \<and> (k\<in>{0..<input_bound} \<longrightarrow> (cw_len c k) = lengthk k)"
 proof sorry
 
 theorem rate_upper_bound : "0 < \<epsilon> \<Longrightarrow> (\<exists>n. \<exists>c. n \<le> input_block_size \<Longrightarrow> (real_code c
