@@ -197,7 +197,7 @@ lemma sum_vimage_proof:
   fixes g::"nat \<Rightarrow> real"
   assumes bounded: "\<And>w. f w < bound"
   shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bound. (card ((f-`{m}) \<inter> H) )* g m)"
-proof (induct H rule: finite_induct )
+proof (induct H rule: finite_induct)
 case empty
 show ?case by simp
 next
@@ -245,9 +245,23 @@ qed
 
 lemma sum_vimage:
   fixes g::"nat \<Rightarrow> real"
-  assumes bounded: "\<And>w. f w < bound"
-shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bound. (card ((f-`{m}) \<inter> H) )* g m)"
-using  local.sum_vimage_proof assms by blast
+  assumes bounded: "\<And>w. w \<in> H \<Longrightarrow> f w < bound" and "0< bound"
+shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bound. (card ((f-`{m}) \<inter> H) ) * g m)"
+(is "?fin \<Longrightarrow> ?s1 = ?s2")
+proof -
+let ?ff = "(\<lambda>x. if x\<in>H then f x else 0)"
+let ?ss1 = "(\<Sum>w\<in>H. g (?ff w))"
+have eq1: "?s1 =  ?ss1" by simp
+let ?ss2 = "(\<Sum> m=0..<bound. (card ((?ff-`{m}) \<inter> H) ) * g m)"
+have  "\<And>m. ?ff -`{m} \<inter> H = f-`{m} \<inter> H" by auto
+then have eq2: "?s2 = ?ss2" by simp
+have boundedff: "\<And>w . ?ff w < bound"using assms by simp
+then have "?fin \<Longrightarrow> ?ss1 = ?ss2"
+using boundedff local.sum_vimage_proof[where H="H" and f="?ff" and bound="bound"
+  and g="g"] assms by simp
+then show "?fin \<Longrightarrow> ?s1 = ?s2" using eq1 eq2 assms boundedff
+by metis
+qed
 
 
 lemma finite_k_words: "finite (k_words k)"  sorry
