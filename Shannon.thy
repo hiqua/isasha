@@ -281,6 +281,7 @@ ultimately show ?thesis
 using finite_k_words
 sum_vimage[where f="cw_len_concat c" and g = "(\<lambda>i. 1/ (b^i))" and H ="k_words k"
 and bound = "Suc (k*max_len c)"]
+by simp
 qed
 
 definition set_of_k_words_length_m :: "code \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> word set" where
