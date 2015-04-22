@@ -184,9 +184,7 @@ apply simp
 
 lemma sum_vimage_proof_aux2:
 "real ((n::nat) + 1) * g = (n* g + g)"
-apply auto
-apply (metis comm_monoid_mult_class.mult.right_neutral distrib_left mult.commute real_of_nat_Suc)
-done
+by (metis Suc_eq_plus1 add.commute comm_semiring_1_class.normalizing_semiring_rules(3) real_of_nat_Suc)
 
 
 lemma sum_vimage_proof:
