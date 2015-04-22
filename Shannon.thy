@@ -153,7 +153,7 @@ proof sorry
 
 
 lemma bound_len_concat:
-  "w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
+  "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
 proof sorry
 
 subsection{* Inequality of the kraft sum (source coding theorem, direct) *}
@@ -239,7 +239,7 @@ qed
 
 lemma sum_vimage:
   fixes g::"nat \<Rightarrow> real"
-  assumes bounded: "\<And>w. w \<in> H \<Longrightarrow> f w < bound" and "0< bound"
+  assumes bounded: "\<And>w. w \<in> H \<Longrightarrow> f w < bound" and "0 < bound"
 shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bound. (card ((f-`{m}) \<inter> H) ) * g m)"
 (is "?fin \<Longrightarrow> ?s1 = ?s2")
 proof -
@@ -265,20 +265,21 @@ lemma finite_k_words: "finite (k_words k)"  sorry
 *)
 lemma kraft_sum_rewrite :
    "(\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w)) =
-(\<Sum>m=1..<Suc (k*max_len c). card (k_words k \<inter> ((cw_len_concat c) -` {m})) * (1 /
+(\<Sum>m=0..<Suc (k*max_len c). card (k_words k \<inter> ((cw_len_concat c) -` {m})) * (1 /
 b^m))" (is "?L = ?R")
 proof -
-have "w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
+have "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
 using bound_len_concat by simp
-hence "w \<in> k_words k \<Longrightarrow> cw_len_concat c w < Suc ( k * max_len c)" by auto
-moreover have "?R = (\<Sum>m = 1..<Suc (k * max_len c). real (
-card (cw_len_concat c -` {m} \<inter> k_words k)) * (1 / b ^ m)
-)"
+hence "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w < Suc ( k * max_len c)" by fastforce
+moreover have
+"?R = (\<Sum>m = 0..<Suc (k * max_len c).
+(card (cw_len_concat c -` {m} \<inter> k_words k)) * (1 / b ^ m))"
 using Set.Int_commute[where A ="k_words k"] by auto
+moreover have "0 < Suc (k*max_len c)" by simp
 ultimately show ?thesis
-using finite_k_words[where k="k"] sum_vimage[where f="cw_len_concat c" and g = "(\<lambda>i. 1/ (b^i))" and H ="k_words k" and bound = "Suc
-(k*max_len c)"]
-sorry
+using finite_k_words[where k="k"]
+sum_vimage[where f="cw_len_concat c" and g = "(\<lambda>i. 1/ (b^i))" and H ="k_words k"
+and bound = "Suc (k*max_len c)"] by simp
 qed
 
 definition set_of_k_words_length_m :: "code \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> word set" where
