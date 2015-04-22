@@ -117,7 +117,22 @@ fun arbitrary_take :: "'a list \<Rightarrow> 'a list" where
   "arbitrary_take l = take zn l"
 
 
+lemma sum_transform_aux:
+assumes bounded: "\<forall>x \<in> H. f x < (Suc m::nat)"
+shows "finite H \<Longrightarrow> (\<Sum>x\<in>H\<inter>f-`{i}.f x) = i * card (f-`{i} \<inter> H)"
+proof auto
+assume "finite H"
+hence "card (H \<inter> (f -` {i})) = card ((f -` {i}) \<inter> H)"
+using Set.Int_commute[where A=H]
+by simp
+thus "finite H \<Longrightarrow> card (H \<inter> f -` {i}) \<noteq> card (f -` {i} \<inter> H) \<Longrightarrow> i = 0"
+by auto
+qed
 
+
+lemma partition:
+assumes bounded: "\<forall>x \<in> H. f x < (Suc m::nat)"
+shows "finite H \<Longrightarrow> H = (\<Union>i \<in> {0..m}. ( H\<inter>f-`{i}))" using bounded by auto
 
 
 lemma sum_vimage_proof_aux2:
