@@ -158,7 +158,7 @@ proof sorry
 
 subsection{* Inequality of the kraft sum (source coding theorem, direct) *}
 
-
+(* TODO: insert this lemma in the following proof *)
 lemma sum_vimage_proof_aux2:
 "real ((n::nat) + 1) * r = (n* r + r)"
 by (metis Suc_eq_plus1 add.commute comm_semiring_1_class.normalizing_semiring_rules(3) real_of_nat_Suc)
@@ -312,7 +312,7 @@ qed
 
 lemma kraft_sum_rewrite2:
 assumes lossless: "lossless_code c"
-shows "(\<Sum>m=1..<Suc (k*max_len c). real (card (set_of_k_words_length_m c k m))/ b^m) \<le> real (k * max_len c)"
+shows "(\<Sum>m=1..<Suc (k*max_len c). (card (set_of_k_words_length_m c k m))/ b^m) \<le> (k * max_len c)"
 proof -
 have "(\<Sum>m=1..<Suc (k*max_len c). (card (set_of_k_words_length_m c k m) / b^m)) \<le> (\<Sum>m=1..<Suc(k * max_len c). b^m / b^m)"
 using assms am_maj[where c="c" and k="k" and m="m"] binary_space
@@ -332,60 +332,15 @@ then show ?thesis by auto
 qed
 
 lemma kraft_sum_power_bound :
+assumes lossless: "lossless_code c"
 shows "(kraft_sum c)^k \<le> real (k * max_len c)"
 proof -
-show ?thesis using assms kraft_sum_def kraft_sum_power kraft_sum_rewrite
-kraft_sum_rewrite2
+show ?thesis using assms kraft_sum_power kraft_sum_rewrite
+kraft_sum_rewrite2 unfolding set_of_k_words_length_m_def
  sorry
 qed
 
-lemma partition:
-assumes bounded: "\<forall>x \<in> H. f x < (Suc m::nat)"
-shows "finite H \<Longrightarrow> H = (\<Union>i \<in> {0..m}. ( H\<inter>f-`{i}))" using bounded by auto
 
-lemma sum_transform_aux:
-assumes bounded: "\<forall>x \<in> H. f x < (Suc m::nat)"
-shows "finite H \<Longrightarrow> (\<Sum>x\<in>H\<inter>f-`{i}.f x) = i * card (f-`{i} \<inter> H)"
-proof auto
-assume "finite H"
-hence "card (H \<inter> (f -` {i})) = card ((f -` {i}) \<inter> H)"
-using Set.Int_commute[where A=H]
-by simp
-thus "finite H \<Longrightarrow> card (H \<inter> f -` {i}) \<noteq> card (f -` {i} \<inter> H) \<Longrightarrow> i = 0"
-by auto
-qed
-
-
-
-lemma sum_transform:
-assumes bounded: "\<forall>x \<in> H. f x < m"
-shows "finite H \<Longrightarrow> (\<Sum>x\<in>H. f x) = (\<Sum> i=0..<m. (i * card ((f-`{i}) \<inter> H)))"
-proof (inductrule: finite_induct)
-case empty
-thus ?case by simp
-next
-case (insert x F)
-have first_case: "f x \<noteq> i \<Longrightarrow>card (f -` {i} \<inter> insert x F) =card (f -` {i} \<inter> F)"
-by auto
-have "\<lbrakk>f x = i ; \<not>x \<in> F \<rbrakk>\<Longrightarrow>
-(f -` {i} \<inter> insert x F) =(f -`{i} \<inter> F) \<union> {x} "
-by auto
-hence second_case: "\<lbrakk>f x = i ; \<not>x \<in> F \<rbrakk>\<Longrightarrow>
-card (f -` {i} \<inter> insert x F) =card (f -`{i} \<inter> F) + 1"
-by (metis (erased, hide_lams) Int_iff One_nat_def Un_commute add.commute add_Suc card_insert_disjoint finite_Int insert.hyps(1) insert_is_Un monoid_add_class.add.left_neutral)
-from second_case
-have second_case_imp :"\<lbrakk>f x = i ; \<not>x \<in> F \<rbrakk>\<Longrightarrow>
-i*card (f -` {i} \<inter> insert x F) =i * card (f -`{i} \<inter> F) + i"
-by auto
-have "finite F \<Longrightarrow> \<not>x\<in>F \<Longrightarrow> (\<Sum>y \<in> (insert x F). f y) = ((\<Sum>y \<in> F. f y) + f x)"
-by auto
-
-(* assume "finite F" "\<not>x\<in>F" *)
-
-have"(\<Sum>i = 0..<m. i * card (f -` {i} \<inter> insert x F)) =((\<Sum>i = 0..<m. i * card
-(f -` {i} \<inter> F)) + f x)" using first_case second_case_imp sorry
-
- qed
 
 
 theorem McMillan :
