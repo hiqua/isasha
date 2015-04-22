@@ -268,18 +268,19 @@ lemma kraft_sum_rewrite :
 (\<Sum>m=0..<Suc (k*max_len c). card (k_words k \<inter> ((cw_len_concat c) -` {m})) * (1 /
 b^m))" (is "?L = ?R")
 proof -
-have "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
-using bound_len_concat by simp
-hence "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w < Suc ( k * max_len c)" by fastforce
+have "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w < Suc ( k * max_len c)"
+using bound_len_concat
+by (metis le_antisym lessI less_imp_le_nat not_less_eq)
 moreover have
 "?R = (\<Sum>m = 0..<Suc (k * max_len c).
 (card (cw_len_concat c -` {m} \<inter> k_words k)) * (1 / b ^ m))"
-using Set.Int_commute[where A ="k_words k"] by auto
+using Set.Int_commute
+by metis
 moreover have "0 < Suc (k*max_len c)" by simp
 ultimately show ?thesis
-using finite_k_words[where k="k"]
+using finite_k_words
 sum_vimage[where f="cw_len_concat c" and g = "(\<lambda>i. 1/ (b^i))" and H ="k_words k"
-and bound = "Suc (k*max_len c)"] by simp
+and bound = "Suc (k*max_len c)"]
 qed
 
 definition set_of_k_words_length_m :: "code \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> word set" where
