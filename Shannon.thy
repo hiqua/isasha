@@ -331,6 +331,30 @@ real_of_card)
 then show ?thesis by auto
 qed
 
+lemma empty_set_k_words:
+  assumes "0 < k" and "real_code c"
+  shows "set_of_k_words_length_m c k 0 = {}"
+proof (rule ccontr)
+assume "\<not> set_of_k_words_length_m c k 0 = {}"
+hence "\<exists>x. x \<in> set_of_k_words_length_m c k 0" by auto
+then obtain x where "x \<in> set_of_k_words_length_m c k 0" by auto
+note x_def = this
+hence "x \<in> k_words k" unfolding set_of_k_words_length_m_def by simp
+hence "x \<noteq> []" using assms unfolding k_words_def by auto
+hence "x = hd x # tl x" by simp
+hence "cw_len_concat c x = cw_len c (hd x) + cw_len_concat c (tl x)" using
+cw_len_concat_def
+by (metis cw_len_concat.simps(2))
+hence "cw_len_concat c x \<ge> cw_len c (hd x)" by simp
+moreover have "(fst c) [(hd x)] \<noteq> []" using assms unfolding real_code_def by
+simp
+moreover hence "0 < cw_len c (hd x)" using cw_len_def by simp
+ultimately have "0 \<noteq> cw_len_concat c x" by simp
+hence "x \<notin> set_of_k_words_length_m c k 0" unfolding set_of_k_words_length_m_def
+by simp
+thus "False" using x_def by simp
+qed
+
 lemma kraft_sum_power_bound :
 assumes lossless: "lossless_code c"
 shows "(kraft_sum c)^k \<le> real (k * max_len c)"
