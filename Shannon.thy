@@ -357,17 +357,13 @@ then show ?thesis using empty_set_k_words assms
 by (metis One_nat_def card_empty divide_1 power_0 real_of_nat_zero setsum_shift_lb_Suc0_0_upt)
 qed
 
-
-
 lemma kraft_sum_power_bound :
-assumes real_code: "real_code c"
-assumes "0 < k"
+assumes real_code: "real_code c" and "0 < k"
 shows "(kraft_sum c)^k \<le> real (k * max_len c)"
 proof -
 show ?thesis using assms kraft_sum_power kraft_sum_rewrite
 kraft_sum_rewrite2 empty_set_k_words unfolding set_of_k_words_length_m_def
-real_code_def
- sorry
+real_code_def by simp
 qed
 
 
