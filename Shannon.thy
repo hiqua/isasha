@@ -114,7 +114,7 @@ _lossless
 _uniquely decodable
 *)
 definition real_code ::"code \<Rightarrow> bool" where
-"real_code c = (lossless_code c)"
+"real_code c = ((lossless_code c) \<and> (\<forall>w. (fst c) w = [] \<longleftrightarrow> w = []))"
 
 (*
 The code rate is the expectation of the length of the code taken on all inputs.
