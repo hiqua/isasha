@@ -355,17 +355,6 @@ by (metis One_nat_def card_atLeastLessThan card_eq_setsum diff_Suc_Suc
 real_of_card)
 then show ?thesis using empty_set_k_words assms
 by (metis One_nat_def card_empty divide_1 power_0 real_of_nat_zero setsum_shift_lb_Suc0_0_upt)
-(*
-Alternate FAILED structured proof, whatever it means
-proof -
-  have f1: "\<And>x\<^sub>1 x2. setsum x\<^sub>1 {1\<Colon>nat..<x2} = setsum x\<^sub>1 {0..<x2} \<or> x\<^sub>1 0 \<noteq> (0\<Colon>real)"
-by (metis One_nat_def setsum_shift_lb_Suc0_0_upt)
-  have "real (card (set_of_k_words_length_m c k 0)) / b ^ 0 = 0"
-by (simp add: assms(1) assms(2) empty_set_k_words)
-  thus "(\<Sum>m = 0..<Suc (k * max_len c). real (card (set_of_k_words_length_m c k m)) / b ^ m) \<le> real (k * max_len c)" using f1
-by (metis `(\<Sum>m = 1..<Suc (k * max_len c). real (card (set_of_k_words_length_m c k m)) / b ^ m) \<le> real (k * max_len c)`) (* failed *)
-qed
-*)
 qed
 
 
