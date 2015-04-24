@@ -229,7 +229,7 @@ moreover have "?ff (f x) (insert x F) = (card (f-` {f x} \<inter>F) + 1) * g (f 
 using insert.hyps
 by simp
 ultimately have
-"(\<Sum>m = 0..<bound.  ?ff m (insert x F))
+"(\<Sum>m = 0..<bound. ?ff m (insert x F))
 = (\<Sum>m\<in>{0..<bound} - {f x}.(card (f -` {m} \<inter> F)) * g m) + (card (f -` {f x} \<inter>F) + 1) * g (f x)"
 by simp
 also have "(\<Sum>m\<in>{0..<bound} - {f x}. ?ff m F) +(card (f -` {f x} \<inter> F) + 1) * g (f x) =
@@ -273,7 +273,7 @@ by metis
 qed
 
 
-lemma finite_k_words: "finite (k_words k)"sorry
+lemma finite_k_words: "finite (k_words k)" sorry
 
 (*
 5.54
@@ -346,15 +346,15 @@ qed
 (* let ?s="set_of_k_words_length_m c k m" and ?enc="fst c" *)
 
 lemma empty_set_k_words:
-  assumes "0 < k" and "real_code c"
-  shows "set_of_k_words_length_m c k 0 = {}"
+ assumes "0 < k" and "real_code c"
+ shows "set_of_k_words_length_m c k 0 = {}"
 proof (rule ccontr)
 assume "\<not> set_of_k_words_length_m c k 0 = {}"
 hence "\<exists>x. x \<in> set_of_k_words_length_m c k 0" by auto
 then obtain x where "x \<in> set_of_k_words_length_m c k 0" by auto
 note x_def = this
 hence "x \<in> k_words k" unfolding set_of_k_words_length_m_def by simp
-hence "x \<noteq> []" using assms unfolding k_words_def by auto
+hence "x \<noteq> []" using assms by auto
 hence "x = hd x # tl x" by simp
 hence "cw_len_concat c x = cw_len c (hd x) + cw_len_concat c (tl x)" using
 cw_len_concat_def
@@ -377,7 +377,7 @@ shows "(\<Sum>m=0..<Suc (k*max_len c). (card (set_of_k_words_length_m c k m))/ b
 proof -
 have "(\<Sum>m=1..<Suc (k*max_len c). (card (set_of_k_words_length_m c k m) / b^m)) \<le> (\<Sum>m=1..<Suc(k * max_len c). b^m / b^m)"
 using assms am_maj[where c="c" and k="k" and m="m"] binary_space
-Groups_Big.setsum_mono[ where K="{1..<Suc(k*max_len c)}" and f="(\<lambda>m.  (card
+Groups_Big.setsum_mono[ where K="{1..<Suc(k*max_len c)}" and f="(\<lambda>m. (card
 (set_of_k_words_length_m c k m))/b^m)" and g="\<lambda>m. b^m /b^m"]
 by (metis am_maj divide_le_eq_1_pos divide_self_if linorder_not_le order_refl zero_less_numeral zero_less_power)
 moreover have"(\<Sum>m=1..<Suc(k * max_len c). b^m / b^m) = (\<Sum>m=1..<Suc(k
@@ -385,7 +385,7 @@ moreover have"(\<Sum>m=1..<Suc(k * max_len c). b^m / b^m) = (\<Sum>m=1..<Suc(k
 using binary_space by auto
 moreover have "(\<Sum>m=1..<Suc(k*max_len c). 1) =(k * max_len c)"
 using assms by simp
-ultimately have "(\<Sum>m = 1..<Suc (k * max_len c).  (card (set_of_k_words_length_m c k
+ultimately have "(\<Sum>m = 1..<Suc (k * max_len c). (card (set_of_k_words_length_m c k
  m)) / b ^ m) \<le>(k * max_len c)"
 by (metis One_nat_def card_atLeastLessThan card_eq_setsum diff_Suc_Suc
 real_of_card)
