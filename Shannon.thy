@@ -62,7 +62,7 @@ output symbols.
 *)
 assumes binary_space: "b = 2"
 assumes entropy_defi: "source_entropy = \<H>(Input 0)"
-assumes "letters = {0..<input_bound}"
+assumes letters_def: "letters = {0..<input_bound}"
 assumes bounded_input: "fi input_bound \<noteq> 0 \<and> (input_bound < n \<longrightarrow> fi n = 0)"
 
 print_locale information_space_discrete
@@ -101,12 +101,20 @@ definition u_decodable :: "code \<Rightarrow> bool" where
 
 
 inductive real_word:: "word \<Rightarrow> bool" where
-"real_word []"|
-rw_induct: "real_word l \<and> n <input_bound \<Longrightarrow> real_word (n#l)"
+rw_empty: "real_word []"|
+rw_induct: "real_word l \<and> n \<le> input_bound \<Longrightarrow> real_word (n#l)"
 
+abbreviation real_word_alt :: "word \<Rightarrow> bool" where
+"real_word_alt w \<equiv> (set w \<subseteq> letters)"
 
-definition k_words :: "nat \<Rightarrow> word set" where
-"k_words k = {w. length w = k \<and> real_word w}"
+abbreviation k_words :: "nat \<Rightarrow> word set" where
+"k_words k \<equiv> {w. length w = k \<and> real_word w}"
+
+abbreviation k_words_alt:: "nat \<Rightarrow> word set" where
+"k_words_alt k \<equiv> {w. length w = k \<and> real_word_alt w}"
+
+lemma rw_tail: "real_word w \<Longrightarrow> w = [] \<or> real_word (tl w)"
+by (metis list.sel(3) real_word.cases)
 
 (*
 Is the code a real source encoding code?
@@ -133,8 +141,36 @@ fun cw_len_concat :: "code \<Rightarrow> word \<Rightarrow> nat" where
 "cw_len_concat c [] = 0" |
 "cw_len_concat c (x#xs) = cw_len c x + cw_len_concat c xs"
 
- definition max_len :: "code \<Rightarrow> nat" where
+abbreviation cw_len_concat_alt :: "code \<Rightarrow> word \<Rightarrow> nat" where
+"cw_len_concat_alt c w \<equiv> foldr (\<lambda>x s. (cw_len c x) + s) w (0::nat)"
+
+lemma maj_fold:
+fixes f::"letter \<Rightarrow> nat"
+assumes "\<And>l. l\<in>letters \<Longrightarrow> f l \<le> bound"
+shows "real_word_alt w \<Longrightarrow> foldr (\<lambda>x s. f x + s) w 0 \<le> length w * bound"
+proof (induction w)
+case Nil
+thus ?case by simp
+next
+case (Cons x xs)
+assume "real_word_alt (x#xs)"
+note cas = this
+hence rw_xs: "real_word_alt xs" by simp
+from cas have "x \<in> letters" by simp
+hence "f x \<le> bound" using assms by simp
+hence "foldr (\<lambda>x s. f x + s) (x#xs) 0 = foldr (\<lambda>x s. f x + s) (xs) 0 +
+f x" by simp
+thus ?case using assms Cons.IH cas rw_xs by fastforce
+qed
+
+definition max_len :: "code \<Rightarrow> nat" where
 "max_len c = Max ((\<lambda>x. cw_len c x) ` {n. n \<le> input_bound})"
+
+lemma max_cw:
+"\<And>l. l \<in> letters \<Longrightarrow> cw_len c l \<le> max_len c"
+apply (simp add: letters_def real_word_def max_len_def)
+done
+
 
 definition kraft_sum :: "code \<Rightarrow> real" where
 "kraft_sum c = (\<Sum>i\<in>letters. 1 / b^(cw_len c i))"
@@ -142,18 +178,18 @@ definition kraft_sum :: "code \<Rightarrow> real" where
 definition kraft_inequality :: "code \<Rightarrow> bool" where
 "kraft_inequality c = (kraft_sum c \<le> 1)"
 
+(* should be easy by induction on k *)
 lemma kraft_sum_power :
-"(kraft_sum c) ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w))"
+assumes "real_code c"
+shows "(kraft_sum c) ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w))"
 proof sorry
 
-lemma max_len_concat :
-"\<forall>w. w\<in> (k_words k) \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
-proof sorry
-
-
+lemma bound_concat_alt:
+ shows "\<And>w. w \<in> k_words_alt k \<Longrightarrow> cw_len_concat_alt c w \<le> k * max_len c"
+using max_cw maj_fold by blast
 
 lemma bound_len_concat:
-"\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
+shows "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
 proof sorry
 
 subsection{* Inequality of the kraft sum (source coding theorem, direct) *}
