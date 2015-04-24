@@ -99,22 +99,15 @@ A code is uniquely decodable iff its concatenation is non-singular
 definition u_decodable :: "code \<Rightarrow> bool" where
 "u_decodable c = (\<forall>x. \<forall>y. snd c (fst c x) = snd c (fst c y) \<longrightarrow> x = y)"
 
+abbreviation real_word :: "word \<Rightarrow> bool" where
+"real_word w \<equiv> (set w \<subseteq> letters)"
 
-inductive real_word:: "word \<Rightarrow> bool" where
-rw_empty: "real_word []"|
-rw_induct: "real_word l \<and> n \<le> input_bound \<Longrightarrow> real_word (n#l)"
-
-abbreviation real_word_alt :: "word \<Rightarrow> bool" where
-"real_word_alt w \<equiv> (set w \<subseteq> letters)"
 
 abbreviation k_words :: "nat \<Rightarrow> word set" where
 "k_words k \<equiv> {w. length w = k \<and> real_word w}"
 
-abbreviation k_words_alt:: "nat \<Rightarrow> word set" where
-"k_words_alt k \<equiv> {w. length w = k \<and> real_word_alt w}"
-
 lemma rw_tail: "real_word w \<Longrightarrow> w = [] \<or> real_word (tl w)"
-by (metis list.sel(3) real_word.cases)
+by (metis  list.sel_set(2) subset_code(1) subset_eq)
 
 (*
 Is the code a real source encoding code?
@@ -137,30 +130,24 @@ length of the codeword associated with the letter
 definition cw_len :: "code \<Rightarrow> letter \<Rightarrow> nat" where
 "cw_len c l = length ((fst c) [l])"
 
-fun cw_len_concat :: "code \<Rightarrow> word \<Rightarrow> nat" where
-"cw_len_concat c [] = 0" |
-"cw_len_concat c (x#xs) = cw_len c x + cw_len_concat c xs"
 
-abbreviation cw_len_concat_alt :: "code \<Rightarrow> word \<Rightarrow> nat" where
-"cw_len_concat_alt c w \<equiv> foldr (\<lambda>x s. (cw_len c x) + s) w (0::nat)"
+abbreviation cw_len_concat :: "code \<Rightarrow> word \<Rightarrow> nat" where
+"cw_len_concat c w \<equiv> foldr (\<lambda>x s. (cw_len c x) + s) w 0"
 
 lemma maj_fold:
 fixes f::"letter \<Rightarrow> nat"
 assumes "\<And>l. l\<in>letters \<Longrightarrow> f l \<le> bound"
-shows "real_word_alt w \<Longrightarrow> foldr (\<lambda>x s. f x + s) w 0 \<le> length w * bound"
+shows "real_word w \<Longrightarrow> foldr (\<lambda>x s. f x + s) w 0 \<le> length w * bound"
 proof (induction w)
 case Nil
 thus ?case by simp
 next
 case (Cons x xs)
-assume "real_word_alt (x#xs)"
-note cas = this
-hence rw_xs: "real_word_alt xs" by simp
-from cas have "x \<in> letters" by simp
-hence "f x \<le> bound" using assms by simp
-hence "foldr (\<lambda>x s. f x + s) (x#xs) 0 = foldr (\<lambda>x s. f x + s) (xs) 0 +
+assume "real_word (x#xs)"
+moreover hence "real_word xs" by simp
+moreover have "foldr (\<lambda>x s. f x + s) (x#xs) 0 = foldr (\<lambda>x s. f x + s) (xs) 0 +
 f x" by simp
-thus ?case using assms Cons.IH cas rw_xs by fastforce
+ultimately show ?case using assms Cons.IH by fastforce
 qed
 
 definition max_len :: "code \<Rightarrow> nat" where
@@ -168,7 +155,7 @@ definition max_len :: "code \<Rightarrow> nat" where
 
 lemma max_cw:
 "\<And>l. l \<in> letters \<Longrightarrow> cw_len c l \<le> max_len c"
-apply (simp add: letters_def real_word_def max_len_def)
+apply (simp add: letters_def max_len_def)
 done
 
 
@@ -184,13 +171,10 @@ assumes "real_code c"
 shows "(kraft_sum c) ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w))"
 proof sorry
 
-lemma bound_concat_alt:
- shows "\<And>w. w \<in> k_words_alt k \<Longrightarrow> cw_len_concat_alt c w \<le> k * max_len c"
+lemma bound_len_concat:
+ shows "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
 using max_cw maj_fold by blast
 
-lemma bound_len_concat:
-shows "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
-proof sorry
 
 subsection{* Inequality of the kraft sum (source coding theorem, direct) *}
 
@@ -329,7 +313,14 @@ lemma am_maj_aux2:
 assumes lossless: "lossless_code c"
 shows "finite ((cw_len_concat c)-`{m}) \<and> real (card ((cw_len_concat c)-`{m})) \<le> b^m"
 using assms am_maj_aux binary_space am_maj_aux12
-by (metis card_image finite_imageD)
+(* sledgehammer min [e] (card_0_eq card_image card_infinite empty_subsetI
+finite_Collect_le_nat finite_imageI finite_subset image_empty image_is_empty am_maj_aux am_maj_aux12 lossless) *)
+(* TODO: timeout? *)
+(* by (metis card_0_eq card_image card_infinite finite_imageI image_is_empty) *)
+proof -
+  have "\<And>x\<^sub>1 x\<^sub>2. card (fst x\<^sub>1 ` (\<lambda>R. foldr (\<lambda>R. op + (cw_len x\<^sub>1 R)) R 0) -` {x\<^sub>2}) = card ((\<lambda>R. foldr (\<lambda>R. op + (cw_len x\<^sub>1 R)) R 0) -` {x\<^sub>2}) \<or> \<not> lossless_code x\<^sub>1" using am_maj_aux card_image by blast
+  thus "finite ((\<lambda>w. foldr (\<lambda>x. op + (cw_len c x)) w 0) -` {m}) \<and> real (card ((\<lambda>w. foldr (\<lambda>x. op + (cw_len c x)) w 0) -` {m})) \<le> b ^ m" by (metis am_maj_aux12 card_0_eq card_infinite finite_imageI image_is_empty lossless)
+qed
 
 lemma am_maj:
 assumes lossless: "lossless_code c"
@@ -356,10 +347,10 @@ note x_def = this
 hence "x \<in> k_words k" unfolding set_of_k_words_length_m_def by simp
 hence "x \<noteq> []" using assms by auto
 hence "x = hd x # tl x" by simp
-hence "cw_len_concat c x = cw_len c (hd x) + cw_len_concat c (tl x)" using
-cw_len_concat_def
-by (metis cw_len_concat.simps(2))
-hence "cw_len_concat c x \<ge> cw_len c (hd x)" by simp
+moreover have
+"cw_len_concat c (hd x#tl x) =  cw_len_concat c (tl x) + cw_len c (hd x)"
+by (metis add.commute comp_apply foldr.simps(2))
+ultimately have "cw_len_concat c x \<ge> cw_len c (hd x)" by simp
 moreover have "(fst c) [(hd x)] \<noteq> []" using assms unfolding real_code_def by
 simp
 moreover hence "0 < cw_len c (hd x)" using cw_len_def by simp
