@@ -165,11 +165,60 @@ definition kraft_sum :: "code \<Rightarrow> real" where
 definition kraft_inequality :: "code \<Rightarrow> bool" where
 "kraft_inequality c = (kraft_sum c \<le> 1)"
 
+
+lemma k_words_rel:
+  "\<And>k. k_words (Suc k) = {w. (hd w \<in> letters \<and> tl w \<in> k_words k)}"
+proof
+fix k
+show "k_words (Suc k) \<subseteq> {w. (hd w \<in> letters \<and> tl w \<in> k_words k)}" (is "?l \<subseteq> ?r")
+proof
+  fix w
+  assume "w \<in> k_words (Suc k)"
+  note asm = this
+  hence "real_word w" by simp
+  hence "hd w \<in> letters" using letters_def
+  by (smt2 `w \<in> {w. length w = Suc k \<and> real_word w}` hd_in_set list.size(3) mem_Collect_eq nat.distinct(1) subsetCE)
+  moreover have "length w = Suc k" using asm by simp
+  moreover hence "length (tl w) = k" by simp
+  moreover have "real_word (tl w)" using asm 
+by (metis `real_word w` calculation(2) list.size(3) nat.distinct(1) rw_tail)
+  ultimately show "w \<in> ?r" using asm by simp
+qed
+next
+  fix k
+  fix w
+  assume "w \<in> {w. hd w \<in> letters \<and> tl w \<in> {w. length w = k \<and> real_word w}}"
+  hence " hd w \<in> letters \<and> length (tl w) = k \<and> real_word (tl w)" by simp
+  hence "length w = Suc k" sorry
+  then show "w \<in> k_words (Suc k)"
+oops
+(*
+show "k_words (Suc k) \<supseteq> {w. (hd w \<in> letters \<and> tl w \<in> k_words k)}"
+proof
+  fix w
+  assume "w \<in> {w. (hd w \<in> letters \<and> tl w \<in> k_words k)}"
+
+qed
+*)
+
 (* should be easy by induction on k *)
 lemma kraft_sum_power :
 assumes "real_code c"
-shows "(kraft_sum c) ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w))"
-proof sorry
+shows "(kraft_sum c) ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w))" (is "?l = ?r")
+proof (induction k)
+case 0
+have "k_words 0 = {[]}" by auto
+thus  ?case by simp
+next
+case (Suc n)
+have "kraft_sum c ^ (Suc n) = kraft_sum c ^ n * kraft_sum c" by simp
+also have "\<dots> = 
+(\<Sum>w \<in> k_words n. 1 / b ^ foldr (\<lambda>x. op + (cw_len c x)) w 0) *kraft_sum c"
+using Suc 
+by simp
+
+oops
+
 
 lemma bound_len_concat:
  shows "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
@@ -417,6 +466,5 @@ theorem rate_upper_bound : "0 < \<epsilon> \<Longrightarrow> (\<exists>n. \<exis
 \<and> code_rate c \<le> source_entropy + \<epsilon>))"
 sorry
 *)
-
 end
 end
