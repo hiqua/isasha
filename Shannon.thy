@@ -167,10 +167,10 @@ definition kraft_inequality :: "code \<Rightarrow> bool" where
 
 
 lemma k_words_rel:
-  "\<And>k. k_words (Suc k) = {w. (hd w \<in> letters \<and> tl w \<in> k_words k)}"
+  "\<And>k. k_words (Suc k) = {w. (hd w \<in> letters \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
 proof
 fix k
-show "k_words (Suc k) \<subseteq> {w. (hd w \<in> letters \<and> tl w \<in> k_words k)}" (is "?l \<subseteq> ?r")
+show "k_words (Suc k) \<subseteq> {w. (hd w \<in> letters \<and> tl w \<in> k_words k \<and> w \<noteq> [] )}" (is "?l \<subseteq> ?r")
 proof
   fix w
   assume "w \<in> k_words (Suc k)"
@@ -178,20 +178,29 @@ proof
   hence "real_word w" by simp
   hence "hd w \<in> letters" using letters_def
   by (smt2 `w \<in> {w. length w = Suc k \<and> real_word w}` hd_in_set list.size(3) mem_Collect_eq nat.distinct(1) subsetCE)
-  moreover have "length w = Suc k" using asm by simp
-  moreover hence "length (tl w) = k" by simp
-  moreover have "real_word (tl w)" using asm 
-by (metis `real_word w` calculation(2) list.size(3) nat.distinct(1) rw_tail)
+  moreover have len: "length w = Suc k" using asm by simp
+  moreover hence "w \<noteq> []" by auto
+  moreover have "length (tl w) = k" using len by simp
+  moreover have "real_word (tl w)" using asm
+  by (metis `real_word w` calculation(2) list.size(3) nat.distinct(1) rw_tail)
   ultimately show "w \<in> ?r" using asm by simp
 qed
 next
-  fix k
+fix k
+show "k_words (Suc k) \<supseteq> {w. (hd w \<in> letters \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
+proof
   fix w
-  assume "w \<in> {w. hd w \<in> letters \<and> tl w \<in> {w. length w = k \<and> real_word w}}"
+  assume "w \<in> {w. hd w \<in> letters \<and> tl w \<in> {w. length w = k \<and> real_word w} \<and> w \<noteq>
+  []}"
+  note asm = this
   hence " hd w \<in> letters \<and> length (tl w) = k \<and> real_word (tl w)" by simp
-  hence "length w = Suc k" sorry
-  then show "w \<in> k_words (Suc k)"
-oops
+  hence "real_word w"
+  by (metis empty_iff insert_subset list.collapse list.set(1) set_simps(2) subsetI)
+  moreover hence "length w = Suc k" using asm by auto
+  ultimately show "w \<in> k_words (Suc k)" by simp
+qed
+qed
+
 (*
 show "k_words (Suc k) \<supseteq> {w. (hd w \<in> letters \<and> tl w \<in> k_words k)}"
 proof
