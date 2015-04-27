@@ -201,16 +201,30 @@ proof
 qed
 qed
 
-(*
-show "k_words (Suc k) \<supseteq> {w. (hd w \<in> letters \<and> tl w \<in> k_words k)}"
-proof
-  fix w
-  assume "w \<in> {w. (hd w \<in> letters \<and> tl w \<in> k_words k)}"
 
+lemma bij_k_words:
+  "bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (letters \<times> (k_words k))  (k_words (Suc
+  k))" using k_words_rel sorry
+
+
+lemma finite_k_words: "\<And>k. finite (k_words k)" sorry
+
+lemma cartesian_product:
+  fixes f::"('a \<Rightarrow> real)"
+  fixes g::"('b \<Rightarrow> real)"
+  shows "finite A \<Longrightarrow> finite B \<Longrightarrow> (\<Sum>a\<in>A. f a) * (\<Sum>b\<in>B. g b) = (\<Sum>ab\<in>A\<times>B. f (fst ab) * g (snd
+  ab))"
+proof (induct A rule: finite_induct)
+case empty
+show ?case by simp
+case insert
+thus ?case sorry
 qed
-*)
 
-(* should be easy by induction on k *)
+(*
+should be easy by induction on k
+cartesian_product
+*)
 lemma kraft_sum_power :
 assumes "real_code c"
 shows "(kraft_sum c) ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w))" (is "?l = ?r")
@@ -221,12 +235,19 @@ thus  ?case by simp
 next
 case (Suc n)
 have "kraft_sum c ^ (Suc n) = kraft_sum c ^ n * kraft_sum c" by simp
-also have "\<dots> = 
-(\<Sum>w \<in> k_words n. 1 / b ^ foldr (\<lambda>x. op + (cw_len c x)) w 0) *kraft_sum c"
-using Suc 
-by simp
+also have "\<dots> = (\<Sum>w \<in> k_words n. 1 / b ^ (cw_len_concat c w)) * (\<Sum>i\<in>letters. 1 / b^(cw_len c i))"
+by (metis Suc.IH kraft_sum_def)
+(* TODO: need help to use cartesian_product, or to do st else *)
+also have "\<dots> = (\<Sum>wi \<in> letters \<times> k_words n. 1 / b^(cw_len_concat c (snd wi)) * 1/b^(cw_len c (fst wi)))"
+using letters_def finite_k_words cartesian_product finite_k_words sorry
+also have "\<dots> = (\<Sum>wi \<in> letters \<times> k_words n. 1 / b^(cw_len_concat c (snd wi) +cw_len c (fst wi)))"
+using letters_def finite_k_words binary_space
+by (simp add: power_add)
+(* use bij_k_words *)
+also have "\<dots> = (\<Sum>w \<in> (k_words (Suc n)). 1 / b^(cw_len_concat c w))" sorry
+finally show ?case by simp
+qed
 
-oops
 
 
 lemma bound_len_concat:
@@ -315,7 +336,6 @@ by metis
 qed
 
 
-lemma finite_k_words: "finite (k_words k)" sorry
 
 (*
 5.54
