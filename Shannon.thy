@@ -228,7 +228,17 @@ ultimately show "inj_on (\<lambda>wi. fst wi # snd wi) (letters \<times> {w. len
 qed
 
 
-lemma finite_k_words: "\<And>k. finite (k_words k)" sorry
+lemma finite_k_words: "finite (k_words k)"
+proof (induct k)
+case 0
+show ?case by simp
+case (Suc n)
+thus ?case using bij_k_words
+proof -
+  have "\<And>x\<^sub>1. finite {R. length R = Suc x\<^sub>1 \<and> real_word R} \<or> infinite {R. length R = x\<^sub>1 \<and> real_word R}" using bij_betw_finite bij_k_words letters_def by blast
+  thus "finite {w. length w = Suc n \<and> real_word w}" using Suc.hyps by blast
+qed
+qed
 
 lemma cartesian_product:
   fixes f::"('a \<Rightarrow> real)"
@@ -260,9 +270,9 @@ also have "\<dots> = (\<Sum>w \<in> k_words n. 1 / b ^ (cw_len_concat c w)) * (\
 by (metis Suc.IH kraft_sum_def)
 (* TODO: need help to use cartesian_product, or to do st else *)
 also have "\<dots> = (\<Sum>wi \<in> letters \<times> k_words n. 1 / b^(cw_len_concat c (snd wi)) * 1/b^(cw_len c (fst wi)))"
-using letters_def finite_k_words cartesian_product finite_k_words sorry
+using letters_def finite_k_words cartesian_product sorry
 also have "\<dots> = (\<Sum>wi \<in> letters \<times> k_words n. 1 / b^(cw_len_concat c (snd wi) +cw_len c (fst wi)))"
-using letters_def finite_k_words binary_space
+using letters_def binary_space
 by (simp add: power_add)
 (* use bij_k_words *)
 also have "\<dots> = (\<Sum>w \<in> (k_words (Suc n)). 1 / b^(cw_len_concat c w))" sorry
