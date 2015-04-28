@@ -1,5 +1,5 @@
 theory Shannon
-imports Information
+imports Information "~~/src/HOL/Library/NthRoot_Limits"
 begin
 (*
 AIM: Formalize Shannon's theorems
@@ -386,19 +386,37 @@ qed
 
 lemma kraft_sum_power_bound :
 assumes real_code: "real_code c" and "0 < k"
-shows "(kraft_sum c)^k \<le> real (k * max_len c)"
+shows "(kraft_sum c)^k \<le> (k * max_len c)"
 proof -
 show ?thesis using assms kraft_sum_power kraft_sum_rewrite
 kraft_sum_rewrite2 empty_set_k_words unfolding set_of_k_words_length_m_def
 real_code_def by simp
 qed
 
-
-
+lemma kraft_sum_posi:
+  "0 \<le> kraft_sum c" unfolding kraft_sum_def
+by (metis (erased, lifting) b_gt_1 divide_less_0_1_iff less_le_not_le not_le
+  order.trans setsum_nonneg zero_le_one zero_le_power)
 
 theorem McMillan :
 shows "real_code c \<Longrightarrow> kraft_inequality c"
-proof sorry
+proof -
+  assume "real_code c"
+  hence ineq: "\<And>k. 0 < k \<Longrightarrow> (kraft_sum c) \<le> root k k * root k (max_len c)"
+  using kraft_sum_posi kraft_sum_power_bound
+  by (metis real_of_nat_mult real_root_mult real_root_le_iff real_root_power_cancel)
+  moreover hence
+  "0 < max_len c \<Longrightarrow> (\<lambda>k. root k k * root k (max_len c)) ----> 1"
+  using LIMSEQ_root LIMSEQ_root_const tendsto_mult
+  by fastforce
+  moreover have "\<forall>n\<ge>1. kraft_sum c \<le> root n n * root n (max_len c)"
+  using ineq by simp
+  moreover have "max_len c = 0 \<Longrightarrow> kraft_sum c \<le> 1" unfolding
+  kraft_inequality_def using ineq by fastforce
+  ultimately have "kraft_sum c \<le> 1"
+  using LIMSEQ_le_const by blast
+  thus "kraft_inequality c" unfolding kraft_inequality_def by simp
+qed
 
 (*
 _Kraft inequality for uniquely decodable codes using the McMillan theorem
