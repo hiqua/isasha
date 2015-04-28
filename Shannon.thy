@@ -203,8 +203,29 @@ qed
 
 
 lemma bij_k_words:
-  "bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (letters \<times> (k_words k))  (k_words (Suc
-  k))" using k_words_rel sorry
+  shows "\<forall>k. bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (letters \<times> (k_words k))  (k_words (Suc
+  k))" unfolding bij_betw_def
+proof
+fix k
+let ?f = "(\<lambda>wi. Cons (fst wi) (snd wi))"
+let ?S = "letters \<times> (k_words k)"
+let ?T = "k_words (Suc k)"
+have inj: "inj_on ?f ?S" unfolding inj_on_def by simp
+moreover have surj: "?f`?S = ?T"
+proof (rule ccontr)
+assume "?f ` ?S \<noteq> ?T"
+  hence "\<exists>w. w\<in> ?T \<and> w \<notin> ?f`?S" by auto
+  then obtain w where "w\<in> ?T \<and> w \<notin> ?f`?S" by blast
+  note asm = this
+  hence "w = ?f ((hd w),(tl w))" using k_words_rel by simp
+  moreover have "((hd w),(tl w)) \<in> ?S" using k_words_rel asm by simp
+  ultimately have "w \<in> ?f`?S" by blast
+  thus "False" using asm by simp
+qed
+ultimately show "inj_on (\<lambda>wi. fst wi # snd wi) (letters \<times> {w. length w = k \<and> real_word w}) \<and>
+    (\<lambda>wi. fst wi # snd wi) ` (letters \<times> {w. length w = k \<and> real_word w}) =
+    {w. length w = Suc k \<and> real_word w}" using inj surj by simp
+qed
 
 
 lemma finite_k_words: "\<And>k. finite (k_words k)" sorry
