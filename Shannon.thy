@@ -456,7 +456,7 @@ Groups_Big.setsum_mono[ where K="{1..<Suc(k*max_len c)}" and f="(\<lambda>m. (ca
 by (metis am_maj divide_le_eq_1_pos divide_self_if linorder_not_le order_refl zero_less_numeral zero_less_power)
 moreover have"(\<Sum>m=1..<Suc(k * max_len c). b^m / b^m) = (\<Sum>m=1..<Suc(k
 *max_len c). 1)"
-using binary_space by auto
+using binary_space by simp
 moreover have "(\<Sum>m=1..<Suc(k*max_len c). 1) =(k * max_len c)"
 using assms by simp
 ultimately have "(\<Sum>m = 1..<Suc (k * max_len c). (card (set_of_k_words_length_m c k
