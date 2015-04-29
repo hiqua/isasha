@@ -94,6 +94,12 @@ definition block_encoding_code :: "code \<Rightarrow> bool" where
 c) x @ (fst c) xs))"
 
 (*
+Concatenated code: code taken by encoding each letter and concatenate the result
+*)
+definition concat_code :: "code \<Rightarrow> bool" where
+  "concat_code c = (\<forall>x. fst c x = (fst c) [(hd x)] @ (fst c) (tl x))"
+
+(*
 A code is uniquely decodable iff its concatenation is non-singular
 *)
 definition u_decodable :: "code \<Rightarrow> bool" where
@@ -115,7 +121,7 @@ _lossless
 _uniquely decodable
 *)
 definition real_code ::"code \<Rightarrow> bool" where
-"real_code c = ((lossless_code c) \<and> (\<forall>w. (fst c) w = [] \<longleftrightarrow> w = []))"
+"real_code c = ((lossless_code c) \<and> (\<forall>w. (fst c) w = [] \<longleftrightarrow> w = []) \<and> concat_code c)"
 
 (*
 The code rate is the expectation of the length of the code taken on all inputs.
@@ -367,10 +373,9 @@ qed
 definition set_of_k_words_length_m :: "code \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> word set" where
 "set_of_k_words_length_m c k m = { xk. xk \<in> k_words k} \<inter> (cw_len_concat c)-`{m}"
 
-(*
-Uses the fact that the code is an injection from k_words_length_m into m-lists
-*)
-lemma am_maj_aux:
+
+(* REFACTOR BEGIN *)
+lemma am_inj_code :
 assumes lossless: "lossless_code c"
 shows "inj_on (fst c) ((cw_len_concat c)-`{m})" (is "inj_on ?enc ?s")
 proof -
@@ -383,30 +388,70 @@ using inj_on_def[where f="?enc" and A="?s"]
 by (metis lossless lossless_code_def option.inject)
 qed
 
-lemma am_maj_aux12:
-assumes lossless: "lossless_code c"
-shows "finite ((fst c)`(((cw_len_concat c)-`{m}))) \<and> card ((fst c)`(((cw_len_concat c)-`{m}))) \<le> b^m"
+lemma img_inc:
+assumes "real_code c"
+shows "(fst c)`(cw_len_concat c)-`{m}  \<subseteq> {b. length b = m}"
+using assms
+unfolding cw_len_def real_code_def concat_code_def
+by (metis list.distinct(1) list.sel)
+
+lemma bool_list_fin:
+"\<And>m. finite  {bl::(bool list). length bl = m}"
 proof -
-show ?thesis sorry
+fix m
+have "{bl. set bl \<subseteq> {True, False} \<and> length bl = m} = {bl. length bl= m}"
+by auto
+moreover have "finite  {bl. set bl \<subseteq> {True, False} \<and> length bl = m}"
+by (metis (full_types) finite_code finite_lists_length_eq)
+ultimately show "finite {bl::(bool list). length bl = m}" by simp
+qed
+
+lemma bool_lists_card:
+shows "\<And>m. card {bl::(bool list). length bl = m} = b^m"
+proof -
+fix m
+have "card {b. set b \<subseteq> {True,False} \<and> length b = m} = card {True,False}^m"
+using card_lists_length_eq[where A="{True,False}"] by simp
+moreover have "card {True, False} = b" using binary_space by simp
+moreover have "\<And>d. d \<in> {c::(bool list). True} \<longleftrightarrow> set d \<subseteq> {True, False}" by auto
+ultimately show "card {b::(bool list). length b = m} = b^m"  by simp
+qed
+
+lemma img_card:
+assumes "real_code c"
+shows "card (fst c`cw_len_concat c-`{m})  \<le> b^m"
+proof -
+have "\<And>m. card ((fst c)` (cw_len_concat c)-`{m})  \<le> card {b::(bool list). length b = m}"
+proof -
+fix m
+show "card ((fst c)` (cw_len_concat c)-`{m})  \<le> card {b::(bool list). length b = m}" using bool_list_fin img_inc assms
+card_mono
+ by (metis (mono_tags))
+qed
+thus ?thesis using assms bool_lists_card binary_space
+by (metis real_of_nat_le_iff)
 qed
 
 lemma am_maj_aux2:
-assumes lossless: "lossless_code c"
-shows "finite ((cw_len_concat c)-`{m}) \<and> real (card ((cw_len_concat c)-`{m})) \<le> b^m"
-(* sledgehammer min [e] (card_0_eq card_image card_infinite empty_subsetI
-finite_Collect_le_nat finite_imageI finite_subset image_empty image_is_empty am_maj_aux am_maj_aux12 lossless) *)
-(* TODO: timeout? *)
-(* by (metis card_0_eq card_image card_infinite finite_imageI image_is_empty) *)
+assumes real_code: "real_code c"
+shows "finite ((cw_len_concat c)-`{m}) \<and> (card ((cw_len_concat c)-`{m})) \<le> b^m"
 proof -
-have "\<And>x\<^sub>1 x\<^sub>2. card (fst x\<^sub>1 ` (\<lambda>R. foldr (\<lambda>R. op + (cw_len x\<^sub>1 R)) R 0) -` {x\<^sub>2}) =
+have "finite ((fst c)`cw_len_concat c-`{m}) \<and> card (fst c`cw_len_concat c-`{m}) \<le> b^m"
+proof -
+  have "finite (fst c ` (\<lambda>w. foldr (\<lambda>x. op + (cw_len c x)) w 0) -` {m})"
+  using bool_list_fin
+  by (metis assms infinite_super img_inc)
+  thus ?thesis using img_card assms by simp
+qed
+moreover have "\<And>x\<^sub>1 x\<^sub>2. card (fst x\<^sub>1 ` (\<lambda>R. foldr (\<lambda>R. op + (cw_len x\<^sub>1 R)) R 0) -` {x\<^sub>2}) =
 card ((\<lambda>R. foldr (\<lambda>R. op + (cw_len x\<^sub>1 R)) R 0) -` {x\<^sub>2}) \<or> \<not> lossless_code x\<^sub>1"
-using am_maj_aux card_image by blast
-thus ?thesis
-by (metis am_maj_aux12 card_0_eq card_infinite finite_imageI image_is_empty lossless)
+using am_inj_code  card_image by blast
+ultimately show ?thesis using assms unfolding real_code_def
+by (metis card_0_eq card_infinite finite_imageI image_is_empty )
 qed
 
 lemma am_maj:
-assumes lossless: "lossless_code c"
+assumes real_code: "real_code c"
 shows "card (set_of_k_words_length_m c k m)\<le> b^m" (is "?c \<le> ?b")
 proof -
 have "set_of_k_words_length_m c k m \<subseteq> (cw_len_concat c)-`{m}" using
@@ -417,7 +462,7 @@ thus ?thesis
 using assms am_maj_aux2[where m="m"] by fastforce
 qed
 
-(* let ?s="set_of_k_words_length_m c k m" and ?enc="fst c" *)
+(* REFACTOR END )*)
 
 lemma empty_set_k_words:
  assumes "0 < k" and "real_code c"
