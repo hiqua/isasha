@@ -1,5 +1,5 @@
 theory Shannon
-imports Information "~~/src/HOL/Library/NthRoot_Limits"
+imports "~~/src/HOL/Probability/Information" "~~/src/HOL/Library/NthRoot_Limits"
 begin
 (*
 AIM: Formalize Shannon's theorems
