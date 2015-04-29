@@ -165,11 +165,120 @@ definition kraft_sum :: "code \<Rightarrow> real" where
 definition kraft_inequality :: "code \<Rightarrow> bool" where
 "kraft_inequality c = (kraft_sum c \<le> 1)"
 
-(* should be easy by induction on k *)
+
+lemma k_words_rel:
+  "\<And>k. k_words (Suc k) = {w. (hd w \<in> letters \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
+proof
+fix k
+show "k_words (Suc k) \<subseteq> {w. (hd w \<in> letters \<and> tl w \<in> k_words k \<and> w \<noteq> [] )}" (is "?l \<subseteq> ?r")
+proof
+  fix w
+  assume "w \<in> k_words (Suc k)"
+  note asm = this
+  hence "real_word w" by simp
+  hence "hd w \<in> letters" using letters_def
+  by (smt2 `w \<in> {w. length w = Suc k \<and> real_word w}` hd_in_set list.size(3) mem_Collect_eq nat.distinct(1) subsetCE)
+  moreover have len: "length w = Suc k" using asm by simp
+  moreover hence "w \<noteq> []" by auto
+  moreover have "length (tl w) = k" using len by simp
+  moreover have "real_word (tl w)" using asm
+  by (metis `real_word w` calculation(2) list.size(3) nat.distinct(1) rw_tail)
+  ultimately show "w \<in> ?r" using asm by simp
+qed
+next
+fix k
+show "k_words (Suc k) \<supseteq> {w. (hd w \<in> letters \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
+proof
+  fix w
+  assume "w \<in> {w. hd w \<in> letters \<and> tl w \<in> {w. length w = k \<and> real_word w} \<and> w \<noteq>
+  []}"
+  note asm = this
+  hence " hd w \<in> letters \<and> length (tl w) = k \<and> real_word (tl w)" by simp
+  hence "real_word w"
+  by (metis empty_iff insert_subset list.collapse list.set(1) set_simps(2) subsetI)
+  moreover hence "length w = Suc k" using asm by auto
+  ultimately show "w \<in> k_words (Suc k)" by simp
+qed
+qed
+
+(* TODO: remove this version and prefer the alt one *)
+lemma bij_k_words:
+  shows "\<forall>k. bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (letters \<times> (k_words k))  (k_words (Suc
+  k))" unfolding bij_betw_def
+proof
+fix k
+let ?f = "(\<lambda>wi. Cons (fst wi) (snd wi))"
+let ?S = "letters \<times> (k_words k)"
+let ?T = "k_words (Suc k)"
+have inj: "inj_on ?f ?S" unfolding inj_on_def by simp
+moreover have surj: "?f`?S = ?T"
+proof (rule ccontr)
+assume "?f ` ?S \<noteq> ?T"
+  hence "\<exists>w. w\<in> ?T \<and> w \<notin> ?f`?S" by auto
+  then obtain w where "w\<in> ?T \<and> w \<notin> ?f`?S" by blast
+  note asm = this
+  hence "w = ?f ((hd w),(tl w))" using k_words_rel by simp
+  moreover have "((hd w),(tl w)) \<in> ?S" using k_words_rel asm by simp
+  ultimately have "w \<in> ?f`?S" by blast
+  thus "False" using asm by simp
+qed
+ultimately show "inj_on (\<lambda>wi. fst wi # snd wi) (letters \<times> {w. length w = k \<and> real_word w}) \<and>
+    (\<lambda>wi. fst wi # snd wi) ` (letters \<times> {w. length w = k \<and> real_word w}) =
+    {w. length w = Suc k \<and> real_word w}" using inj surj by simp
+qed
+
+lemma bij_k_words_alt:
+  shows "\<And>k. bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (letters \<times> (k_words k))  (k_words (Suc
+  k))" using bij_k_words
+by auto
+
+lemma finite_k_words: "finite (k_words k)"
+proof (induct k)
+case 0
+show ?case by simp
+case (Suc n)
+thus ?case using bij_k_words_alt bij_betw_finite letters_def by blast
+qed
+
+lemma cartesian_product:
+  fixes f::"('c \<Rightarrow> real)"
+  fixes g::"('b \<Rightarrow> real)"
+  shows "finite A \<Longrightarrow> finite B \<Longrightarrow>
+(\<Sum>b\<in>B. g b)* (\<Sum>a\<in>A. f a) = (\<Sum>ab\<in>A\<times>B. f (fst ab) * g (snd ab))"
+using bilinear_times bilinear_setsum[where h="(\<lambda>x y. x * y)" and f="f"
+  and g="g"]
+by (metis (erased, lifting) setsum.cong split_beta' Groups.ab_semigroup_mult_class.mult.commute)
+
 lemma kraft_sum_power :
-assumes "real_code c"
-shows "(kraft_sum c) ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w))"
-proof sorry
+shows "kraft_sum c^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w))"
+proof (induct k)
+case 0
+have "k_words 0 = {[]}" by auto
+thus ?case by simp
+next
+case (Suc n)
+have "kraft_sum c^Suc n = kraft_sum c^n * kraft_sum c" by simp
+also have "\<dots> =
+(\<Sum>w \<in> k_words n. 1 / b^cw_len_concat c w) * (\<Sum>i\<in>letters. 1 / b^cw_len c i)"
+by (metis Suc kraft_sum_def)
+also have
+"\<dots> =
+(\<Sum>wi \<in> letters \<times> k_words n. 1/b^cw_len c (fst wi) * (1 / b^cw_len_concat c (snd wi)))"
+using letters_def finite_k_words[where k="n"] cartesian_product[where A="letters"]
+by fastforce
+also have "\<dots> =
+(\<Sum>wi \<in> letters \<times> k_words n. 1 / b^(cw_len_concat c (snd wi) + cw_len c (fst wi)))"
+using letters_def binary_space power_add
+by (metis (no_types, lifting) add.commute power_one_over)
+also have "\<dots> =
+(\<Sum>wi \<in> letters \<times> k_words n. 1 / b^cw_len_concat c (fst wi # snd wi))"
+by (metis (erased, lifting) add.commute comp_apply foldr.simps(2))
+also have "\<dots> = (\<Sum>w \<in> (k_words (Suc n)). 1 / b^(cw_len_concat c w))"
+using bij_k_words_alt setsum.reindex_bij_betw by fastforce
+finally show ?case by simp
+qed
+
+
 
 lemma bound_len_concat:
  shows "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
@@ -230,7 +339,6 @@ by metis
 qed
 
 
-lemma finite_k_words: "finite (k_words k)" sorry
 
 (*
 5.54
@@ -410,6 +518,5 @@ theorem rate_upper_bound : "0 < \<epsilon> \<Longrightarrow> (\<exists>n. \<exis
 \<and> code_rate c \<le> source_entropy + \<epsilon>))"
 sorry
 *)
-
 end
 end
