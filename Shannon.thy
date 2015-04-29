@@ -1,5 +1,5 @@
 theory Shannon
-imports Information
+imports Information "~~/src/HOL/Groups_Big"
 begin
 (*
 AIM: Formalize Shannon's theorems
@@ -201,7 +201,7 @@ proof
 qed
 qed
 
-
+(* TODO: remove this version and prefer the alt one *)
 lemma bij_k_words:
   shows "\<forall>k. bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (letters \<times> (k_words k))  (k_words (Suc
   k))" unfolding bij_betw_def
@@ -227,55 +227,54 @@ ultimately show "inj_on (\<lambda>wi. fst wi # snd wi) (letters \<times> {w. len
     {w. length w = Suc k \<and> real_word w}" using inj surj by simp
 qed
 
+lemma bij_k_words_alt:
+  shows "\<And>k. bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (letters \<times> (k_words k))  (k_words (Suc
+  k))" using bij_k_words
+by auto
 
 lemma finite_k_words: "finite (k_words k)"
 proof (induct k)
 case 0
 show ?case by simp
 case (Suc n)
-thus ?case using bij_k_words
-proof -
-  have "\<And>x\<^sub>1. finite {R. length R = Suc x\<^sub>1 \<and> real_word R} \<or> infinite {R. length R = x\<^sub>1 \<and> real_word R}" using bij_betw_finite bij_k_words letters_def by blast
-  thus "finite {w. length w = Suc n \<and> real_word w}" using Suc.hyps by blast
-qed
+thus ?case using bij_k_words_alt bij_betw_finite letters_def by blast
 qed
 
 lemma cartesian_product:
-  fixes f::"('a \<Rightarrow> real)"
+  fixes f::"('c \<Rightarrow> real)"
   fixes g::"('b \<Rightarrow> real)"
-  shows "finite A \<Longrightarrow> finite B \<Longrightarrow> (\<Sum>a\<in>A. f a) * (\<Sum>b\<in>B. g b) = (\<Sum>ab\<in>A\<times>B. f (fst ab) * g (snd
-  ab))"
-proof (induct A rule: finite_induct)
-case empty
-show ?case by simp
-case insert
-thus ?case sorry
-qed
+  shows "finite A \<Longrightarrow> finite B \<Longrightarrow>
+(\<Sum>b\<in>B. g b)* (\<Sum>a\<in>A. f a) = (\<Sum>ab\<in>A\<times>B. f (fst ab) * g (snd ab))"
+using bilinear_times bilinear_setsum[where h="(\<lambda>x y. x * y)" and f="f"
+  and g="g"]
+by (metis (erased, lifting) setsum.cong split_beta' Groups.ab_semigroup_mult_class.mult.commute)
 
-(*
-should be easy by induction on k
-cartesian_product
-*)
 lemma kraft_sum_power :
-assumes "real_code c"
-shows "(kraft_sum c) ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w))" (is "?l = ?r")
-proof (induction k)
+shows "kraft_sum c^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat c w))"
+proof (induct k)
 case 0
 have "k_words 0 = {[]}" by auto
-thus  ?case by simp
+thus ?case by simp
 next
 case (Suc n)
-have "kraft_sum c ^ (Suc n) = kraft_sum c ^ n * kraft_sum c" by simp
-also have "\<dots> = (\<Sum>w \<in> k_words n. 1 / b ^ (cw_len_concat c w)) * (\<Sum>i\<in>letters. 1 / b^(cw_len c i))"
-by (metis Suc.IH kraft_sum_def)
-(* TODO: need help to use cartesian_product, or to do st else *)
-also have "\<dots> = (\<Sum>wi \<in> letters \<times> k_words n. 1 / b^(cw_len_concat c (snd wi)) * 1/b^(cw_len c (fst wi)))"
-using letters_def finite_k_words cartesian_product sorry
-also have "\<dots> = (\<Sum>wi \<in> letters \<times> k_words n. 1 / b^(cw_len_concat c (snd wi) +cw_len c (fst wi)))"
-using letters_def binary_space
-by (simp add: power_add)
-(* use bij_k_words *)
-also have "\<dots> = (\<Sum>w \<in> (k_words (Suc n)). 1 / b^(cw_len_concat c w))" sorry
+have "kraft_sum c^Suc n = kraft_sum c^n * kraft_sum c" by simp
+also have "\<dots> =
+(\<Sum>w \<in> k_words n. 1 / b^cw_len_concat c w) * (\<Sum>i\<in>letters. 1 / b^cw_len c i)"
+by (metis Suc kraft_sum_def)
+also have
+"\<dots> =
+(\<Sum>wi \<in> letters \<times> k_words n. 1/b^cw_len c (fst wi) * (1 / b^cw_len_concat c (snd wi)))"
+using letters_def finite_k_words[where k="n"] cartesian_product[where A="letters"]
+by fastforce
+also have "\<dots> =
+(\<Sum>wi \<in> letters \<times> k_words n. 1 / b^(cw_len_concat c (snd wi) + cw_len c (fst wi)))"
+using letters_def binary_space power_add
+by (metis (no_types, lifting) add.commute power_one_over)
+also have "\<dots> =
+(\<Sum>wi \<in> letters \<times> k_words n. 1 / b^cw_len_concat c (fst wi # snd wi))"
+by (metis (erased, lifting) add.commute comp_apply foldr.simps(2))
+also have "\<dots> = (\<Sum>w \<in> (k_words (Suc n)). 1 / b^(cw_len_concat c w))"
+using bij_k_words_alt setsum.reindex_bij_betw by fastforce
 finally show ?case by simp
 qed
 
