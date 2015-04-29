@@ -1,5 +1,5 @@
 theory Shannon
-imports Information "~~/src/HOL/Groups_Big"
+imports Information
 begin
 (*
 AIM: Formalize Shannon's theorems
