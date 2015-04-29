@@ -178,80 +178,53 @@ using max_cw maj_fold by blast
 
 subsection{* Inequality of the kraft sum (source coding theorem, direct) *}
 
-(* TODO: insert this lemma in the following proof *)
-lemma sum_vimage_proof_aux2:
-"real ((n::nat) + 1) * r = (n* r + r)"
-by (metis Suc_eq_plus1 add.commute comm_semiring_1_class.normalizing_semiring_rules(3) real_of_nat_Suc)
 
 lemma sum_vimage_proof:
 fixes g::"nat \<Rightarrow> real"
-assumes bounded: "\<And>w. f w < bound"
-shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bound. (card ((f-`{m}) \<inter> H) )* g
-m)" (is "?fin \<Longrightarrow> ?s1 = (\<Sum> m=0..<bound. ?ff m H)")
+assumes bounded: "\<And>w. f w < bd"
+shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bd. (card ((f-`{m}) \<inter> H) )* g
+m)" (is "?fin \<Longrightarrow> ?s1 = (\<Sum> m=0..<bd. ?ff m H)")
 proof (induct H rule: finite_induct)
 case empty
 show ?case by simp
 next
 case (insert x F)
-let ?rr = "(\<Sum>m = 0..<bound. ?ff m (insert x F))"
-have lefthandterm: "(\<Sum>w\<in>insert x F. g (f w)) = (\<Sum>w\<in>F. g (f w)) + g (f x)"
-using insert.hyps by simp
-(* now focusing of the right hand term *)
-have "finite F \<Longrightarrow> card (f -` {m} \<inter> insert x F) = (if f x = m then 1 + card (f -` {m} \<inter> F) else card (f -` {m} \<inter>F))"
-using insert.hyps by simp
-have "(f x) \<in> {0..<bound}" using assms by simp
-hence "\<forall>h::(nat \<Rightarrow> real). (\<Sum>m=0..<bound. h m)- h (f x) = (\<Sum> m \<in> ({0..<bound} - {f x}). h m)"
-by (metis finite_atLeastLessThan setsum_diff1_ring)
-hence sum_reord: "\<And> h::(nat \<Rightarrow> real). (\<Sum>m=0..<bound. h m) = (setsum h ({0..<bound} - {f x}) + h (f x))"
-by (metis diff_add_cancel)
-have "?rr = (\<Sum>m \<in> ({0..<bound} - {f x}). ?ff m (insert x F)) + ?ff (f x) (insert x F)"
-using sum_reord by simp
-moreover hence
-"(\<Sum>m\<in>{0..<bound} - {f x}. ?ff m (insert x F)) = (\<Sum>m\<in>{0..<bound} - {f x}.?ff m (insert x F))"
-by simp
-moreover have "?ff (f x) (insert x F) = (card (f-` {f x} \<inter>F) + 1) * g (f x)"
-using insert.hyps
-by simp
+let ?rr = "(\<Sum>m = 0..<bd. ?ff m (insert x F))"
+(* focusing of the right hand term *)
+have "(f x) \<in> {0..<bd}" using assms by simp
+hence sum_reord: "\<And> h::(nat \<Rightarrow> real). (\<Sum>m=0..<bd. h m) =
+(setsum h ({0..<bd} - {f x}) + h (f x))"
+by (metis diff_add_cancel finite_atLeastLessThan setsum_diff1_ring)
+moreover have "\<And>n r. real ((n::nat) + 1) * r = (n* r + r)"
+by (metis Suc_eq_plus1 add.commute
+comm_semiring_1_class.normalizing_semiring_rules(3) real_of_nat_Suc)
 ultimately have
-"(\<Sum>m = 0..<bound. ?ff m (insert x F))
-= (\<Sum>m\<in>{0..<bound} - {f x}.(card (f -` {m} \<inter> F)) * g m) + (card (f -` {f x} \<inter>F) + 1) * g (f x)"
-by simp
-also have "(\<Sum>m\<in>{0..<bound} - {f x}. ?ff m F) +(card (f -` {f x} \<inter> F) + 1) * g (f x) =
-(\<Sum>m\<in>{0..<bound} -{f x}.?ff m F) +?ff (f x) F + g (f x)"
-using sum_vimage_proof_aux2[where n="card (f -` {f x} \<inter> F)" and r="g (f x)"]
-by simp
-finally have firsteq: "(\<Sum>m = 0..<bound. ?ff m (insert x F))
-= (\<Sum>m\<in>{0..<bound} - {f x}. ?ff m (insert x F)) + card (f -` {f x} \<inter>
-F) * g (f x) + g (f x)"
-by simp
-have "(\<Sum>m\<in>{0..<bound} - {f x}. card (f -` {m} \<inter> F) * g m) +
- (card (f -` {f x} \<inter> F)) * g (f x) =(\<Sum>m\<in>{0..<bound}. card (f -` {m} \<inter> F) * g m)"
-using assms(1)[where w="x"] sum_reord[where h="\<lambda>m. card (f -` {m} \<inter> F) * g m"]
-by simp
-hence "(\<Sum>m = 0..<bound. ?ff m (insert x F)) =
-(\<Sum>m\<in>{0..<bound}. ?ff m F) + g (f x)"
-using firsteq
-by simp
-thus ?case using lefthandterm insert.hyps by simp
+"(\<Sum>m = 0..<bd. ?ff m (insert x F))
+= (\<Sum>m\<in>{0..<bd} - {f x}. ?ff m (insert x F)) +
+card (f -` {f x} \<inter> F) * g (f x) + g (f x)"
+using insert.hyps by fastforce
+hence "(\<Sum>m = 0..<bd. ?ff m (insert x F)) = (\<Sum>m\<in>{0..<bd}. ?ff m F) + g (f x)"
+using assms sum_reord by fastforce
+thus ?case using insert.hyps by simp
 qed
 
 
 lemma sum_vimage:
 fixes g::"nat \<Rightarrow> real"
-assumes bounded: "\<And>w. w \<in> H \<Longrightarrow> f w < bound" and "0 < bound"
-shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bound. (card ((f-`{m}) \<inter> H) ) * g m)"
+assumes bounded: "\<And>w. w \<in> H \<Longrightarrow> f w < bd" and "0 < bd"
+shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bd. (card ((f-`{m}) \<inter> H) ) * g m)"
 (is "?fin \<Longrightarrow> ?s1 = ?s2")
 proof -
 let ?ff = "(\<lambda>x. if x\<in>H then f x else 0)"
 let ?ss1 = "(\<Sum>w\<in>H. g (?ff w))"
 have eq1: "?s1 =?ss1" by simp
-let ?ss2 = "(\<Sum> m=0..<bound. (card ((?ff-`{m}) \<inter> H) ) * g m)"
+let ?ss2 = "(\<Sum> m=0..<bd. (card ((?ff-`{m}) \<inter> H) ) * g m)"
 have"\<And>m. ?ff -`{m} \<inter> H = f-`{m} \<inter> H" by auto
 hence eq2: "?s2 = ?ss2" by simp
-have boundedff: "\<And>w . ?ff w < bound" using assms by simp
+have boundedff: "\<And>w . ?ff w < bd" using assms by simp
 hence "?fin \<Longrightarrow> ?ss1 = ?ss2"
-using boundedff local.sum_vimage_proof[where H="H" and f="?ff" and bound="bound"
-and g="g"] assms by simp
+using boundedff local.sum_vimage_proof[where f="?ff" and bd="bd"] assms
+by blast
 thus "?fin \<Longrightarrow> ?s1 = ?s2" using eq1 eq2 assms boundedff
 by metis
 qed
@@ -279,7 +252,7 @@ moreover have "0 < Suc (k*max_len c)" by simp
 ultimately show ?thesis
 using finite_k_words
 sum_vimage[where f="cw_len_concat c" and g = "(\<lambda>i. 1/ (b^i))" and H ="k_words k"
-and bound = "Suc (k*max_len c)"]
+and bd = "Suc (k*max_len c)"]
 by simp
 qed
 
@@ -295,11 +268,11 @@ shows "inj_on (fst c) ((cw_len_concat c)-`{m})" (is "inj_on ?enc ?s")
 proof -
 fix x y
 let ?dec = "snd c"
-(* assume "x \<in> ?r \<and> y \<in> ?r \<and> ?l x = ?l y" *)
 have "x \<in> ?s \<and> y \<in> ?s \<and> ?enc x = ?enc y \<longrightarrow> ?dec (?enc x) = ?dec (?enc y)"
 using assms lossless_code_def by auto
 thus ?thesis
-using inj_on_def[where f="?enc" and A="?s"]by (metis lossless lossless_code_def option.inject)
+using inj_on_def[where f="?enc" and A="?s"]
+by (metis lossless lossless_code_def option.inject)
 qed
 
 lemma am_maj_aux12:
@@ -312,14 +285,16 @@ qed
 lemma am_maj_aux2:
 assumes lossless: "lossless_code c"
 shows "finite ((cw_len_concat c)-`{m}) \<and> real (card ((cw_len_concat c)-`{m})) \<le> b^m"
-using assms am_maj_aux binary_space am_maj_aux12
 (* sledgehammer min [e] (card_0_eq card_image card_infinite empty_subsetI
 finite_Collect_le_nat finite_imageI finite_subset image_empty image_is_empty am_maj_aux am_maj_aux12 lossless) *)
 (* TODO: timeout? *)
 (* by (metis card_0_eq card_image card_infinite finite_imageI image_is_empty) *)
 proof -
-  have "\<And>x\<^sub>1 x\<^sub>2. card (fst x\<^sub>1 ` (\<lambda>R. foldr (\<lambda>R. op + (cw_len x\<^sub>1 R)) R 0) -` {x\<^sub>2}) = card ((\<lambda>R. foldr (\<lambda>R. op + (cw_len x\<^sub>1 R)) R 0) -` {x\<^sub>2}) \<or> \<not> lossless_code x\<^sub>1" using am_maj_aux card_image by blast
-  thus "finite ((\<lambda>w. foldr (\<lambda>x. op + (cw_len c x)) w 0) -` {m}) \<and> real (card ((\<lambda>w. foldr (\<lambda>x. op + (cw_len c x)) w 0) -` {m})) \<le> b ^ m" by (metis am_maj_aux12 card_0_eq card_infinite finite_imageI image_is_empty lossless)
+have "\<And>x\<^sub>1 x\<^sub>2. card (fst x\<^sub>1 ` (\<lambda>R. foldr (\<lambda>R. op + (cw_len x\<^sub>1 R)) R 0) -` {x\<^sub>2}) =
+card ((\<lambda>R. foldr (\<lambda>R. op + (cw_len x\<^sub>1 R)) R 0) -` {x\<^sub>2}) \<or> \<not> lossless_code x\<^sub>1"
+using am_maj_aux card_image by blast
+thus ?thesis
+by (metis am_maj_aux12 card_0_eq card_infinite finite_imageI image_is_empty lossless)
 qed
 
 lemma am_maj:
@@ -331,7 +306,7 @@ set_of_k_words_length_m_def by simp
 hence "card (set_of_k_words_length_m c k m) \<le> card ((cw_len_concat c)-`{m})"
 using assms am_maj_aux2 Finite_Set.card_mono by blast
 thus ?thesis
-using assms am_maj_aux2[where c="c" and m="m" ] by simp
+using assms am_maj_aux2[where m="m"] by fastforce
 qed
 
 (* let ?s="set_of_k_words_length_m c k m" and ?enc="fst c" *)
