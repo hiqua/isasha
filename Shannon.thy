@@ -472,18 +472,14 @@ assume "\<not> set_of_k_words_length_m c k 0 = {}"
 hence "\<exists>x. x \<in> set_of_k_words_length_m c k 0" by auto
 then obtain x where "x \<in> set_of_k_words_length_m c k 0" by auto
 note x_def = this
-hence "x \<in> k_words k" unfolding set_of_k_words_length_m_def by simp
-hence "x \<noteq> []" using assms by auto
-hence "x = hd x # tl x" by simp
+hence "x \<noteq> []" unfolding set_of_k_words_length_m_def using assms by auto
 moreover have
 "cw_len_concat c (hd x#tl x) =  cw_len_concat c (tl x) + cw_len c (hd x)"
 by (metis add.commute comp_apply foldr.simps(2))
-ultimately have "cw_len_concat c x \<ge> cw_len c (hd x)" by simp
 moreover have "(fst c) [(hd x)] \<noteq> []" using assms unfolding real_code_def by
 simp
 moreover hence "0 < cw_len c (hd x)" using cw_len_def by simp
-ultimately have "0 \<noteq> cw_len_concat c x" by simp
-hence "x \<notin> set_of_k_words_length_m c k 0" unfolding set_of_k_words_length_m_def
+ultimately have "x \<notin> set_of_k_words_length_m c k 0" unfolding set_of_k_words_length_m_def
 by simp
 thus "False" using x_def by simp
 qed
