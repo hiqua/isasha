@@ -311,7 +311,7 @@ ultimately have
 "(\<Sum>m = 0..<bd. ?ff m (insert x F))
 = (\<Sum>m\<in>{0..<bd} - {f x}. ?ff m (insert x F)) +
 card (f -` {f x} \<inter> F) * g (f x) + g (f x)"
-using insert.hyps by fastforce
+using insert by fastforce
 hence "(\<Sum>m = 0..<bd. ?ff m (insert x F)) = (\<Sum>m\<in>{0..<bd}. ?ff m F) + g (f x)"
 using assms sum_reord by fastforce
 thus ?case using insert.hyps by simp
