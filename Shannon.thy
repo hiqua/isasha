@@ -177,7 +177,7 @@ proof
   note asm = this
   hence "real_word w" by simp
   hence "hd w \<in> letters" using letters_def
-  by (smt2 `w \<in> {w. length w = Suc k \<and> real_word w}` hd_in_set list.size(3) mem_Collect_eq nat.distinct(1) subsetCE)
+  by (metis (mono_tags) asm hd_in_set list.size(3) mem_Collect_eq nat.distinct(1) subset_code(1))
   moreover have len: "length w = Suc k" using asm by simp
   moreover hence "w \<noteq> []" by auto
   moreover have "length (tl w) = k" using len by simp
