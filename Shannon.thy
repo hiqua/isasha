@@ -62,8 +62,11 @@ output symbols.
 *)
 assumes binary_space: "b = 2"
 assumes entropy_defi: "source_entropy = \<H>(Input 0)"
-assumes letters_def: "letters = {0..<input_bound}"
-assumes bounded_input: "fi input_bound \<noteq> 0 \<and> (input_bound < n \<longrightarrow> fi n = 0)"
+assumes letters_def: "letters = {0..input_bound}"
+(* assumes bounded_input: "fi input_bound \<noteq> 0 \<and> (input_bound < n \<longrightarrow> fi n = 0)" *)
+assumes bounded_input: "(Input i) ` space M \<subseteq> letters"
+assumes bounded_input_alt: "\<And>n. n \<notin> letters \<Longrightarrow> fi n = 0"
+
 
 print_locale information_space_discrete
 
