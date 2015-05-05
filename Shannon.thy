@@ -42,13 +42,13 @@ fixes input_bound :: letter
 fixes Output :: "nat \<Rightarrow> ('a \<Rightarrow> letter)"
 fixes fi :: "prob"
 fixes fo :: "prob"
-fixes N :: "'a measure" --"we should take M?"
+(* fixes N :: "'a measure" --"we should take M? ----> yes!" *)
 fixes N' :: "letter measure"
 fixes letters :: "nat set"
 assumes distr_i:
-"simple_distributed N (Input i) fi"
+"simple_distributed M (Input i) fi"
 assumes distr_o:
-"simple_distributed N (Output i) fo"
+"simple_distributed M (Output i) fo"
 assumes memoryless:
 "(m \<noteq> n \<longrightarrow> (indep_var N' (Input m) N' (Output n)) \<and> indep_var N' (Output m) N' (Output n))"
 assumes mutual_info:
