@@ -130,7 +130,7 @@ definition real_code ::"code \<Rightarrow> bool" where
 The code rate is the expectation of the length of the code taken on all inputs.
 *)
 definition code_rate :: "code \<Rightarrow> real" where
-"code_rate code = lebesgue_integral N (\<lambda>a. (fi ((Input 0) a)) * (length ((fst
+"code_rate code = lebesgue_integral M (\<lambda>a. (fi ((Input 0) a)) * (length ((fst
 code) [(Input 0) a])))"
 
 (*
