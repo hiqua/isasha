@@ -67,6 +67,8 @@ assumes letters_def: "letters = {0..input_bound}"
 assumes bounded_input: "(Input i) ` space M \<subseteq> letters"
 assumes bounded_input_alt: "\<And>n. n \<notin> letters \<Longrightarrow> fi n = 0"
 
+(* What is countable exactly? *)
+assumes countable: "count_space (space M) = M"
 
 print_locale information_space_discrete
 
@@ -81,6 +83,7 @@ subsection{* locale specific to the source coding theorem *}
 locale information_space_discrete_source = information_space_discrete +
 fixes input_block_size::nat
 begin
+abbreviation "L \<equiv> letters"
 
 definition lossless_code :: "code \<Rightarrow> bool" where
 "lossless_code c = (\<forall>x. snd c (fst c x) = Some x)"
