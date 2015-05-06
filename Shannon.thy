@@ -130,17 +130,40 @@ definition real_code ::"code \<Rightarrow> bool" where
 "real_code c = ((lossless_code c) \<and> (\<forall>w. (fst c) w = [] \<longleftrightarrow> w = []) \<and> concat_code c)"
 
 (*
-The code rate is the expectation of the length of the code taken on all inputs.
-*)
-definition code_rate :: "code \<Rightarrow> real" where
-"code_rate code = lebesgue_integral M (\<lambda>a. (fi ((Input 0) a)) * (length ((fst
-code) [(Input 0) a])))"
-
-(*
 length of the codeword associated with the letter
 *)
 definition cw_len :: "code \<Rightarrow> letter \<Rightarrow> nat" where
 "cw_len c l = length ((fst c) [l])"
+
+(*
+The code rate is the expectation of the length of the code taken on all inputs (which is a finite set, the set of letters).
+*)
+  definition code_rate :: "code \<Rightarrow> real" where
+"code_rate c = lebesgue_integral M (\<lambda>a. (cw_len c ((Input 0) a)))"
+
+
+(*
+Proof by Johannes Hölzl
+*)
+lemma (in prob_space) simp_exp:
+  assumes X: "simple_distributed M X Px"
+  shows "expectation X = (\<Sum>x \<in> X`space M. x * Px x)"
+  using simple_distributed_finite[OF X]
+  using distributed_integral[OF simple_distributed[OF X], of "\<lambda>x. x",
+symmetric]
+  by (simp add: lebesgue_integral_count_space_finite ac_simps)
+
+
+(* lebesgue_integral_count_space_finite *)
+(* nn_integral_count_space *)
+  (* shows "(\<integral>x. f x \<partial>count_space A) = (\<Sum>a | a \<in> A \<and> f a \<noteq> 0. f a)" *)
+lemma code_rate_rw:
+"code_rate c = (\<Sum>i \<in> Input 0 ` space M. fi i * cw_len c i)"
+using distr_i[where i="0"] simple_distributed_setsum_space[where X="Input 0" and f="fi"]
+code_rate_def[where c="c"]
+simple_distributed_def bounded_input_alt lebesgue_integral_count_space_finite
+sorry
+
 
 
 abbreviation cw_len_concat :: "code \<Rightarrow> word \<Rightarrow> nat" where
