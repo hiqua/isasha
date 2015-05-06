@@ -571,22 +571,88 @@ proof -
   thus "kraft_inequality c" unfolding kraft_inequality_def by simp
 qed
 
+
+lemma img_input:
+"(Input 0) ` space M = letters" sorry
+
+lemma entropy_rewrite:
+shows "source_entropy = -(\<Sum>i \<in> letters. fi i * log b (fi i))"
+proof -
+have sum_set: "(Input 0) ` space M = letters" using img_input by simp
+have "source_entropy = \<H>(Input 0)" using entropy_defi by simp
+also have "\<dots> = entropy b (count_space ((Input 0)`space M)) (Input 0)" by simp
+finally have "\<dots> =  -(\<Sum>i \<in> letters. fi i * log b (fi i))"
+using distr_i entropy_simple_distributed sum_set by blast
+thus ?thesis by (metis entropy_defi)
+qed
+
+
+(*
+TODO (eventually):
+I use a custom definition of the KL_divergence, as it is far simpler for me to use. It'd be better
+if in the end I can use the real def definition KL_cus
+*)
+definition KL_cus ::"(letter \<Rightarrow> real) \<Rightarrow> (letter \<Rightarrow> real) \<Rightarrow> real" where
+  "KL_cus a c = (\<Sum> i \<in> letters. a i * log b (a i / c i))"
+
+lemma KL_cus_pos: "\<And>a c. 0 \<le> KL_cus a c"
+sorry
+
 (*
 _Kraft inequality for uniquely decodable codes using the McMillan theorem
 *)
 theorem rate_lower_bound :
-shows "real_code c \<Longrightarrow> source_entropy \<le> code_rate c"
-proof sorry
-
-(*
-theorem kraft_theorem :
-assumes "(\<Sum> k\<in>{0..< input_bound}. (1 / b^(lengthk k))) \<le> 1"
-shows "\<exists>c. real_code c \<and> (k\<in>{0..<input_bound} \<longrightarrow> (cw_len c k) = lengthk k)"
-proof sorry
-
-theorem rate_upper_bound : "0 < \<epsilon> \<Longrightarrow> (\<exists>n. \<exists>c. n \<le> input_block_size \<Longrightarrow> (real_code c
-\<and> code_rate c \<le> source_entropy + \<epsilon>))"
+assumes "real_code c"
+defines "l \<equiv> (\<lambda>i. cw_len c i)"
+defines "p \<equiv> (\<lambda>i. fi i)"
+shows "source_entropy \<le> code_rate c"
+proof -
+let ?r = "(\<lambda>i. 1 / ((b powr l i) * kraft_sum c))"
+let ?c = "kraft_sum c"
+have pi_nonnull: "\<And>i. 0 < (p i)" sorry
+have kraft_sum_nonnull: "0 < kraft_sum c" sorry
+have sum_one: "(\<Sum> i \<in> L. p i) = 1" sorry
+have 1: "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * l i) + (\<Sum>i \<in> L. p i * log b (p i))"
+unfolding code_rate_def entropy_def
+using kraft_sum_def[where c="c"] entropy_rewrite bounded_input
 sorry
-*)
+also have 2: "(\<Sum>i\<in>L. p i * l i) = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i)))))"
+ using binary_space
+by (metis b_gt_1 less_irrefl minus_mult_minus mult_minus_right powr_minus_divide zero_less_numeral log_powr log_powr_cancel)
+also have "\<dots> =  (\<Sum>i \<in> L. p i * (-1 * log b (1/(b powr (l i)))))" by simp
+also have "\<dots> = -1 * (\<Sum>i \<in> L. p i * (log b (1/(b powr (l i)))))" using setsum_right_distrib[where r="-1" and A="L" and f="(\<lambda>i.  p i * (- 1 * log b (1 / b powr real (l i))))"]
+by simp
+finally have "code_rate c - source_entropy = -(\<Sum>i \<in> L. p i * log b (1/b powr l i)) + (\<Sum>i \<in> L. p i * log b (p i))" by simp
+from 1 2 have "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i))))) +  (\<Sum>i \<in> L. p i * log b (p i))" by simp
+also have "\<dots> = (\<Sum>i \<in> L. p i * (log b (1/ (1/(b powr (l i)))))) +  (\<Sum>i \<in> L. p i * log b (p i))" using log_inverse binary_space
+by (metis log_powr mult_minus_left powr_minus_divide)
+also have "\<dots> = (\<Sum>i \<in> L. p i * (log b (1/ (1/(b powr (l i))))) + p i * log b (p i))"
+by (simp add: setsum.distrib)
+
+also have "\<dots> = (\<Sum>i \<in> L. p i * ((log b (1/ (1/(b powr (l i))))) +log b (p i)))"
+by (metis (no_types, hide_lams) distrib_left)
+also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i / (1/(b powr (l i)))))))" using pi_nonnull log_mult
+add.commute add_mono_thms_linordered_field(5) add_uminus_conv_diff b_gt_1 comm_monoid_add_class.add.right_neutral diff_self less_irrefl linorder_neqE_linordered_idom log_divide log_inverse_eq log_powr neg_0_less_iff_less not_one_less_zero powr_gt_zero powr_minus powr_minus_divide pi_nonnull
+by metis
+also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * (?c / ?c) / (1/(b powr (l i)))))))"
+using kraft_sum_nonnull by simp
+also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * ?c  / (1/(b powr (l i)))))) - log b ?c)"
+ using pi_nonnull log_mult
+
+
+also have "\<dots> = (\<Sum> i \<in> L. p i * log b (p i / ?r i)) - (\<Sum> i \<in> L. p i * log b ?c)"
+sledgehammer
+sorry
+also have "\<dots> = (\<Sum> i \<in> L. p i * log b (p i / ?r i)) - (\<Sum> i \<in> L. p i ) * log b ?c" using setsum_left_distrib[where r ="log b ?c"] by metis
+also have "\<dots> = KL_cus p ?r - log b ( ?c)" unfolding KL_cus_def using sum_one by simp
+also have "\<dots> = KL_cus p ?r + log b (inverse ?c)" using log_inverse binary_space kraft_sum_nonnull by simp
+finally have "log b (inverse (kraft_sum c)) \<le> code_rate c - source_entropy"
+using KL_cus_pos   unfolding kraft_inequality_def by simp
+moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum c))" using kraft_sum_nonnull unfolding kraft_inequality_def
+by (metis b_gt_1 log_inverse_eq log_le_zero_cancel_iff neg_0_le_iff_le)
+ultimately have "0 \<le> code_rate c - source_entropy" using McMillan assms by simp
+thus ?thesis by simp
+qed
+
 end
 end
