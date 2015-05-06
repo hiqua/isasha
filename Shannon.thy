@@ -609,9 +609,18 @@ shows "source_entropy \<le> code_rate c"
 proof -
 let ?r = "(\<lambda>i. 1 / ((b powr l i) * kraft_sum c))"
 let ?c = "kraft_sum c"
+have lol_nonnull: "\<And>i. 0 < (p i * ?c  / (1/b powr l i))" sorry
 have pi_nonnull: "\<And>i. 0 < (p i)" sorry
 have kraft_sum_nonnull: "0 < kraft_sum c" sorry
+have kraft_sum_inv_nonnull: "0 < 1 / kraft_sum c" sorry
 have sum_one: "(\<Sum> i \<in> L. p i) = 1" sorry
+{
+fix x::real
+assume "0 < x"
+have "0 < x \<Longrightarrow> log b (x * (1 / kraft_sum c)) = log b x + log b (1 / kraft_sum c)"
+using log_mult[where y="1/?c" and a ="b" and x="x"] kraft_sum_inv_nonnull binary_space by simp
+} then have "\<And>x. 0 < x \<Longrightarrow> log b (x * (1 / kraft_sum c)) = log b x + log b (1 / kraft_sum c)" by blast
+ then have big_eq: "\<And>i. log b (p i * ?c / (1/b powr l i) * (1 / kraft_sum c)) = log b (p i * ?c / (1/b powr l i)) + log b (1 / kraft_sum c)" using lol_nonnull by blast
 have 1: "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * l i) + (\<Sum>i \<in> L. p i * log b (p i))"
 unfolding code_rate_def entropy_def
 using kraft_sum_def[where c="c"] entropy_rewrite bounded_input
@@ -632,22 +641,29 @@ by (simp add: setsum.distrib)
 also have "\<dots> = (\<Sum>i \<in> L. p i * ((log b (1/ (1/(b powr (l i))))) +log b (p i)))"
 by (metis (no_types, hide_lams) distrib_left)
 also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i / (1/(b powr (l i)))))))" using pi_nonnull log_mult
-add.commute add_mono_thms_linordered_field(5) add_uminus_conv_diff b_gt_1 comm_monoid_add_class.add.right_neutral diff_self less_irrefl linorder_neqE_linordered_idom log_divide log_inverse_eq log_powr neg_0_less_iff_less not_one_less_zero powr_gt_zero powr_minus powr_minus_divide pi_nonnull
+add.commute add_mono_thms_linordered_field(5) add_uminus_conv_diff b_gt_1 comm_monoid_add_class.add.right_neutral
+diff_self less_irrefl linorder_neqE_linordered_idom log_divide log_inverse_eq log_powr neg_0_less_iff_less not_one_less_zero powr_gt_zero powr_minus powr_minus_divide pi_nonnull
 by metis
-also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * (?c / ?c) / (1/(b powr (l i)))))))"
+also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * (?c * 1 / ?c) / (1/(b powr (l i)))))))"
 using kraft_sum_nonnull by simp
-also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * ?c  / (1/(b powr (l i)))))) - log b ?c)"
- using pi_nonnull log_mult
+also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * ?c / (1/b powr l i) * 1/?c))))" by simp
+also from big_eq have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * ?c / (1/b powr l i))) + log b (1/?c)))"
+ using  lol_nonnull by simp
+also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * ?c  / (1/b powr l i)))) + (p i * log b (1/?c)))"
+by (metis (no_types, hide_lams) add.commute distrib_left divide_divide_eq_right times_divide_eq_right)
+also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * kraft_sum c / (1 / b powr real (l i))))) + (\<Sum>i \<in> L. p i * log b (1/ ?c))"
+using Groups_Big.comm_monoid_add_class.setsum.distrib by simp
+also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * kraft_sum c / (1 / b powr real (l i))))) + log b (1 / ?c)" using sum_one setsum_left_distrib[where A="L" and f="p"] by simp
 
 
 also have "\<dots> = (\<Sum> i \<in> L. p i * log b (p i / ?r i)) - (\<Sum> i \<in> L. p i * log b ?c)"
-sledgehammer
+
 sorry
 also have "\<dots> = (\<Sum> i \<in> L. p i * log b (p i / ?r i)) - (\<Sum> i \<in> L. p i ) * log b ?c" using setsum_left_distrib[where r ="log b ?c"] by metis
 also have "\<dots> = KL_cus p ?r - log b ( ?c)" unfolding KL_cus_def using sum_one by simp
 also have "\<dots> = KL_cus p ?r + log b (inverse ?c)" using log_inverse binary_space kraft_sum_nonnull by simp
 finally have "log b (inverse (kraft_sum c)) \<le> code_rate c - source_entropy"
-using KL_cus_pos   unfolding kraft_inequality_def by simp
+using KL_cus_pos   unfolding kraft_inequality_def  by simp
 moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum c))" using kraft_sum_nonnull unfolding kraft_inequality_def
 by (metis b_gt_1 log_inverse_eq log_le_zero_cancel_iff neg_0_le_iff_le)
 ultimately have "0 \<le> code_rate c - source_entropy" using McMillan assms by simp
