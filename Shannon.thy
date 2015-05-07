@@ -607,8 +607,8 @@ defines "l \<equiv> (\<lambda>i. cw_len c i)"
 defines "p \<equiv> (\<lambda>i. fi i)"
 shows "source_entropy \<le> code_rate c"
 proof -
-let ?r = "(\<lambda>i. 1 / ((b powr l i) * kraft_sum c))"
 let ?c = "kraft_sum c"
+let ?r = "(\<lambda>i. 1 / ((b powr l i) * ?c))"
 have lol_nonnull: "\<And>i. 0 < (p i * ?c  / (1/b powr l i))" sorry
 have pi_nonnull: "\<And>i. 0 < (p i)" sorry
 have kraft_sum_nonnull: "0 < kraft_sum c" sorry
@@ -637,7 +637,6 @@ also have "\<dots> = (\<Sum>i \<in> L. p i * (log b (1/ (1/(b powr (l i)))))) + 
 by (metis log_powr mult_minus_left powr_minus_divide)
 also have "\<dots> = (\<Sum>i \<in> L. p i * (log b (1/ (1/(b powr (l i))))) + p i * log b (p i))"
 by (simp add: setsum.distrib)
-
 also have "\<dots> = (\<Sum>i \<in> L. p i * ((log b (1/ (1/(b powr (l i))))) +log b (p i)))"
 by (metis (no_types, hide_lams) distrib_left)
 also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i / (1/(b powr (l i)))))))" using pi_nonnull log_mult
@@ -651,15 +650,15 @@ also from big_eq have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * ?c / (1/b
  using  lol_nonnull by simp
 also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * ?c  / (1/b powr l i)))) + (p i * log b (1/?c)))"
 by (metis (no_types, hide_lams) add.commute distrib_left divide_divide_eq_right times_divide_eq_right)
-also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * kraft_sum c / (1 / b powr real (l i))))) + (\<Sum>i \<in> L. p i * log b (1/ ?c))"
+also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr real (l i))))) + (\<Sum>i \<in> L. p i * log b (1/ ?c))"
 using Groups_Big.comm_monoid_add_class.setsum.distrib by simp
-also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * kraft_sum c / (1 / b powr real (l i))))) + log b (1 / ?c)" using sum_one setsum_left_distrib[where A="L" and f="p"] by simp
-
-
-also have "\<dots> = (\<Sum> i \<in> L. p i * log b (p i / ?r i)) - (\<Sum> i \<in> L. p i * log b ?c)"
-
-sorry
-also have "\<dots> = (\<Sum> i \<in> L. p i * log b (p i / ?r i)) - (\<Sum> i \<in> L. p i ) * log b ?c" using setsum_left_distrib[where r ="log b ?c"] by metis
+also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr real (l i))))) + (\<Sum>i \<in> L. p i) * log b (1/ ?c)"
+using setsum_left_distrib by (metis (no_types))
+also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr real (l i))))) + log b (1/?c)" using sum_one by simp
+also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr real (l i))))) - log b (?c)" using log_inverse_eq kraft_sum_nonnull
+by (metis (no_types, lifting) add_uminus_conv_diff divide_inverse monoid_mult_class.mult.left_neutral)
+also have "\<dots> = (\<Sum> i \<in> L. p i * log b (p i / ?r i)) - log b (?c)"
+by (metis (mono_tags, hide_lams) divide_divide_eq_left divide_divide_eq_right)
 also have "\<dots> = KL_cus p ?r - log b ( ?c)" unfolding KL_cus_def using sum_one by simp
 also have "\<dots> = KL_cus p ?r + log b (inverse ?c)" using log_inverse binary_space kraft_sum_nonnull by simp
 finally have "log b (inverse (kraft_sum c)) \<le> code_rate c - source_entropy"
