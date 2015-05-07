@@ -139,7 +139,7 @@ definition cw_len :: "code \<Rightarrow> letter \<Rightarrow> nat" where
 The code rate is the expectation of the length of the code taken on all inputs (which is a finite set, the set of letters).
 *)
   definition code_rate :: "code \<Rightarrow> real" where
-"code_rate c = lebesgue_integral M (\<lambda>a. (cw_len c ((Input 0) a)))"
+"code_rate c = expectation (\<lambda>a. (cw_len c ((Input 0) a)))"
 
 
 (*
@@ -149,20 +149,23 @@ lemma (in prob_space) simp_exp:
   assumes X: "simple_distributed M X Px"
   shows "expectation X = (\<Sum>x \<in> X`space M. x * Px x)"
   using simple_distributed_finite[OF X]
-  using distributed_integral[OF simple_distributed[OF X], of "\<lambda>x. x",
-symmetric]
+using distributed_integral[OF simple_distributed[OF X], of "\<lambda>x. x"]
   by (simp add: lebesgue_integral_count_space_finite ac_simps)
 
+lemma (in prob_space) simp_exp_composed:
+  assumes X: "simple_distributed M X Px" 
+  shows "expectation (\<lambda>a. f (X a)) = (\<Sum>x \<in> X`space M. f x * Px x)"
+  using lebesgue_integral_count_space_finite[OF simple_distributed_finite[OF X]]
+using distributed_integral[OF simple_distributed[OF X], of "\<lambda>x. f x"] borel_measurable_count_space
+by (metis (mono_tags, lifting) mult.commute setsum.cong)
 
 (* lebesgue_integral_count_space_finite *)
 (* nn_integral_count_space *)
   (* shows "(\<integral>x. f x \<partial>count_space A) = (\<Sum>a | a \<in> A \<and> f a \<noteq> 0. f a)" *)
 lemma code_rate_rw:
-"code_rate c = (\<Sum>i \<in> Input 0 ` space M. fi i * cw_len c i)"
-using distr_i[where i="0"] simple_distributed_setsum_space[where X="Input 0" and f="fi"]
-code_rate_def[where c="c"]
-simple_distributed_def bounded_input_alt lebesgue_integral_count_space_finite
-sorry
+"code_rate c = (\<Sum>i \<in> Input 0 ` space M. fi i * cw_len c i)" unfolding code_rate_def
+using simp_exp_composed[where X="Input 0" and f = "cw_len c"]
+by (metis (erased, lifting) distr_i mult.commute setsum.cong)
 
 
 
@@ -605,6 +608,7 @@ theorem rate_lower_bound :
 assumes "real_code c"
 defines "l \<equiv> (\<lambda>i. cw_len c i)"
 defines "p \<equiv> (\<lambda>i. fi i)"
+defines "LL \<equiv> L - {i. p i = 0}"
 shows "source_entropy \<le> code_rate c"
 proof -
 let ?c = "kraft_sum c"
@@ -612,19 +616,20 @@ let ?r = "(\<lambda>i. 1 / ((b powr l i) * ?c))"
 have lol_nonnull: "\<And>i. 0 < (p i * ?c  / (1/b powr l i))" sorry
 have pi_nonnull: "\<And>i. 0 < (p i)" sorry
 have kraft_sum_nonnull: "0 < kraft_sum c" sorry
-have kraft_sum_inv_nonnull: "0 < 1 / kraft_sum c" sorry
-have sum_one: "(\<Sum> i \<in> L. p i) = 1" sorry
+have sum_one: "(\<Sum> i \<in> L. p i) = 1" using simple_distributed_setsum_space distr_i by (metis img_input p_def)
+hence "(\<Sum> i \<in> LL. p i) = 1" using LL_def
+by (metis setsum.infinite setsum.setdiff_irrelevant zero_neq_one)
 {
 fix x::real
 assume "0 < x"
 have "0 < x \<Longrightarrow> log b (x * (1 / kraft_sum c)) = log b x + log b (1 / kraft_sum c)"
-using log_mult[where y="1/?c" and a ="b" and x="x"] kraft_sum_inv_nonnull binary_space by simp
+using log_mult[where y="1/?c" and a ="b" and x="x"]  binary_space kraft_sum_nonnull by simp
 } then have "\<And>x. 0 < x \<Longrightarrow> log b (x * (1 / kraft_sum c)) = log b x + log b (1 / kraft_sum c)" by blast
  then have big_eq: "\<And>i. log b (p i * ?c / (1/b powr l i) * (1 / kraft_sum c)) = log b (p i * ?c / (1/b powr l i)) + log b (1 / kraft_sum c)" using lol_nonnull by blast
 have 1: "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * l i) + (\<Sum>i \<in> L. p i * log b (p i))"
 unfolding code_rate_def entropy_def
-using kraft_sum_def[where c="c"] entropy_rewrite bounded_input
-sorry
+using kraft_sum_def[where c="c"] entropy_rewrite bounded_input simp_exp_composed distr_i
+using code_rate_def code_rate_rw img_input l_def p_def by auto
 also have 2: "(\<Sum>i\<in>L. p i * l i) = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i)))))"
  using binary_space
 by (metis b_gt_1 less_irrefl minus_mult_minus mult_minus_right powr_minus_divide zero_less_numeral log_powr log_powr_cancel)
@@ -642,6 +647,7 @@ by (metis (no_types, hide_lams) distrib_left)
 also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i / (1/(b powr (l i)))))))" using pi_nonnull log_mult
 add.commute add_mono_thms_linordered_field(5) add_uminus_conv_diff b_gt_1 comm_monoid_add_class.add.right_neutral
 diff_self less_irrefl linorder_neqE_linordered_idom log_divide log_inverse_eq log_powr neg_0_less_iff_less not_one_less_zero powr_gt_zero powr_minus powr_minus_divide pi_nonnull
+(* TODO: looooooong following metis *)
 by metis
 also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * (?c * 1 / ?c) / (1/(b powr (l i)))))))"
 using kraft_sum_nonnull by simp
