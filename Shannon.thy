@@ -64,7 +64,7 @@ assumes binary_space: "b = 2"
 assumes entropy_defi: "source_entropy = \<H>(Input 0)"
 assumes letters_def: "letters = {0..input_bound}"
 (* assumes bounded_input: "fi input_bound \<noteq> 0 \<and> (input_bound < n \<longrightarrow> fi n = 0)" *)
-assumes bounded_input: "(Input i) ` space M \<subseteq> letters"
+assumes bounded_input: "\<And>i. (Input i) ` space M = letters"
 assumes bounded_input_alt: "\<And>n. n \<notin> letters \<Longrightarrow> fi n = 0"
 
 (* What is countable exactly? *)
@@ -199,6 +199,13 @@ done
 
 definition kraft_sum :: "code \<Rightarrow> real" where
 "kraft_sum c = (\<Sum>i\<in>letters. 1 / b^(cw_len c i))"
+
+lemma fin_letters: "finite letters" by (simp add:letters_def)
+lemma emp_letters: "letters \<noteq> {}" by (simp add: letters_def)
+lemma pos_cw_len: "\<And>i. 0 < 1 / b ^ cw_len c i" using binary_space by simp
+
+lemma kraft_sum_nonnull: "\<And>c. 0 < kraft_sum c" using kraft_sum_def letters_def binary_space
+Groups_Big.ordered_comm_monoid_add_class.setsum_pos[OF fin_letters emp_letters pos_cw_len] by simp
 
 definition kraft_inequality :: "code \<Rightarrow> bool" where
 "kraft_inequality c = (kraft_sum c \<le> 1)"
