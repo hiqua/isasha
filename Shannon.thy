@@ -64,9 +64,11 @@ assumes binary_space: "b = 2"
 assumes entropy_defi: "source_entropy = \<H>(Input 0)"
 assumes letters_def: "letters = {0..input_bound}"
 (* assumes bounded_input: "fi input_bound \<noteq> 0 \<and> (input_bound < n \<longrightarrow> fi n = 0)" *)
-assumes bounded_input: "(Input i) ` space M \<subseteq> letters"
+assumes bounded_input: "\<And>i. (Input i) ` space M = letters"
 assumes bounded_input_alt: "\<And>n. n \<notin> letters \<Longrightarrow> fi n = 0"
 
+(* What is countable exactly? *)
+assumes countable: "count_space (space M) = M"
 
 print_locale information_space_discrete
 
@@ -81,6 +83,7 @@ subsection{* locale specific to the source coding theorem *}
 locale information_space_discrete_source = information_space_discrete +
 fixes input_block_size::nat
 begin
+abbreviation "L \<equiv> letters"
 
 definition lossless_code :: "code \<Rightarrow> bool" where
 "lossless_code c = (\<forall>x. snd c (fst c x) = Some x)"
@@ -127,17 +130,43 @@ definition real_code ::"code \<Rightarrow> bool" where
 "real_code c = ((lossless_code c) \<and> (\<forall>w. (fst c) w = [] \<longleftrightarrow> w = []) \<and> concat_code c)"
 
 (*
-The code rate is the expectation of the length of the code taken on all inputs.
-*)
-definition code_rate :: "code \<Rightarrow> real" where
-"code_rate code = lebesgue_integral M (\<lambda>a. (fi ((Input 0) a)) * (length ((fst
-code) [(Input 0) a])))"
-
-(*
 length of the codeword associated with the letter
 *)
 definition cw_len :: "code \<Rightarrow> letter \<Rightarrow> nat" where
 "cw_len c l = length ((fst c) [l])"
+
+(*
+The code rate is the expectation of the length of the code taken on all inputs (which is a finite set, the set of letters).
+*)
+  definition code_rate :: "code \<Rightarrow> real" where
+"code_rate c = expectation (\<lambda>a. (cw_len c ((Input 0) a)))"
+
+
+(*
+Proof by Johannes Hölzl
+*)
+lemma (in prob_space) simp_exp:
+  assumes X: "simple_distributed M X Px"
+  shows "expectation X = (\<Sum>x \<in> X`space M. x * Px x)"
+  using simple_distributed_finite[OF X]
+using distributed_integral[OF simple_distributed[OF X], of "\<lambda>x. x"]
+  by (simp add: lebesgue_integral_count_space_finite ac_simps)
+
+lemma (in prob_space) simp_exp_composed:
+  assumes X: "simple_distributed M X Px"
+  shows "expectation (\<lambda>a. f (X a)) = (\<Sum>x \<in> X`space M. f x * Px x)"
+  using lebesgue_integral_count_space_finite[OF simple_distributed_finite[OF X]]
+using distributed_integral[OF simple_distributed[OF X], of "\<lambda>x. f x"] borel_measurable_count_space
+by (metis (mono_tags, lifting) mult.commute setsum.cong)
+
+(* lebesgue_integral_count_space_finite *)
+(* nn_integral_count_space *)
+  (* shows "(\<integral>x. f x \<partial>count_space A) = (\<Sum>a | a \<in> A \<and> f a \<noteq> 0. f a)" *)
+lemma code_rate_rw:
+"code_rate c = (\<Sum>i \<in> Input 0 ` space M. fi i * cw_len c i)" unfolding code_rate_def
+using simp_exp_composed[where X="Input 0" and f = "cw_len c"]
+by (metis (erased, lifting) distr_i mult.commute setsum.cong)
+
 
 
 abbreviation cw_len_concat :: "code \<Rightarrow> word \<Rightarrow> nat" where
@@ -170,6 +199,13 @@ done
 
 definition kraft_sum :: "code \<Rightarrow> real" where
 "kraft_sum c = (\<Sum>i\<in>letters. 1 / b^(cw_len c i))"
+
+lemma fin_letters: "finite letters" by (simp add:letters_def)
+lemma emp_letters: "letters \<noteq> {}" by (simp add: letters_def)
+lemma pos_cw_len: "\<And>i. 0 < 1 / b ^ cw_len c i" using binary_space by simp
+
+lemma kraft_sum_nonnull: "\<And>c. 0 < kraft_sum c" using kraft_sum_def letters_def binary_space
+Groups_Big.ordered_comm_monoid_add_class.setsum_pos[OF fin_letters emp_letters pos_cw_len] by simp
 
 definition kraft_inequality :: "code \<Rightarrow> bool" where
 "kraft_inequality c = (kraft_sum c \<le> 1)"
@@ -545,22 +581,164 @@ proof -
   thus "kraft_inequality c" unfolding kraft_inequality_def by simp
 qed
 
+
+
+lemma entropy_rewrite:
+shows "source_entropy = -(\<Sum>i \<in> letters. fi i * log b (fi i))"
+proof -
+have sum_set: "(Input 0) ` space M = letters" using bounded_input by simp
+have "source_entropy = \<H>(Input 0)" using entropy_defi by simp
+also have "\<dots> = entropy b (count_space ((Input 0)`space M)) (Input 0)" by simp
+finally have "\<dots> =  -(\<Sum>i \<in> letters. fi i * log b (fi i))"
+using distr_i entropy_simple_distributed sum_set by blast
+thus ?thesis by (metis entropy_defi)
+qed
+
+
+lemma entropy_rw:
+shows "source_entropy = -(\<Sum>i \<in> (Input 0) ` space M. fi i * log b (fi i))"
+proof -
+have "source_entropy = \<H>(Input 0)" using entropy_defi by simp
+also have "\<dots> = entropy b (count_space ((Input 0)`space M)) (Input 0)" by simp
+finally have "\<dots> =  -(\<Sum>i \<in> (Input 0) ` space M. fi i * log b (fi i))"
+using distr_i entropy_simple_distributed by blast
+thus ?thesis
+by (metis entropy_defi)
+qed
+
+(*
+TODO (eventually):
+I use a custom definition of the KL_divergence, as it is far simpler for me to use. It'd be better
+if in the end I can use the real def definition KL_cus
+*)
+definition KL_cus ::"(letter \<Rightarrow> real) \<Rightarrow> (letter \<Rightarrow> real) \<Rightarrow> real" where
+  "KL_cus a c = (\<Sum> i \<in> letters. a i * log b (a i / c i))"
+
+lemma KL_cus_pos:
+  "\<And>a c. 0 \<le> KL_cus a c"
+sorry
+
+
+lemma log_mult_ext: "\<And>x y z. 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
+proof -
+  fix x :: real and y :: real and z :: real
+  assume a1: "0 < y"
+  assume a2: "0 \<le> x"
+  assume a3: "0 < z"
+  moreover
+  { assume "x * z \<noteq> 0"
+    hence "x * (log b y + log b (x * z)) = x * log b (x * (y * z))" using a1 a2 a3 by (metis binary_space eq_numeral_simps(2) less_eq_real_def less_numeral_simps(4) log_mult mult.left_commute mult_nonneg_nonneg num.distinct(2)) }
+  ultimately show "x * log b (x * z * y) = x * log b (x * z) + x * log b y" by (metis (no_types) add.commute distrib_left mult.commute mult.left_commute mult_zero_right nonzero_mult_divide_cancel_right order_less_irrefl)
+qed
+
+lemma log_mult_ext2: "\<And>x y. 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * log b (x*y) = x * log b (x) + x * log b y"
+proof -
+fix x y::real
+assume "0 \<le> x" "0 < y"
+thus  "x * log b (x*y) = x * log b (x) + x * log b y" using log_mult_ext[of x, of y, of 1] by simp
+qed
+
+lemma simp_posi:
+  assumes "simple_distributed M X Px"
+  shows "\<And>x. x \<in> X ` space M \<Longrightarrow> 0 \<le> Px x"
+using assms simple_distributed_measure[OF assms]
+by (metis measure_nonneg)
+
 (*
 _Kraft inequality for uniquely decodable codes using the McMillan theorem
 *)
+(* TODO using bounded_input, is that ok? *)
 theorem rate_lower_bound :
-shows "real_code c \<Longrightarrow> source_entropy \<le> code_rate c"
-proof sorry
+assumes "real_code c"
+defines "l \<equiv> (\<lambda>i. cw_len c i)"
+defines "p \<equiv> (\<lambda>i. fi i)"
+defines "LL \<equiv> L - {i. p i = 0}"
+defines "F \<equiv> (Input 0 ` space M)"
+shows "source_entropy \<le> code_rate c"
+proof -
+let ?c = "kraft_sum c"
+let ?r = "(\<lambda>i. 1 / ((b powr l i) * ?c))"
+{
+fix i
+assume "i \<in> letters"
+(* TODO using bounded_input *)
+hence "0 \<le> p i" using simple_distributed_nonneg[OF distr_i] p_def bounded_input by fast
+} hence pos_pi: "\<And>i. i \<in> letters \<Longrightarrow> 0 \<le> p i" by simp
+{
+fix i
+assume "i \<in> letters"
+hence "p i * (log b (1 / (1 / b powr real (l i))) + log b (p i)) = p i * log b (p i / (1 / b powr real (l i)))"
+using log_mult_ext2[OF pos_pi] powr_gt_zero
+by (metis (no_types, hide_lams) add.commute distrib_left divide_1 divide_divide_eq_right inverse_eq_divide powr_minus times_divide_eq_right)
+}
+hence eqpi: "\<And>i. i\<in> letters \<Longrightarrow> p i * (log b (1 / (1 / b powr real (l i))) + log b (p i)) = p i * log b (p i / (1 / b powr real (l i)))"
+by simp
+have sum_one: "(\<Sum> i \<in> F. p i) = 1"
+using simple_distributed_setsum_space[OF distr_i[of 0]] p_def F_def by simp
+(* TODO using bounded_input *)
+hence sum_one_L: "(\<Sum> i \<in> L. p i) = 1" using bounded_input F_def by simp
+{
+fix i
+assume "i \<in> letters"
+note asm = this
+have "p i * log b (p i * ?c / (1/b powr l i) * (1 / kraft_sum c)) =
+p i * log b (p i * ?c / (1/b powr l i)) + p i * log b (1 / kraft_sum c)"
+using log_mult_ext[OF pos_pi[OF asm], OF Fields.linordered_field_class.positive_imp_inverse_positive[OF kraft_sum_nonnull[of c]],
+of "kraft_sum c / (1 / b powr real (l i))"]
+  binary_space powr_gt_zero[of b, of "l i"]
+Fields.linordered_field_class.positive_imp_inverse_positive[OF powr_gt_zero[of b, of "l i"]]
+by (metis (erased, hide_lams) divide_pos_pos inverse_eq_divide kraft_sum_nonnull times_divide_eq_right)
+} then have big_eq: "\<And>i. i \<in> letters \<Longrightarrow> p i * log b (p i * ?c / (1/b powr l i) * (1 / kraft_sum c)) =
+p i * log b (p i * ?c / (1/b powr l i)) + p i * log b (1 / kraft_sum c)" by simp
+have 1: "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * l i) + (\<Sum>i \<in> L. p i * log b (p i))"
+unfolding code_rate_def entropy_def
+using kraft_sum_def[where c="c"] entropy_rewrite bounded_input simp_exp_composed distr_i
+using code_rate_def code_rate_rw bounded_input l_def p_def by auto
+also have 2: "(\<Sum>i\<in>L. p i * l i) = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i)))))"
+ using binary_space
+by (metis b_gt_1 less_irrefl minus_mult_minus mult_minus_right powr_minus_divide zero_less_numeral log_powr log_powr_cancel)
+also have "\<dots> =  (\<Sum>i \<in> L. p i * (-1 * log b (1/(b powr (l i)))))" by simp
+also have "\<dots> = -1 * (\<Sum>i \<in> L. p i * (log b (1/(b powr (l i)))))"
+using setsum_right_distrib[where r="-1" and A="L" and f="(\<lambda>i.  p i * (- 1 * log b (1 / b powr real (l i))))"]
+by simp
+finally have "code_rate c - source_entropy = -(\<Sum>i \<in> L. p i * log b (1/b powr l i)) + (\<Sum>i \<in> L. p i * log b (p i))" by simp
+from 1 2 have "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i))))) +  (\<Sum>i \<in> L. p i * log b (p i))" by simp
+also have "\<dots> = (\<Sum>i \<in> L. p i * (log b (1/ (1/(b powr (l i)))))) +  (\<Sum>i \<in> L. p i * log b (p i))"
+using log_inverse binary_space
+by (metis log_powr mult_minus_left powr_minus_divide)
+also have "\<dots> = (\<Sum>i \<in> L. p i * (log b (1/ (1/(b powr (l i))))) + p i * log b (p i))"
+by (simp add: setsum.distrib)
+also have "\<dots> = (\<Sum>i \<in> L. p i * ((log b (1/ (1/(b powr (l i))))) +log b (p i)))"
+by (metis (no_types, hide_lams) distrib_left)
+also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i / (1/(b powr (l i)))))))"
+using Cartesian_Euclidean_Space.setsum_cong_aux[OF eqpi] by simp
+also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * (?c * 1 / ?c) / (1/(b powr (l i)))))))"
+using kraft_sum_nonnull[of c] by simp
+also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * ?c / (1/b powr l i) * 1/?c))))" by simp
+also from big_eq have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * ?c  / (1/b powr l i)))) + (p i * log b (1/?c)))"
+using add.commute distrib_left divide_divide_eq_right times_divide_eq_right by simp
+also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr real (l i))))) + (\<Sum>i \<in> L. p i * log b (1/ ?c))"
+using Groups_Big.comm_monoid_add_class.setsum.distrib by simp
+also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr real (l i))))) + (\<Sum>i \<in> L. p i) * log b (1/ ?c)"
+using setsum_left_distrib by (metis (no_types))
+also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr real (l i))))) + log b (1/?c)"
+using sum_one_L by simp
+also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr real (l i))))) - log b (?c)"
+using log_inverse_eq kraft_sum_nonnull
+by (metis (no_types, lifting) add_uminus_conv_diff divide_inverse monoid_mult_class.mult.left_neutral)
+also have "\<dots> = (\<Sum> i \<in> L. p i * log b (p i / ?r i)) - log b (?c)"
+by (metis (mono_tags, hide_lams) divide_divide_eq_left divide_divide_eq_right)
+also have "\<dots> = KL_cus p ?r - log b ( ?c)" unfolding KL_cus_def using sum_one by simp
+also have "\<dots> = KL_cus p ?r + log b (inverse ?c)"
+using log_inverse binary_space kraft_sum_nonnull by simp
+finally have "log b (inverse (kraft_sum c)) \<le> code_rate c - source_entropy"
+using KL_cus_pos   unfolding kraft_inequality_def  by simp
+moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum c))"
+using kraft_sum_nonnull unfolding kraft_inequality_def
+by (metis b_gt_1 log_inverse_eq log_le_zero_cancel_iff neg_0_le_iff_le)
+ultimately have "0 \<le> code_rate c - source_entropy" using McMillan assms by simp
+thus ?thesis by simp
+qed
 
-(*
-theorem kraft_theorem :
-assumes "(\<Sum> k\<in>{0..< input_bound}. (1 / b^(lengthk k))) \<le> 1"
-shows "\<exists>c. real_code c \<and> (k\<in>{0..<input_bound} \<longrightarrow> (cw_len c k) = lengthk k)"
-proof sorry
-
-theorem rate_upper_bound : "0 < \<epsilon> \<Longrightarrow> (\<exists>n. \<exists>c. n \<le> input_block_size \<Longrightarrow> (real_code c
-\<and> code_rate c \<le> source_entropy + \<epsilon>))"
-sorry
-*)
 end
 end
