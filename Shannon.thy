@@ -155,9 +155,8 @@ using distributed_integral[OF simple_distributed[OF X], of "\<lambda>x. x"]
 lemma (in prob_space) simp_exp_composed:
   assumes X: "simple_distributed M X Px"
   shows "expectation (\<lambda>a. f (X a)) = (\<Sum>x \<in> X`space M. f x * Px x)"
-  using lebesgue_integral_count_space_finite[OF simple_distributed_finite[OF X]]
-using distributed_integral[OF simple_distributed[OF X], of "\<lambda>x. f x"] borel_measurable_count_space
-by (metis (mono_tags, lifting) mult.commute setsum.cong)
+using distributed_integral[OF simple_distributed[OF X], of f]
+  by (simp add: lebesgue_integral_count_space_finite[OF simple_distributed_finite[OF X]] ac_simps)
 
 (* lebesgue_integral_count_space_finite *)
 (* nn_integral_count_space *)
