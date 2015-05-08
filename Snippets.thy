@@ -12,6 +12,12 @@ by (metis atLeastLessThan_iff le0 zero_less_numeral)
 
 typedef bit = "{0::nat, 1}" apply auto done
 
+lemma "\<exists>c. x \<le> 0 \<Longrightarrow> ln x = c"
+proof -
+fix c::real
+assume "c = (THE x. False)"
+then have "x\<le>0 \<Longrightarrow> ln x = c"
+ using ln_neg_is_const by simp
 
 class bounded = ord +
 fixes max :: "'a"
@@ -154,6 +160,15 @@ apply (metis comm_monoid_mult_class.mult.right_neutral distrib_left mult.commute
 done
 
 
+
+lemma sum_rw:
+fixes b::real
+fixes f::"nat \<Rightarrow> real"
+assumes "finite F" "E \<subseteq> F"
+shows "(\<Sum>i| i \<in>F. f i * log b (f i))
+= (\<Sum>i|i \<in> (F-E). f i * log b (f i))
++(\<Sum>i|i \<in> E. f i * log b (f i))" using Groups_Big.setsum_diff[OF assms, of f]
+by (metis (no_types) Collect_mem_eq assms(1) assms(2) setsum.subset_diff)
 
 
 
