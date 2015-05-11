@@ -119,7 +119,7 @@ abbreviation k_words :: "nat \<Rightarrow> word set" where
 "k_words k \<equiv> {w. length w = k \<and> real_word w}"
 
 lemma rw_tail: "real_word w \<Longrightarrow> w = [] \<or> real_word (tl w)"
-by (metis  list.sel_set(2) subset_code(1) subset_eq)
+by (metis dual_order.trans list.collapse set_subset_Cons)
 
 (*
 Is the code a real source encoding code?
@@ -349,8 +349,7 @@ hence sum_reord: "\<And> h::(nat \<Rightarrow> real). (\<Sum>m=0..<bd. h m) =
 (setsum h ({0..<bd} - {f x}) + h (f x))"
 by (metis diff_add_cancel finite_atLeastLessThan setsum_diff1_ring)
 moreover have "\<And>n r. real ((n::nat) + 1) * r = (n* r + r)"
-by (metis Suc_eq_plus1 add.commute
-comm_semiring_1_class.normalizing_semiring_rules(3) real_of_nat_Suc)
+by (metis Suc_eq_plus1 distrib_left mult.commute mult.right_neutral real_of_nat_Suc)
 ultimately have
 "(\<Sum>m = 0..<bd. ?ff m (insert x F))
 = (\<Sum>m\<in>{0..<bd} - {f x}. ?ff m (insert x F)) +
