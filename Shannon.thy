@@ -612,6 +612,21 @@ if in the end I can use the real def definition KL_cus
 definition KL_cus ::"(letter \<Rightarrow> real) \<Rightarrow> (letter \<Rightarrow> real) \<Rightarrow> real" where
   "KL_cus a c = (\<Sum> i \<in> letters. a i * log b (a i / c i))"
 
+lemma KL_dis:
+  fixes Px::"nat\<Rightarrow>real"
+  assumes "simple_distributed M X Px"
+  assumes "simple_distributed M Y Py"
+  assumes  "\<And>i. i \<notin>letters \<longrightarrow> Px i = 0" "\<And>i. i \<notin>letters \<longrightarrow> Py i = 0"
+  shows "KL_divergence b (distr M N X) (distr M N Y) = (\<Sum> i\<in> letters. Px i * log b (Px i / Py i))" (is "?l = ?r")
+proof -
+have "?l = (\<integral>x. Py x * log b (Py x / Px x) \<partial>N)" using KL_density_density[of b] assms
+
+sorry
+also have "\<dots> = (\<Sum> i \<in> letters. Py i * log b (Py i / Px i))" using assms
+sorry
+show ?thesis sorry
+qed
+
 lemma KL_cus_pos:
   "\<And>a c. 0 \<le> KL_cus a c"
 sorry
