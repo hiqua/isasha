@@ -682,7 +682,12 @@ fix i
 assume "i \<in> letters"
 hence "p i * (log b (1 / (1 / b powr real (l i))) + log b (p i)) = p i * log b (p i / (1 / b powr real (l i)))"
 using log_mult_ext2[OF pos_pi] powr_gt_zero
-by (metis (no_types, hide_lams) add.commute distrib_left divide_1 divide_divide_eq_right inverse_eq_divide powr_minus times_divide_eq_right)
+proof -
+  have "1 < b"
+    using b_gt_1 by blast
+  thus ?thesis
+    by (simp add: `\<And>y i. \<lbrakk>i \<in> L; 0 < y\<rbrakk> \<Longrightarrow> p i * log b (p i * y) = p i * log b (p i) + p i * log b y` `i \<in> L` linordered_field_class.sign_simps(36))
+qed
 }
 hence eqpi: "\<And>i. i\<in> letters \<Longrightarrow> p i * (log b (1 / (1 / b powr real (l i))) + log b (p i)) = p i * log b (p i / (1 / b powr real (l i)))"
 by simp
@@ -709,7 +714,7 @@ using kraft_sum_def[where c="c"] entropy_rewrite bounded_input simp_exp_composed
 using code_rate_def code_rate_rw bounded_input l_def p_def by auto
 also have 2: "(\<Sum>i\<in>L. p i * l i) = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i)))))"
  using binary_space
-by (metis b_gt_1 less_irrefl minus_mult_minus mult_minus_right powr_minus_divide zero_less_numeral log_powr log_powr_cancel)
+using log_divide by auto
 also have "\<dots> =  (\<Sum>i \<in> L. p i * (-1 * log b (1/(b powr (l i)))))" by simp
 also have "\<dots> = -1 * (\<Sum>i \<in> L. p i * (log b (1/(b powr (l i)))))"
 using setsum_right_distrib[where r="-1" and A="L" and f="(\<lambda>i.  p i * (- 1 * log b (1 / b powr real (l i))))"]
@@ -718,7 +723,8 @@ finally have "code_rate c - source_entropy = -(\<Sum>i \<in> L. p i * log b (1/b
 from 1 2 have "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i))))) +  (\<Sum>i \<in> L. p i * log b (p i))" by simp
 also have "\<dots> = (\<Sum>i \<in> L. p i * (log b (1/ (1/(b powr (l i)))))) +  (\<Sum>i \<in> L. p i * log b (p i))"
 using log_inverse binary_space
-by (metis log_powr mult_minus_left powr_minus_divide)
+using log_powr powr_minus_divide
+by (metis (lifting) log_powr_cancel num.distinct(2) numeral_eq_one_iff zero_less_numeral)
 also have "\<dots> = (\<Sum>i \<in> L. p i * (log b (1/ (1/(b powr (l i))))) + p i * log b (p i))"
 by (simp add: setsum.distrib)
 also have "\<dots> = (\<Sum>i \<in> L. p i * ((log b (1/ (1/(b powr (l i))))) +log b (p i)))"
