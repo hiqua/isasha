@@ -1,5 +1,5 @@
 theory Shannon
-imports "~~/src/HOL/Probability/Information" "~~/src/HOL/Library/NthRoot_Limits"
+imports "~~/src/HOL/Probability/Information"
 begin
 (*
 AIM: Formalize Shannon's theorems
@@ -704,8 +704,15 @@ p i * log b (p i * ?c / (1/b powr l i)) + p i * log b (1 / kraft_sum c)"
 using log_mult_ext[OF pos_pi[OF asm], OF Fields.linordered_field_class.positive_imp_inverse_positive[OF kraft_sum_nonnull[of c]],
 of "kraft_sum c / (1 / b powr real (l i))"]
   binary_space powr_gt_zero[of b, of "l i"]
-Fields.linordered_field_class.positive_imp_inverse_positive[OF powr_gt_zero[of b, of "l i"]]
-by (metis (erased, hide_lams) divide_pos_pos inverse_eq_divide kraft_sum_nonnull times_divide_eq_right)
+using divide_pos_pos inverse_eq_divide kraft_sum_nonnull times_divide_eq_right
+proof -
+  have "\<not> 0 < kraft_sum c / inverse (b powr real (l i)) \<or> p i * log b (p i * (kraft_sum c / inverse (b powr real (l i)))) + p i * log b (inverse (kraft_sum c)) = p i * log b (p i * (kraft_sum c / inverse (b powr real (l i))) * inverse (kraft_sum c))"
+    by (metis `0 < kraft_sum c / (1 / b powr real (l i)) \<Longrightarrow> p i * log b (p i * (kraft_sum c / (1 / b powr real (l i))) * inverse (kraft_sum c)) = p i * log b (p i * (kraft_sum c / (1 / b powr real (l i)))) + p i * log b (inverse (kraft_sum c))` inverse_eq_divide)
+  hence "p i * log b (p i * kraft_sum c / b powr - real (l i)) + p i * log b (inverse (kraft_sum c)) = p i * log b (p i * kraft_sum c / b powr - real (l i) * inverse (kraft_sum c))"
+    using binary_space kraft_sum_nonnull powr_minus by auto
+  thus ?thesis
+    by (simp add: inverse_eq_divide powr_minus)
+qed
 } then have big_eq: "\<And>i. i \<in> letters \<Longrightarrow> p i * log b (p i * ?c / (1/b powr l i) * (1 / kraft_sum c)) =
 p i * log b (p i * ?c / (1/b powr l i)) + p i * log b (1 / kraft_sum c)" by simp
 have 1: "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * l i) + (\<Sum>i \<in> L. p i * log b (p i))"
