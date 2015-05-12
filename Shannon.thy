@@ -609,27 +609,39 @@ TODO (eventually):
 I use a custom definition of the KL_divergence, as it is far simpler for me to use. It'd be better
 if in the end I can use the real def definition KL_cus
 *)
-definition KL_cus ::"(letter \<Rightarrow> real) \<Rightarrow> (letter \<Rightarrow> real) \<Rightarrow> real" where
-  "KL_cus a c = (\<Sum> i \<in> letters. a i * log b (a i / c i))"
-
-lemma KL_dis:
-  fixes Px::"nat\<Rightarrow>real"
-  assumes "simple_distributed M X Px"
-  assumes "simple_distributed M Y Py"
-  assumes  "\<And>i. i \<notin>letters \<longrightarrow> Px i = 0" "\<And>i. i \<notin>letters \<longrightarrow> Py i = 0"
-  shows "KL_divergence b (distr M N X) (distr M N Y) = (\<Sum> i\<in> letters. Px i * log b (Px i / Py i))" (is "?l = ?r")
-proof -
-have "?l = (\<integral>x. Py x * log b (Py x / Px x) \<partial>N)" using KL_density_density[of b] assms
-
-sorry
-also have "\<dots> = (\<Sum> i \<in> letters. Py i * log b (Py i / Px i))" using assms
-sorry
-show ?thesis sorry
-qed
+definition KL_cus ::"letter set \<Rightarrow> (letter \<Rightarrow> real) \<Rightarrow> (letter \<Rightarrow> real) \<Rightarrow> real" where
+  "KL_cus S a c = (\<Sum> i \<in> S. a i * log b (a i / c i))"
 
 lemma KL_cus_pos:
-  "\<And>a c. 0 \<le> KL_cus a c"
-sorry
+  fixes a c::"letter \<Rightarrow> real"
+  assumes fin: "finite S"
+  assumes nemp: "S \<noteq> {}"
+  assumes non_null: "\<And>i. i\<in>S \<Longrightarrow> 0 < a i" "\<And>i. i\<in> S \<Longrightarrow> 0 < c i"
+  assumes sum_a_one: "(\<Sum> i \<in> S. a i) = 1"
+  assumes sum_c_one: "(\<Sum> i \<in> S. c i) = 1"
+  shows "0 \<le> KL_cus S a c" unfolding KL_cus_def
+proof -
+(* TODO: what is the elegant way to do this already? (fix variables and obtains assumptions
+automatically) *)(*
+assume non_null: "\<And>i. i\<in>letters \<Longrightarrow> 0 < a i" "\<And>i. i\<in> letters \<Longrightarrow> 0 < c i"
+assume sum_a_one: "(\<Sum> i \<in> letters. a i) = 1"
+assume sum_c_one: "(\<Sum> i \<in> letters. c i) = 1"*)
+let ?f = "\<lambda>i. c i / a i"
+have f_pos: "\<And>i. i\<in>S \<Longrightarrow> 0 < ?f i" using non_null by simp
+have a_pos: "\<And>i. i\<in> S \<Longrightarrow> 0 \<le> a i" using non_null by (simp add: order.strict_implies_order)
+have "- log b (\<Sum>i\<in>S. a i * c i / a i) \<le> (\<Sum>i\<in>S. a i * - log b (c i / a i))"
+using convex_on_setsum[
+OF fin,OF nemp,OF minus_log_convex[OF b_gt_1],OF convex_real_interval(3)[of 0],
+OF sum_a_one, OF a_pos, where y="?f"
+]
+f_pos
+by simp
+also have "- log b (\<Sum>i\<in>S. a i * c i / a i) = -log b (\<Sum>i\<in>S. c i)"
+by (smt non_null(1) nonzero_mult_divide_cancel_left setsum.cong)
+finally have "0 \<le> (\<Sum>i\<in>S. a i * - log b (c i / a i))"using sum_c_one by simp
+thus "0 \<le> (\<Sum>i\<in>S. a i * log b (a i / c i))"
+using binary_space log_divide non_null(1) non_null(2) by auto
+qed
 
 
 lemma log_mult_ext: "\<And>x y z. 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
@@ -754,11 +766,11 @@ using log_inverse_eq kraft_sum_nonnull
 by (metis (no_types, lifting) add_uminus_conv_diff divide_inverse monoid_mult_class.mult.left_neutral)
 also have "\<dots> = (\<Sum> i \<in> L. p i * log b (p i / ?r i)) - log b (?c)"
 by (metis (mono_tags, hide_lams) divide_divide_eq_left divide_divide_eq_right)
-also have "\<dots> = KL_cus p ?r - log b ( ?c)" unfolding KL_cus_def using sum_one by simp
-also have "\<dots> = KL_cus p ?r + log b (inverse ?c)"
+also have "\<dots> = KL_cus L p ?r - log b ( ?c)" unfolding KL_cus_def using sum_one by simp
+also have "\<dots> = KL_cus L p ?r + log b (inverse ?c)"
 using log_inverse binary_space kraft_sum_nonnull by simp
 finally have "log b (inverse (kraft_sum c)) \<le> code_rate c - source_entropy"
-using KL_cus_pos   unfolding kraft_inequality_def  by simp
+using KL_cus_pos[OF fin_letters, OF emp_letters] unfolding kraft_inequality_def  by simp
 moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum c))"
 using kraft_sum_nonnull unfolding kraft_inequality_def
 by (metis b_gt_1 log_inverse_eq log_le_zero_cancel_iff neg_0_le_iff_le)
