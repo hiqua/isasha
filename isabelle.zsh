@@ -1,5 +1,5 @@
 # Explore the theories given.
-# ISABELLE_BIN_PATH must contain the path to the Isabelle binary.
+# "isabelle" is an alias to ./bin/isabelle
 isplore(){
   for f in $@; do
     theory_name=`basename -s ".thy" "$f"`
@@ -8,6 +8,6 @@ isplore(){
     cp "$f" /tmp/$new_filename
     sed -i'' "s/ $theory_name$/ $new_theory_name/" /tmp/$new_filename
     chmod u-w /tmp/$new_filename
-    /.$ISABELLE_BIN_PATH /tmp/$new_filename
+    isabelle /tmp/$new_filename
   done;
 }
