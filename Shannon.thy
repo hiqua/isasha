@@ -199,14 +199,15 @@ done
 
 
 definition kraft_sum :: "code \<Rightarrow> real" where
-"kraft_sum c = (\<Sum>i\<in>letters. 1 / b^(cw_len c i))"
+"kraft_sum c = (\<Sum>i\<in>letters. 1 / b powr (cw_len c i))"
 
 lemma fin_letters: "finite letters" by (simp add:letters_def)
 lemma emp_letters: "letters \<noteq> {}" by (simp add: letters_def)
 lemma pos_cw_len: "\<And>i. 0 < 1 / b ^ cw_len c i" using binary_space by simp
 
 lemma kraft_sum_nonnull: "\<And>c. 0 < kraft_sum c" using kraft_sum_def letters_def binary_space
-Groups_Big.ordered_comm_monoid_add_class.setsum_pos[OF fin_letters emp_letters pos_cw_len] by simp
+Groups_Big.ordered_comm_monoid_add_class.setsum_pos[OF fin_letters emp_letters pos_cw_len]
+by (smt emp_letters fin_letters pos_cw_len powr_realpow setsum_pos)
 
 definition kraft_inequality :: "code \<Rightarrow> bool" where
 "kraft_inequality c = (kraft_sum c \<le> 1)"
@@ -806,6 +807,16 @@ lemma simp_posi:
 using assms simple_distributed_measure[OF assms]
 by (metis measure_nonneg)
 
+(* Used in many theorems... *)
+lemma sum_div_1:
+  fixes f::"'b\<Rightarrow>real"
+  assumes fin: "finite A"
+  assumes "(\<Sum>i\<in>A. f i) \<noteq> 0"
+  defines "S \<equiv>\<Sum>i\<in>A. f i"
+  shows "(\<Sum>i\<in>A. f i / S) = 1"
+by (metis (no_types) S_def assms(2) right_inverse_eq setsum_divide_distrib)
+
+
 (*
 _Kraft inequality for uniquely decodable codes using the McMillan theorem
 *)
@@ -908,7 +919,10 @@ also have "\<dots> = KL_cus L p ?r + log b (inverse ?c)"
 using log_inverse binary_space kraft_sum_nonnull by simp
 finally have code_ent_kl_log: "code_rate c - source_entropy = KL_cus L p ?r + log b (inverse ?c)" by simp
 {
-} hence sum_r_one: "setsum ?r L = 1" sorry
+} have sum_r_one: "setsum ?r L = 1" using sum_div_1[OF fin_letters,
+where f="\<lambda>i. 1 / (b powr real (l i))"] kraft_sum_nonnull[of c]
+unfolding kraft_sum_def l_def
+by simp
 have r_non_null: "\<And>i. 0 < ?r i" using b_gt_1
 using kraft_sum_nonnull by auto
 have sum_fi_one: "(\<Sum>i\<in>L. fi  i) = 1" using bounded_input sum_one_L unfolding p_def by simp
