@@ -706,7 +706,6 @@ using KL_cus_pos KL_cus_pos_emp assms by metis
 lemma KL_cus_pos2:
   fixes a c::"letter \<Rightarrow> real"
   assumes fin: "finite S"
-  assumes nemp: "S \<noteq> {}"
   assumes non_null: "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i" "\<And>i. i\<in> S \<Longrightarrow> 0 < c i"
   assumes sum_a_one: "(\<Sum> i \<in> S. a i) = 1"
   assumes sum_c_one: "(\<Sum> i \<in> S. c i) = 1"
