@@ -906,8 +906,21 @@ by (metis (mono_tags, hide_lams) divide_divide_eq_left divide_divide_eq_right)
 also have "\<dots> = KL_cus L p ?r - log b ( ?c)" unfolding KL_cus_def using sum_one by simp
 also have "\<dots> = KL_cus L p ?r + log b (inverse ?c)"
 using log_inverse binary_space kraft_sum_nonnull by simp
-finally have "log b (inverse (kraft_sum c)) \<le> code_rate c - source_entropy"
-using KL_cus_pos[OF fin_letters, OF emp_letters] unfolding kraft_inequality_def by simp
+finally have code_ent_kl_log: "code_rate c - source_entropy = KL_cus L p ?r + log b (inverse ?c)" by simp
+{
+} hence sum_r_one: "setsum ?r L = 1" sorry
+have r_non_null: "\<And>i. 0 < ?r i" using b_gt_1
+using kraft_sum_nonnull by auto
+have sum_fi_one: "(\<Sum>i\<in>L. fi  i) = 1" using bounded_input sum_one_L unfolding p_def by simp
+  have "0 \<le> KL_cus L p ?r"
+using KL_cus_pos2[OF fin_letters, where a =fi and c="?r",OF fi_pos,OF r_non_null,OF sum_fi_one,OF sum_r_one]
+unfolding F_def p_def by simp
+hence "log b (inverse ?c) \<le> code_rate c -source_entropy" using code_ent_kl_log by simp
+
+
+hence "log b (inverse (kraft_sum c)) \<le> code_rate c - source_entropy"
+unfolding kraft_inequality_def p_def by simp
+
 moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum c))"
 using kraft_sum_nonnull unfolding kraft_inequality_def
 by (metis b_gt_1 log_inverse_eq log_le_zero_cancel_iff neg_0_le_iff_le)
