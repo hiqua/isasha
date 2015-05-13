@@ -199,7 +199,7 @@ done
 
 
 definition kraft_sum :: "code \<Rightarrow> real" where
-"kraft_sum c = (\<Sum>i\<in>letters. 1 / b powr (cw_len c i))"
+"kraft_sum c = (\<Sum>i\<in>letters. 1 / b ^ (cw_len c i))"
 
 lemma fin_letters: "finite letters" by (simp add:letters_def)
 lemma emp_letters: "letters \<noteq> {}" by (simp add: letters_def)
@@ -208,6 +208,9 @@ lemma pos_cw_len: "\<And>i. 0 < 1 / b ^ cw_len c i" using binary_space by simp
 lemma kraft_sum_nonnull: "\<And>c. 0 < kraft_sum c" using kraft_sum_def letters_def binary_space
 Groups_Big.ordered_comm_monoid_add_class.setsum_pos[OF fin_letters emp_letters pos_cw_len]
 by (smt emp_letters fin_letters pos_cw_len powr_realpow setsum_pos)
+
+lemma kraft_sum_powr: "kraft_sum c = (\<Sum>i\<in>letters. 1 / b powr (cw_len c i))"
+using powr_realpow b_gt_1 unfolding kraft_sum_def by simp
 
 definition kraft_inequality :: "code \<Rightarrow> bool" where
 "kraft_inequality c = (kraft_sum c \<le> 1)"
@@ -396,6 +399,7 @@ b^m))" (is "?L = ?R")
 proof -
 have "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w < Suc ( k * max_len c)"
 using bound_len_concat
+(* long metis *)
 by (metis le_antisym lessI less_imp_le_nat not_less_eq)
 moreover have
 "?R = (\<Sum>m = 0..<Suc (k * max_len c).
@@ -545,6 +549,7 @@ ultimately have "(\<Sum>m = 1..<Suc (k * max_len c). (card (set_of_k_words_lengt
 by (metis One_nat_def card_atLeastLessThan card_eq_setsum diff_Suc_Suc
 real_of_card)
 then show ?thesis using empty_set_k_words assms
+(* long metis *)
 by (metis One_nat_def card_empty divide_1 power_0 real_of_nat_zero setsum_shift_lb_Suc0_0_upt)
 qed
 
@@ -918,10 +923,10 @@ also have "\<dots> = KL_cus L p ?r - log b ( ?c)" unfolding KL_cus_def using sum
 also have "\<dots> = KL_cus L p ?r + log b (inverse ?c)"
 using log_inverse binary_space kraft_sum_nonnull by simp
 finally have code_ent_kl_log: "code_rate c - source_entropy = KL_cus L p ?r + log b (inverse ?c)" by simp
-{
-} have sum_r_one: "setsum ?r L = 1" using sum_div_1[OF fin_letters,
+have sum_r_one: "setsum ?r L = 1" unfolding kraft_sum_def
+using sum_div_1[OF fin_letters,
 where f="\<lambda>i. 1 / (b powr real (l i))"] kraft_sum_nonnull[of c]
-unfolding kraft_sum_def l_def
+ l_def kraft_sum_powr[of c] kraft_sum_def
 by simp
 have r_non_null: "\<And>i. 0 < ?r i" using b_gt_1
 using kraft_sum_nonnull by auto
@@ -930,17 +935,13 @@ have sum_fi_one: "(\<Sum>i\<in>L. fi  i) = 1" using bounded_input sum_one_L unfo
 using KL_cus_pos2[OF fin_letters, where a =fi and c="?r",OF fi_pos,OF r_non_null,OF sum_fi_one,OF sum_r_one]
 unfolding F_def p_def by simp
 hence "log b (inverse ?c) \<le> code_rate c -source_entropy" using code_ent_kl_log by simp
-
-
 hence "log b (inverse (kraft_sum c)) \<le> code_rate c - source_entropy"
 unfolding kraft_inequality_def p_def by simp
-
 moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum c))"
 using kraft_sum_nonnull unfolding kraft_inequality_def
 by (metis b_gt_1 log_inverse_eq log_le_zero_cancel_iff neg_0_le_iff_le)
 ultimately have "0 \<le> code_rate c - source_entropy" using McMillan assms by simp
 thus ?thesis by simp
 qed
-
 end
 end
