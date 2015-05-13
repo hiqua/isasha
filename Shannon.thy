@@ -66,6 +66,8 @@ assumes letters_def: "letters = {0..input_bound}"
 (* assumes bounded_input: "fi input_bound \<noteq> 0 \<and> (input_bound < n \<longrightarrow> fi n = 0)" *)
 assumes bounded_input: "\<And>i. (Input i) ` space M = letters"
 assumes bounded_input_alt: "\<And>n. n \<notin> letters \<Longrightarrow> fi n = 0"
+(* TODO: check if this assumption is not redundant, i.e. simple_distributed \<Longrightarrow>? positive function *)
+assumes fi_pos: "\<And>i. 0 \<le> fi i"
 
 (* What is countable exactly? *)
 assumes countable: "count_space (space M) = M"
