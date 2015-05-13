@@ -604,6 +604,25 @@ thus ?thesis
 by (metis entropy_defi)
 qed
 
+lemma log_mult_ext: "\<And>x y z. 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
+proof -
+  fix x :: real and y :: real and z :: real
+  assume a1: "0 < y"
+  assume a2: "0 \<le> x"
+  assume a3: "0 < z"
+  moreover
+  { assume "x * z \<noteq> 0"
+    hence "x * (log b y + log b (x * z)) = x * log b (x * (y * z))" using a1 a2 a3 by (metis binary_space eq_numeral_simps(2) less_eq_real_def less_numeral_simps(4) log_mult mult.left_commute mult_nonneg_nonneg num.distinct(2)) }
+  ultimately show "x * log b (x * z * y) = x * log b (x * z) + x * log b y" by (metis (no_types) add.commute distrib_left mult.commute mult.left_commute mult_zero_right nonzero_mult_divide_cancel_right order_less_irrefl)
+qed
+
+lemma log_mult_ext2: "\<And>x y. 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * log b (x*y) = x * log b (x) + x * log b y"
+proof -
+fix x y::real
+assume "0 \<le> x" "0 < y"
+thus  "x * log b (x*y) = x * log b (x) + x * log b y" using log_mult_ext[of x, of y, of 1] by simp
+qed
+
 (*
 TODO (eventually):
 I use a custom definition of the KL_divergence, as it is far simpler for me to use. It'd be better
@@ -611,6 +630,33 @@ if in the end I can use the real def definition KL_cus
 *)
 definition KL_cus ::"letter set \<Rightarrow> (letter \<Rightarrow> real) \<Rightarrow> (letter \<Rightarrow> real) \<Rightarrow> real" where
   "KL_cus S a c = (\<Sum> i \<in> S. a i * log b (a i / c i))"
+
+lemma KL_cus_mul:
+  assumes "\<And>i. i\<in>S \<Longrightarrow> 0 < c i"
+  assumes "0 < d"
+  assumes "d \<le> 1"
+  assumes "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i"
+  shows "KL_cus S a c \<ge> KL_cus S a (\<lambda>i. c i / d)"
+unfolding KL_cus_def
+using b_gt_1  assms setsum_mono[where f="(\<lambda>i. a i * log b (a i / (c i / d)))"
+and K="S" and g="(\<lambda>i. a i * log b (a i / c i))"] log_le_cancel_iff[OF b_gt_1]
+using add_divide_distrib binary_space divide_1 divide_pos_pos frac_less2 log_less mult_cancel_left mult_left_mono ordered_comm_semiring_class.comm_mult_left_mono
+sorry
+
+
+(*
+proof -
+have "(\<And>i. i \<in> S \<Longrightarrow>
+          a i * log b (a i / (c i / d)) \<le> a i * log b (a i / c i)) \<Longrightarrow>
+    (\<Sum>i\<in>S. a i * log b (a i / (c i / d)))
+    \<le> (\<Sum>i\<in>S. a i * log b (a i / c i))"
+using b_gt_1  assms setsum_mono[where f="(\<lambda>i. a i * log b (a i / (c i / d)))"
+and K="S" and g="(\<lambda>i. a i * log b (a i / c i))"] log_le_cancel_iff[OF b_gt_1]
+by simp
+moreover have
+"(\<And>i. i \<in> S \<Longrightarrow> a i * log b (a i / (c i * d)) \<le> a i * log b (a i / c i))"
+using log_le_cancel_iff[OF b_gt_1]
+*)
 
 lemma KL_cus_pos:
   fixes a c::"letter \<Rightarrow> real"
@@ -643,24 +689,103 @@ thus "0 \<le> (\<Sum>i\<in>S. a i * log b (a i / c i))"
 using binary_space log_divide non_null(1) non_null(2) by auto
 qed
 
+lemma KL_cus_pos_emp:
+  "0 \<le> KL_cus {} a c" unfolding KL_cus_def by simp
 
-lemma log_mult_ext: "\<And>x y z. 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
+lemma KL_cus_pos_gen:
+  fixes a c::"letter \<Rightarrow> real"
+  assumes fin: "finite S"
+  assumes non_null: "\<And>i. i\<in>S \<Longrightarrow> 0 < a i" "\<And>i. i\<in> S \<Longrightarrow> 0 < c i"
+  assumes sum_a_one: "(\<Sum> i \<in> S. a i) = 1"
+  assumes sum_c_one: "(\<Sum> i \<in> S. c i) = 1"
+  shows "0 \<le> KL_cus S a c"
+using KL_cus_pos KL_cus_pos_emp assms by metis
+
+lemma KL_cus_pos2:
+  fixes a c::"letter \<Rightarrow> real"
+  assumes fin: "finite S"
+  assumes nemp: "S \<noteq> {}"
+  assumes non_null: "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i" "\<And>i. i\<in> S \<Longrightarrow> 0 < c i"
+  assumes sum_a_one: "(\<Sum> i \<in> S. a i) = 1"
+  assumes sum_c_one: "(\<Sum> i \<in> S. c i) = 1"
+  shows "0 \<le> KL_cus S a c"
 proof -
-  fix x :: real and y :: real and z :: real
-  assume a1: "0 < y"
-  assume a2: "0 \<le> x"
-  assume a3: "0 < z"
-  moreover
-  { assume "x * z \<noteq> 0"
-    hence "x * (log b y + log b (x * z)) = x * log b (x * (y * z))" using a1 a2 a3 by (metis binary_space eq_numeral_simps(2) less_eq_real_def less_numeral_simps(4) log_mult mult.left_commute mult_nonneg_nonneg num.distinct(2)) }
-  ultimately show "x * log b (x * z * y) = x * log b (x * z) + x * log b y" by (metis (no_types) add.commute distrib_left mult.commute mult.left_commute mult_zero_right nonzero_mult_divide_cancel_right order_less_irrefl)
+have "S = (S \<inter> {i. 0 < a i}) \<union> (S \<inter> {i. 0 = a i})" using non_null(1)
+by fastforce
+moreover have "(S \<inter> {i. 0 < a i}) \<inter> (S \<inter> {i. 0 = a i}) = {}" by auto
+ultimately have eq: "KL_cus S a c = KL_cus (S \<inter> {i. 0 < a i}) a c + KL_cus (S \<inter> {i. 0 = a i}) a c"
+unfolding KL_cus_def
+by (metis (mono_tags, lifting) fin finite_Un setsum.union_disjoint)
+have "KL_cus (S \<inter> {i. 0 = a i}) a c = 0" unfolding KL_cus_def by simp
+hence "KL_cus S a c = KL_cus (S \<inter> {i. 0 < a i}) a c" using eq by simp
+moreover have "0 \<le> KL_cus (S \<inter> {i. 0 < a i}) a c"
+proof(cases "(S \<inter> {i. 0 < a i}) = {}")
+  case True
+  then show ?thesis unfolding KL_cus_def by simp
+next
+  case False
+  note asm = this
+  let ?c = "\<lambda>i. c i / (\<Sum>j \<in>(S \<inter> {i. 0 < a i}). c j)"
+(* a pos *)
+  have 1: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < a i)" by simp
+(* ?c pos *)
+  have 2: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < ?c i)" using non_null
+  by (smt divide_pos_pos empty_iff fin finite_Int inf_le1 setsum_pos subsetCE)
+(* sum a equals to 1 *)
+  have 3: "setsum a (S \<inter> {i. 0 < a i}) = 1" using sum_a_one non_null
+  by (smt fin mem_Collect_eq setsum.cong setsum.inter_restrict)
+  have "(\<Sum>i\<in>S \<inter> {j. 0 < a j}. ?c i) = (\<Sum>i\<in>S \<inter> {j. 0 < a j}. c i) / (\<Sum>i\<in>S \<inter> {j. 0 < a j}. c i)"
+  by (metis setsum_divide_distrib)
+(* sum ?c equals to 1 *)
+  hence 5: "(\<Sum>i\<in>S \<inter> {j. 0 < a j}. ?c i) = 1"
+  using "2" asm by force
+  hence "0 \<le> KL_cus (S \<inter> {j. 0 < a j}) a ?c" using
+  KL_cus_pos_gen[
+    OF finite_Int[OF disjI1, of S, of "{j. 0 < a j}"], of a, of ?c
+] 1 2 3
+  by (metis fin)
+ have fstdb: "0 < setsum c (S \<inter> {i. 0 < a i})" using non_null(2) asm
+by (metis Int_Collect fin finite_Int setsum_pos)
+have "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < a i) \<Longrightarrow>
+    (\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < c i / setsum c (S \<inter> {i. 0 < a i})) \<Longrightarrow>
+    setsum a (S \<inter> {i. 0 < a i}) = 1 \<Longrightarrow> (\<Sum>i\<in>S \<inter> {i. 0 < a i}. c i / setsum c (S \<inter> {i. 0 < a i})) = 1 \<Longrightarrow> 0 \<le> KL_cus (S \<inter> {i. 0 < a i}) a (\<lambda>i. c i / setsum c (S \<inter> {i. 0 < a i}))"
+  using KL_cus_pos_gen[
+      OF finite_Int[OF disjI1, OF fin], where G1="{i. 0 < a i}" and a="a" and c="?c"
+  ]  by simp
+hence 6: "
+     0 \<le> KL_cus (S \<inter> {i. 0 < a i}) a (\<lambda>i. c i / setsum c (S \<inter> {i. 0 < a i}))"
+using 2 3 5
+by simp
+ have
+"(\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 < c i) \<Longrightarrow>
+    0 < setsum c (S \<inter> {i. 0 < a i}) \<Longrightarrow>
+    setsum c (S \<inter> {i. 0 < a i}) \<le> 1 \<Longrightarrow>
+    (\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i) \<Longrightarrow>
+    KL_cus (S \<inter> {j. 0 < a j}) a
+     (\<lambda>i. c i / setsum c (S \<inter> {i. 0 < a i}))
+    \<le> KL_cus (S \<inter> {j. 0 < a j}) a c"
+using KL_cus_mul[where d = "setsum c (S \<inter> {i. 0 < a i})" and S = "(S \<inter> {j. 0 < a j})" and c="c" and a="a"]
+  by simp
+hence "setsum c (S \<inter> {i. 0 < a i}) \<le> 1 \<Longrightarrow>
+    (\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i) \<Longrightarrow>
+    KL_cus (S \<inter> {j. 0 < a j}) a
+     (\<lambda>i. c i / setsum c (S \<inter> {i. 0 < a i}))
+    \<le> KL_cus (S \<inter> {j. 0 < a j}) a c" using non_null(2) 5 fstdb
+by simp
+hence "(\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i) \<Longrightarrow> KL_cus (S \<inter> {j. 0 < a j}) a
+     (\<lambda>i. c i / setsum c (S \<inter> {i. 0 < a i}))
+    \<le> KL_cus (S \<inter> {j. 0 < a j}) a c" using sum_c_one non_null
+by (smt fin setsum.inter_restrict setsum_mono)
+hence "KL_cus (S \<inter> {j. 0 < a j}) a
+     (\<lambda>i. c i / setsum c (S \<inter> {i. 0 < a i}))
+    \<le> KL_cus (S \<inter> {j. 0 < a j}) a c" using non_null by simp
+moreover have "0 \<le> KL_cus (S \<inter> {j. 0 < a j}) a
+     (\<lambda>i. c i / setsum c (S \<inter> {i. 0 < a i}))" using KL_cus_pos_gen[ OF finite_Int[OF disjI1, OF fin],
+where G1="{i. 0 < a i}" and a="a" and c="?c"] using 1 2 3 5
+by blast
+ ultimately show "0 \<le> KL_cus (S \<inter> {j. 0 < a j}) a c" by simp
 qed
-
-lemma log_mult_ext2: "\<And>x y. 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * log b (x*y) = x * log b (x) + x * log b y"
-proof -
-fix x y::real
-assume "0 \<le> x" "0 < y"
-thus  "x * log b (x*y) = x * log b (x) + x * log b y" using log_mult_ext[of x, of y, of 1] by simp
+ultimately show ?thesis by simp
 qed
 
 lemma simp_posi:
@@ -770,7 +895,7 @@ also have "\<dots> = KL_cus L p ?r - log b ( ?c)" unfolding KL_cus_def using sum
 also have "\<dots> = KL_cus L p ?r + log b (inverse ?c)"
 using log_inverse binary_space kraft_sum_nonnull by simp
 finally have "log b (inverse (kraft_sum c)) \<le> code_rate c - source_entropy"
-using KL_cus_pos[OF fin_letters, OF emp_letters] unfolding kraft_inequality_def  by simp
+using KL_cus_pos[OF fin_letters, OF emp_letters] unfolding kraft_inequality_def by simp
 moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum c))"
 using kraft_sum_nonnull unfolding kraft_inequality_def
 by (metis b_gt_1 log_inverse_eq log_le_zero_cancel_iff neg_0_le_iff_le)
