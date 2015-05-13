@@ -634,16 +634,27 @@ definition KL_cus ::"letter set \<Rightarrow> (letter \<Rightarrow> real) \<Righ
   "KL_cus S a c = (\<Sum> i \<in> S. a i * log b (a i / c i))"
 
 lemma KL_cus_mul:
-  assumes "\<And>i. i\<in>S \<Longrightarrow> 0 < c i"
   assumes "0 < d"
   assumes "d \<le> 1"
-  assumes "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i"
+  assumes pos: "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i" "\<And>i. i\<in>S \<Longrightarrow> 0 < c i"
   shows "KL_cus S a c \<ge> KL_cus S a (\<lambda>i. c i / d)"
 unfolding KL_cus_def
-using b_gt_1  assms setsum_mono[where f="(\<lambda>i. a i * log b (a i / (c i / d)))"
-and K="S" and g="(\<lambda>i. a i * log b (a i / c i))"] log_le_cancel_iff[OF b_gt_1]
-using add_divide_distrib binary_space divide_1 divide_pos_pos frac_less2 log_less mult_cancel_left mult_left_mono ordered_comm_semiring_class.comm_mult_left_mono
-sorry
+proof -
+{fix i
+assume "i\<in>S"
+note asm = this
+hence "(a i / ((c i) / d)) \<le> (a i / c i)" using pos[OF asm] assms
+by (metis (no_types) divide_1 frac_le less_imp_triv not_less)
+hence "log b (a i / (c i / d)) \<le> log b (a i / c i)" using log_less[OF b_gt_1] assms asm
+by (metis (full_types) b_gt_1 divide_divide_eq_left inverse_divide le_less_linear log_le log_neg_const order_refl times_divide_eq_right zero_less_mult_iff)
+}
+hence "\<And>i. i\<in>S \<Longrightarrow> log b (a i / (c i / d)) \<le> log b (a i / c i)"
+using assms(2) assms(3) log_less
+by simp
+thus "(\<Sum>i\<in>S. a i * log b (a i / (c i / d)))
+    \<le> (\<Sum>i\<in>S. a i * log b (a i / c i))"
+by (meson mult_left_mono pos(1) setsum_mono)
+qed
 
 
 (*
