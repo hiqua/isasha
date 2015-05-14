@@ -205,14 +205,14 @@ definition kraft_sum :: "code \<Rightarrow> real" where
 
 lemma fin_letters: "finite letters" by (simp add:letters_def)
 lemma emp_letters: "letters \<noteq> {}" by (simp add: letters_def)
-lemma pos_cw_len: "\<And>i. 0 < 1 / b ^ cw_len c i" using binary_space by simp
+lemma pos_cw_len: "\<And>i. 0 < 1 / b ^ cw_len c i" using b_gt_1 by simp
 
-lemma kraft_sum_nonnull: "\<And>c. 0 < kraft_sum c" using kraft_sum_def letters_def binary_space
+lemma kraft_sum_nonnull: "\<And>c. 0 < kraft_sum c" using kraft_sum_def letters_def b_gt_1
   Groups_Big.ordered_comm_monoid_add_class.setsum_pos[OF fin_letters emp_letters pos_cw_len]
     by (smt emp_letters fin_letters pos_cw_len powr_realpow setsum_pos)
 
 lemma kraft_sum_powr: "kraft_sum c = (\<Sum>i\<in>letters. 1 / b powr (cw_len c i))"
-    using powr_realpow b_gt_1 unfolding kraft_sum_def by simp
+    using powr_realpow b_gt_1 by (simp add: kraft_sum_def)
 
 definition kraft_inequality :: "code \<Rightarrow> bool" where
   "kraft_inequality c = (kraft_sum c \<le> 1)"
@@ -262,7 +262,7 @@ proof
     let ?f = "(\<lambda>wi. Cons (fst wi) (snd wi))"
     let ?S = "letters \<times> (k_words k)"
     let ?T = "k_words (Suc k)"
-    have inj: "inj_on ?f ?S" unfolding inj_on_def by simp
+    have inj: "inj_on ?f ?S" by (simp add: inj_on_def)
     moreover have surj: "?f`?S = ?T"
   proof (rule ccontr)
       assume "?f ` ?S \<noteq> ?T"
@@ -321,7 +321,7 @@ next
       by fastforce
     also have "\<dots> =
   (\<Sum>wi \<in> letters \<times> k_words n. 1 / b^(cw_len_concat c (snd wi) + cw_len c (fst wi)))"
-      using letters_def binary_space power_add
+      using letters_def b_gt_1 power_add
       by (metis (no_types, lifting) add.commute power_one_over)
     also have "\<dots> =
   (\<Sum>wi \<in> letters \<times> k_words n. 1 / b^cw_len_concat c (fst wi # snd wi))"
@@ -340,6 +340,9 @@ shows "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * 
 
 subsection{* Inequality of the kraft sum (source coding theorem, direct) *}
 
+lemma real_plus_one:
+shows "\<And>n r. real ((n::nat) + 1) * r = (n * r + r)"
+    by (metis Suc_eq_plus1 distrib_left mult.commute mult.right_neutral real_of_nat_Suc)
 
 lemma sum_vimage_proof:
   fixes g::"nat \<Rightarrow> real"
@@ -357,15 +360,12 @@ next
     hence sum_reord: "\<And> h::(nat \<Rightarrow> real). (\<Sum>m=0..<bd. h m) =
   (setsum h ({0..<bd} - {f x}) + h (f x))"
       by (metis diff_add_cancel finite_atLeastLessThan setsum_diff1_ring)
-    moreover have "\<And>n r. real ((n::nat) + 1) * r = (n* r + r)"
-      by (metis Suc_eq_plus1 distrib_left mult.commute mult.right_neutral real_of_nat_Suc)
-    ultimately have
+    hence
     "(\<Sum>m = 0..<bd. ?ff m (insert x F))
-    = (\<Sum>m\<in>{0..<bd} - {f x}. ?ff m (insert x F)) +
-    card (f -` {f x} \<inter> F) * g (f x) + g (f x)"
-      using insert by fastforce
+    = (\<Sum>m\<in>{0..<bd} - {f x}. ?ff m (insert x F)) + card (f -` {f x} \<inter> F) * g (f x) + g (f x)"
+      using insert real_plus_one by fastforce
     hence "(\<Sum>m = 0..<bd. ?ff m (insert x F)) = (\<Sum>m\<in>{0..<bd}. ?ff m F) + g (f x)"
-      using assms sum_reord by fastforce
+      using sum_reord by fastforce
     thus ?case using insert.hyps by simp
 qed
 
@@ -384,10 +384,8 @@ proof -
     hence eq2: "?s2 = ?ss2" by simp
     have boundedff: "\<And>w . ?ff w < bd" using assms by simp
     hence "?fin \<Longrightarrow> ?ss1 = ?ss2"
-      using boundedff local.sum_vimage_proof[where f="?ff" and bd="bd"] assms
-      by blast
-    thus "?fin \<Longrightarrow> ?s1 = ?s2" using eq1 eq2 assms boundedff
-      by metis
+      using boundedff sum_vimage_proof[of "?ff"] by blast
+    thus "?fin \<Longrightarrow> ?s1 = ?s2" using eq1 eq2 by metis
 qed
 
 
@@ -406,12 +404,11 @@ proof -
     moreover have
     "?R = (\<Sum>m = 0..<Suc (k * max_len c).
   (card (cw_len_concat c -` {m} \<inter> k_words k)) * (1 / b ^ m))"
-      using Set.Int_commute
-      by metis
+      by (metis Int_commute)
     moreover have "0 < Suc (k*max_len c)" by simp
     ultimately show ?thesis
       using finite_k_words
-    sum_vimage[where f="cw_len_concat c" and g = "(\<lambda>i. 1/ (b^i))"]
+    sum_vimage[where f="cw_len_concat c" and g = "\<lambda>i. 1/ (b^i)"]
       by fastforce
 qed
 
@@ -426,28 +423,23 @@ shows "inj_on (fst c) ((cw_len_concat c)-`{m})" (is "inj_on ?enc ?s")
 proof -
     fix x y
     let ?dec = "snd c"
-    have "x \<in> ?s \<and> y \<in> ?s \<and> ?enc x = ?enc y \<longrightarrow> ?dec (?enc x) = ?dec (?enc y)"
-      using assms lossless_code_def by auto
-    thus ?thesis
-      using inj_on_def[of "?enc" "?s"]
-      by (metis lossless lossless_code_def option.inject)
+    have "x \<in> ?s \<and> y \<in> ?s \<and> ?enc x = ?enc y \<longrightarrow> ?dec (?enc x) = ?dec (?enc y)" by auto
+    thus ?thesis using inj_on_def[of "?enc" "?s"] by (metis lossless lossless_code_def option.inject)
 qed
 
 lemma img_inc:
   assumes "real_code c"
 shows "(fst c)`(cw_len_concat c)-`{m} \<subseteq> {b. length b = m}"
     using assms
-    unfolding cw_len_def real_code_def concat_code_def
-    by (metis list.distinct(1) list.sel)
+    unfolding real_code_def concat_code_def by (metis list.distinct(1) list.sel)
 
 lemma bool_list_fin:
   "\<And>m. finite {bl::(bool list). length bl = m}"
 proof -
     fix m
-    have "{bl. set bl \<subseteq> {True, False} \<and> length bl = m} = {bl. length bl= m}"
-      by auto
+    have "{bl. set bl \<subseteq> {True, False} \<and> length bl = m} = {bl. length bl= m}" by auto
     moreover have "finite {bl. set bl \<subseteq> {True, False} \<and> length bl = m}"
-      by (metis (full_types) finite_code finite_lists_length_eq)
+      by (metis finite_code finite_lists_length_eq)
     ultimately show "finite {bl::(bool list). length bl = m}" by simp
 qed
 
@@ -456,7 +448,7 @@ shows "\<And>m. card {bl::(bool list). length bl = m} = b^m"
 proof -
     fix m
     have "card {b. set b \<subseteq> {True,False} \<and> length b = m} = card {True,False}^m"
-      using card_lists_length_eq[where A="{True,False}"] by simp
+      using card_lists_length_eq[of "{True,False}"] by simp
     moreover have "card {True, False} = b" using binary_space by simp
     moreover have "\<And>d. d \<in> {c::(bool list). True} \<longleftrightarrow> set d \<subseteq> {True, False}" by auto
     ultimately show "card {b::(bool list). length b = m} = b^m" by simp
@@ -470,11 +462,10 @@ proof -
   proof -
       fix m
       show "card ((fst c)` (cw_len_concat c)-`{m}) \<le> card {b::(bool list). length b = m}"
-        using bool_list_fin img_inc assms card_mono
-        by (metis (mono_tags))
+        using assms
+        by (metis (mono_tags) bool_list_fin img_inc card_mono)
   qed
-    thus ?thesis using assms bool_lists_card binary_space
-      by (metis real_of_nat_le_iff)
+    thus ?thesis by (metis real_of_nat_le_iff bool_lists_card)
 qed
 
 lemma am_maj_aux2:
@@ -493,19 +484,18 @@ proof -
     card ((\<lambda>R. foldr (\<lambda>R. op + (cw_len x\<^sub>1 R)) R 0) -` {x\<^sub>2}) \<or> \<not> lossless_code x\<^sub>1"
       using am_inj_code card_image by blast
     ultimately show ?thesis using assms unfolding real_code_def
-      by (metis card_0_eq card_infinite finite_imageI image_is_empty )
+      by (metis card_0_eq card_infinite finite_imageI image_is_empty)
 qed
 
 lemma am_maj:
   assumes real_code: "real_code c"
 shows "card (set_of_k_words_length_m c k m)\<le> b^m" (is "?c \<le> ?b")
 proof -
-    have "set_of_k_words_length_m c k m \<subseteq> (cw_len_concat c)-`{m}" using
-    set_of_k_words_length_m_def by simp
+    have "set_of_k_words_length_m c k m \<subseteq> (cw_len_concat c)-`{m}"
+      using set_of_k_words_length_m_def by simp
     hence "card (set_of_k_words_length_m c k m) \<le> card ((cw_len_concat c)-`{m})"
-      using assms am_maj_aux2 Finite_Set.card_mono by blast
-    thus ?thesis
-      using assms am_maj_aux2[where m="m"] by fastforce
+      using assms am_maj_aux2 card_mono by blast
+    thus ?thesis using assms am_maj_aux2[of _ m] by fastforce
 qed
 
 (* REFACTOR END )*)
@@ -519,33 +509,30 @@ proof (rule ccontr)
     then obtain x where "x \<in> set_of_k_words_length_m c k 0" by auto
     note x_def = this
     hence "x \<noteq> []" unfolding set_of_k_words_length_m_def using assms by auto
-    moreover have
-    "cw_len_concat c (hd x#tl x) = cw_len_concat c (tl x) + cw_len c (hd x)"
+    moreover have "cw_len_concat c (hd x#tl x) = cw_len_concat c (tl x) + cw_len c (hd x)"
       by (metis add.commute comp_apply foldr.simps(2))
-    moreover have "(fst c) [(hd x)] \<noteq> []" using assms unfolding real_code_def by simp
+    moreover have "(fst c) [(hd x)] \<noteq> []" using assms by (simp add: real_code_def)
     moreover hence "0 < cw_len c (hd x)" using cw_len_def by simp
-    ultimately have "x \<notin> set_of_k_words_length_m c k 0" unfolding set_of_k_words_length_m_def
-      by simp
+    ultimately have "x \<notin> set_of_k_words_length_m c k 0" by (simp add:set_of_k_words_length_m_def)
     thus "False" using x_def by simp
 qed
 
 
 lemma kraft_sum_rewrite2:
-  assumes "0 < k" and "real_code c"
-  assumes lossless: "lossless_code c"
+  assumes "0 < k" "real_code c"
 shows "(\<Sum>m=0..<Suc (k*max_len c). (card (set_of_k_words_length_m c k m))/ b^m) \<le> (k * max_len c)"
 proof -
     have
     "(\<Sum>m=1..<Suc (k*max_len c). (card (set_of_k_words_length_m c k m) / b^m))
     \<le> (\<Sum>m=1..<Suc(k * max_len c). b^m / b^m)"
-      using assms am_maj binary_space
+      using assms(2) am_maj binary_space
     Groups_Big.setsum_mono[of "{1..<Suc(k*max_len c)}"
     "(\<lambda>m. (card (set_of_k_words_length_m c k m))/b^m)" "\<lambda>m. b^m /b^m"]
       by (metis divide_le_eq_1_pos divide_self_if linorder_not_le order_refl zero_less_numeral zero_less_power)
     moreover have"(\<Sum>m=1..<Suc(k * max_len c). b^m / b^m) = (\<Sum>m=1..<Suc(k *max_len c). 1)"
-      using binary_space by simp
+      using b_gt_1 by simp
     moreover have "(\<Sum>m=1..<Suc(k*max_len c). 1) =(k * max_len c)"
-      using assms by simp
+      by simp
     ultimately have
     "(\<Sum>m = 1..<Suc (k * max_len c). (card (set_of_k_words_length_m c k m)) / b ^ m) \<le>(k * max_len c)"
       by (metis One_nat_def card_atLeastLessThan card_eq_setsum diff_Suc_Suc real_of_card)
@@ -555,12 +542,10 @@ proof -
 qed
 
 lemma kraft_sum_power_bound :
-  assumes real_code: "real_code c" and "0 < k"
+  assumes "real_code c" "0 < k"
 shows "(kraft_sum c)^k \<le> (k * max_len c)"
-proof -
-    show ?thesis using assms kraft_sum_power kraft_sum_rewrite kraft_sum_rewrite2 empty_set_k_words
-      unfolding set_of_k_words_length_m_def real_code_def by simp
-qed
+    using assms kraft_sum_power kraft_sum_rewrite kraft_sum_rewrite2
+    by (simp add: set_of_k_words_length_m_def)
 
 lemma kraft_sum_posi:
   "0 \<le> kraft_sum c"
@@ -581,14 +566,10 @@ proof -
       by fastforce
     moreover have "\<forall>n\<ge>1. kraft_sum c \<le> root n n * root n (max_len c)"
       using ineq by simp
-    moreover have "max_len c = 0 \<Longrightarrow> kraft_sum c \<le> 1" unfolding
-    kraft_inequality_def using ineq by fastforce
-    ultimately have "kraft_sum c \<le> 1"
-      using LIMSEQ_le_const by blast
+    moreover have "max_len c = 0 \<Longrightarrow> kraft_sum c \<le> 1" using ineq by fastforce
+    ultimately have "kraft_sum c \<le> 1" using LIMSEQ_le_const by blast
     thus "kraft_inequality c" unfolding kraft_inequality_def by simp
 qed
-
-
 
 lemma entropy_rewrite:
 shows "source_entropy = -(\<Sum>i \<in> letters. fi i * log b (fi i))"
@@ -613,7 +594,8 @@ proof -
       by (metis entropy_defi)
 qed
 
-lemma log_mult_ext: "\<And>x y z. 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
+lemma log_mult_ext: "\<And>x y z. 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow>
+  x * log b (x*z*y) = x * log b (x*z) + x * log b y"
 proof -
     fix x :: real and y :: real and z :: real
     assume a1: "0 < y"
@@ -646,8 +628,7 @@ definition KL_cus ::"letter set \<Rightarrow> (letter \<Rightarrow> real) \<Righ
   "KL_cus S a c = (\<Sum> i \<in> S. a i * log b (a i / c i))"
 
 lemma KL_cus_mul:
-  assumes "0 < d"
-  assumes "d \<le> 1"
+  assumes "0 < d" "d \<le> 1"
   assumes pos: "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i" "\<And>i. i\<in>S \<Longrightarrow> 0 < c i"
 shows "KL_cus S a c \<ge> KL_cus S a (\<lambda>i. c i / d)"
     unfolding KL_cus_def
@@ -655,17 +636,14 @@ proof -
     {fix i
     assume "i\<in>S"
     note asm = this
-    hence "(a i / ((c i) / d)) \<le> (a i / c i)" using pos[OF asm] assms
+    hence "(a i / ((c i) / d)) \<le> (a i / c i)" using pos assms
       by (metis (no_types) divide_1 frac_le less_imp_triv not_less)
-    hence "log b (a i / (c i / d)) \<le> log b (a i / c i)" using log_less[OF b_gt_1] assms asm
+    hence "log b (a i / (c i / d)) \<le> log b (a i / c i)" using log_less assms asm
       by (metis (full_types) b_gt_1 divide_divide_eq_left inverse_divide le_less_linear log_le
     log_neg_const order_refl times_divide_eq_right zero_less_mult_iff)
     }
-    hence "\<And>i. i\<in>S \<Longrightarrow> log b (a i / (c i / d)) \<le> log b (a i / c i)"
-      using assms(2) assms(3) log_less
-      by simp
-    thus "(\<Sum>i\<in>S. a i * log b (a i / (c i / d)))
-    \<le> (\<Sum>i\<in>S. a i * log b (a i / c i))"
+    hence "\<And>i. i\<in>S \<Longrightarrow> log b (a i / (c i / d)) \<le> log b (a i / c i)" by simp
+    thus "(\<Sum>i\<in>S. a i * log b (a i / (c i / d))) \<le> (\<Sum>i\<in>S. a i * log b (a i / c i))"
       by (meson mult_left_mono pos(1) setsum_mono)
 qed
 
@@ -696,7 +674,7 @@ proof -
       by (smt non_null(1) nonzero_mult_divide_cancel_left setsum.cong)
     finally have "0 \<le> (\<Sum>i\<in>S. a i * - log b (c i / a i))"using sum_c_one by simp
     thus "0 \<le> (\<Sum>i\<in>S. a i * log b (a i / c i))"
-      using binary_space log_divide non_null(1) non_null(2) by auto
+      using b_gt_1 log_divide non_null(1) non_null(2) by auto
 qed
 
 lemma KL_cus_pos_emp:
@@ -731,7 +709,7 @@ proof -
     moreover have "0 \<le> KL_cus (S \<inter> {i. 0 < a i}) a c"
   proof(cases "(S \<inter> {i. 0 < a i}) = {}")
       case True
-      then show ?thesis unfolding KL_cus_def by simp
+      thus ?thesis unfolding KL_cus_def by simp
   next
       case False
       note asm = this
@@ -815,6 +793,7 @@ shows "(\<Sum>i\<in>A. f i / S) = 1"
     by (metis (no_types) S_def assms(2) right_inverse_eq setsum_divide_distrib)
 
 
+
 (*
 _Kraft inequality for real codes using the McMillan theorem
 *)
@@ -840,8 +819,8 @@ proof -
     assume "i \<in> letters"
     note asm = this
     hence
-    "p i * (log b (1 / (1 / b powr real (l i))) + log b (p i))
-    = p i * log b (p i / (1 / b powr real (l i)))"
+    "p i * (log b (1 / (1 / b powr (l i))) + log b (p i))
+    = p i * log b (p i / (1 / b powr (l i)))"
       using log_mult_ext2[OF pos_pi] powr_gt_zero
   proof -
       have "1 < b"
@@ -853,8 +832,8 @@ proof -
   qed
     }
     hence
-    eqpi: "\<And>i. i\<in> letters \<Longrightarrow> p i * (log b (1 / (1 / b powr real (l i))) + log b (p i))
-    = p i * log b (p i / (1 / b powr real (l i)))"
+    eqpi: "\<And>i. i\<in> letters \<Longrightarrow> p i * (log b (1 / (1 / b powr (l i))) + log b (p i))
+    = p i * log b (p i / (1 / b powr (l i)))"
       by simp
     have sum_one: "(\<Sum> i \<in> F. p i) = 1"
       using simple_distributed_setsum_space[OF distr_i[of 0]] p_def F_def by simp
@@ -869,9 +848,9 @@ proof -
     p i * log b (p i * ?c / (1/b powr l i)) + p i * log b (1 / kraft_sum c)"
       using log_mult_ext[OF pos_pi[OF asm]
     Fields.linordered_field_class.positive_imp_inverse_positive[OF kraft_sum_nonnull[of c]],
-    of "kraft_sum c / (1 / b powr real (l i))"]
+    of "kraft_sum c / (1 / b powr (l i))"]
   proof -
-      show ?thesis using kraft_sum_nonnull binary_space
+      show ?thesis using kraft_sum_nonnull b_gt_1
         by (smt `0 < kraft_sum c / (1 / b powr (l i)) \<Longrightarrow>
       p i * log b (p i * (kraft_sum c / (1 / b powr (l i))) * inverse (kraft_sum c)) =
       p i * log b (p i * (kraft_sum c / (1 / b powr (l i)))) + p i * log b (inverse (kraft_sum c))`
@@ -882,16 +861,14 @@ proof -
     p i * log b (p i * ?c / (1/b powr l i)) + p i * log b (1 / kraft_sum c)"
       by simp
     have 1: "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * l i) + (\<Sum>i \<in> L. p i * log b (p i))"
-      unfolding code_rate_def entropy_def
       using kraft_sum_def entropy_rewrite bounded_input simp_exp_composed distr_i
       using code_rate_def code_rate_rw bounded_input l_def p_def by auto
     also have 2: "(\<Sum>i\<in>L. p i * l i) = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i)))))"
-      using binary_space
-      using log_divide by auto
+      using b_gt_1 log_divide by auto
     also have "\<dots> = (\<Sum>i \<in> L. p i * (-1 * log b (1/(b powr (l i)))))" by simp
     also have "\<dots> = -1 * (\<Sum>i \<in> L. p i * (log b (1/(b powr (l i)))))"
       using setsum_right_distrib
-    [of "-1" "(\<lambda>i. p i * (- 1 * log b (1 / b powr real (l i))))" L]
+    [of "-1" "(\<lambda>i. p i * (- 1 * log b (1 / b powr (l i))))" L]
       by simp
     finally have
     "code_rate c - source_entropy= -(\<Sum>i \<in> L. p i * log b (1/b powr l i)) + (\<Sum>i \<in> L. p i * log b (p i))"
@@ -900,9 +877,7 @@ proof -
     "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i))))) + (\<Sum>i \<in> L. p i * log b (p i))"
       by simp
     also have "\<dots> = (\<Sum>i \<in> L. p i * (log b (1/ (1/(b powr (l i)))))) + (\<Sum>i \<in> L. p i * log b (p i))"
-      using log_inverse binary_space
-      using log_powr powr_minus_divide
-      by (metis (lifting) log_powr_cancel num.distinct(2) numeral_eq_one_iff zero_less_numeral)
+      using b_gt_1 powr_minus_divide log_powr_cancel by (smt setsum.cong)
     also have "\<dots> = (\<Sum>i \<in> L. p i * (log b (1/ (1/(b powr (l i))))) + p i * log b (p i))"
       by (simp add: setsum.distrib)
     also have "\<dots> = (\<Sum>i \<in> L. p i * ((log b (1/ (1/(b powr (l i))))) +log b (p i)))"
@@ -916,37 +891,35 @@ proof -
     "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i * ?c / (1/b powr l i)))) + (p i * log b (1/?c)))"
       using add.commute distrib_left divide_divide_eq_right times_divide_eq_right by simp
     also have
-    "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr real (l i))))) + (\<Sum>i \<in> L. p i * log b (1/ ?c))"
+    "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr (l i))))) + (\<Sum>i \<in> L. p i * log b (1/ ?c))"
       using Groups_Big.comm_monoid_add_class.setsum.distrib by simp
     also have
-    "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr real (l i))))) + (\<Sum>i \<in> L. p i) * log b (1/ ?c)"
+    "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr (l i))))) + (\<Sum>i \<in> L. p i) * log b (1/ ?c)"
       using setsum_left_distrib by (metis (no_types))
-    also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr real (l i))))) + log b (1/?c)"
+    also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr (l i))))) + log b (1/?c)"
       using sum_one_L by simp
-    also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr real (l i))))) - log b (?c)"
+    also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr (l i))))) - log b (?c)"
       using log_inverse_eq kraft_sum_nonnull
       by (metis (no_types, lifting) add_uminus_conv_diff divide_inverse monoid_mult_class.mult.left_neutral)
     also have "\<dots> = (\<Sum> i \<in> L. p i * log b (p i / ?r i)) - log b (?c)"
       by (metis (mono_tags, hide_lams) divide_divide_eq_left divide_divide_eq_right)
-    also have "\<dots> = KL_cus L p ?r - log b ( ?c)" unfolding KL_cus_def using sum_one by simp
+    also have "\<dots> = KL_cus L p ?r - log b ( ?c)" using sum_one by (simp add: KL_cus_def)
     also have "\<dots> = KL_cus L p ?r + log b (inverse ?c)"
-      using log_inverse binary_space kraft_sum_nonnull by simp
+      using log_inverse b_gt_1 kraft_sum_nonnull by simp
     finally have code_ent_kl_log: "code_rate c - source_entropy = KL_cus L p ?r + log b (inverse ?c)"
       by simp
-    have sum_r_one: "setsum ?r L = 1" unfolding kraft_sum_def
+    have sum_r_one: "setsum ?r L = 1"
       using sum_div_1[OF fin_letters,
-    of "\<lambda>i. 1 / (b powr real (l i))"] kraft_sum_nonnull[of c]
+    of "\<lambda>i. 1 / (b powr (l i))"] kraft_sum_nonnull[of c]
     l_def kraft_sum_powr[of c] kraft_sum_def
       by simp
     have r_non_null: "\<And>i. 0 < ?r i" using b_gt_1
       using kraft_sum_nonnull by auto
-    have sum_fi_one: "(\<Sum>i\<in>L. fi i) = 1" using bounded_input sum_one_L unfolding p_def by simp
+    have sum_fi_one: "(\<Sum>i\<in>L. fi i) = 1" using bounded_input sum_one_L by (simp add: p_def)
     have "0 \<le> KL_cus L p ?r"
-      using KL_cus_pos2[OF fin_letters fi_pos r_non_null sum_fi_one sum_r_one]
-      unfolding F_def p_def by simp
+      using KL_cus_pos2[OF fin_letters fi_pos r_non_null sum_fi_one sum_r_one] by (simp add: p_def)
     hence "log b (inverse ?c) \<le> code_rate c -source_entropy" using code_ent_kl_log by simp
-    hence "log b (inverse (kraft_sum c)) \<le> code_rate c - source_entropy"
-      unfolding kraft_inequality_def p_def by simp
+    hence "log b (inverse (kraft_sum c)) \<le> code_rate c - source_entropy" by simp
     moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum c))"
       using kraft_sum_nonnull unfolding kraft_inequality_def
       by (metis b_gt_1 log_inverse_eq log_le_zero_cancel_iff neg_0_le_iff_le)
