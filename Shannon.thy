@@ -63,14 +63,10 @@ output symbols.
   assumes binary_space: "b = 2"
   assumes entropy_defi: "source_entropy = \<H>(Input 0)"
   assumes letters_def: "letters = {0..input_bound}"
-(* assumes bounded_input: "fi input_bound \<noteq> 0 \<and> (input_bound < n \<longrightarrow> fi n = 0)" *)
   assumes bounded_input: "\<And>i. (Input i) ` space M = letters"
-  assumes bounded_input_alt: "\<And>n. n \<notin> letters \<Longrightarrow> fi n = 0"
 (* TODO: check if this assumption is not redundant, i.e. simple_distributed \<Longrightarrow>? positive function *)
   assumes fi_pos: "\<And>i. 0 \<le> fi i"
 
-(* What is countable exactly? *)
-  assumes countable: "count_space (space M) = M"
 
 (*
 TODO: Have some predicates to allow reasonings about codes. Keep the input_block_size that limits
@@ -84,6 +80,10 @@ subsection{* locale specific to the source coding theorem *}
 locale information_space_discrete_source = information_space_discrete +
   fixes input_block_size::nat
 begin
+lemma fin_letters: "finite letters" using simple_distributed_finite[OF distr_i] bounded_input
+    by simp
+
+lemma emp_letters: "letters \<noteq> {}" by (simp add: letters_def)
 abbreviation "L \<equiv> letters"
 
 definition lossless_code :: "code \<Rightarrow> bool" where
@@ -201,11 +201,11 @@ lemma max_cw:
 definition kraft_sum :: "code \<Rightarrow> real" where
   "kraft_sum c = (\<Sum>i\<in>letters. 1 / b ^ (cw_len c i))"
 
-lemma fin_letters: "finite letters" by (simp add:letters_def)
-lemma emp_letters: "letters \<noteq> {}" by (simp add: letters_def)
+
+
 lemma pos_cw_len: "\<And>i. 0 < 1 / b ^ cw_len c i" using b_gt_1 by simp
 
-lemma kraft_sum_nonnull: "\<And>c. 0 < kraft_sum c" using kraft_sum_def letters_def b_gt_1
+lemma kraft_sum_nonnull: "\<And>c. 0 < kraft_sum c" using kraft_sum_def b_gt_1
   Groups_Big.ordered_comm_monoid_add_class.setsum_pos[OF fin_letters emp_letters pos_cw_len]
     by (smt emp_letters fin_letters pos_cw_len powr_realpow setsum_pos)
 
@@ -226,7 +226,7 @@ proof
       assume "w \<in> k_words (Suc k)"
       note asm = this
       hence "real_word w" by simp
-      hence "hd w \<in> letters" using letters_def
+      hence "hd w \<in> letters"
         by (metis (mono_tags) asm hd_in_set list.size(3) mem_Collect_eq nat.distinct(1) subset_code(1))
       moreover have len: "length w = Suc k" using asm by simp
       moreover hence "w \<noteq> []" by auto
@@ -288,7 +288,7 @@ proof (induct k)
     case 0
     show ?case by simp
     case (Suc n)
-    thus ?case using bij_k_words_alt bij_betw_finite letters_def by blast
+    thus ?case using bij_k_words_alt bij_betw_finite fin_letters by blast
 qed
 
 lemma cartesian_product:
@@ -315,11 +315,11 @@ next
     also have
     "\<dots> =
   (\<Sum>wi \<in> letters \<times> k_words n. 1/b^cw_len c (fst wi) * (1 / b^cw_len_concat c (snd wi)))"
-      using letters_def finite_k_words[where k="n"] cartesian_product[where A="letters"]
+      using fin_letters finite_k_words[where k="n"] cartesian_product[where A="letters"]
       by fastforce
     also have "\<dots> =
   (\<Sum>wi \<in> letters \<times> k_words n. 1 / b^(cw_len_concat c (snd wi) + cw_len c (fst wi)))"
-      using letters_def b_gt_1 power_add
+      using b_gt_1 power_add
       by (metis (no_types, lifting) add.commute power_one_over)
     also have "\<dots> =
   (\<Sum>wi \<in> letters \<times> k_words n. 1 / b^cw_len_concat c (fst wi # snd wi))"
