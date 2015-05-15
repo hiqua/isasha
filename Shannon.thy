@@ -72,8 +72,6 @@ output symbols.
 (* What is countable exactly? *)
   assumes countable: "count_space (space M) = M"
 
-print_locale information_space_discrete
-
 (*
 TODO: Have some predicates to allow reasonings about codes. Keep the input_block_size that limits
 the size of the input, and use it.
