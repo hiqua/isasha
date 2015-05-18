@@ -78,7 +78,7 @@ the size of the input, and use it.
 We will generalize the type "code" to any input by splitting the input in piece of length below a
 constant.
 *)
-section{* Source coding theorem *}
+section{* Source coding theorem, direct: the entropy is a lower bound *}
 context information_space_discrete
 begin
 lemma fin_letters: "finite letters" using simple_distributed_finite[OF distr_i] bounded_input
@@ -647,7 +647,7 @@ lemma KL_cus_pos_gen:
 shows "0 \<le> KL_cus S a c"
     using KL_cus_pos KL_cus_pos_emp assms by metis
 
-lemma KL_cus_pos2:
+theorem KL_cus_pos2:
   fixes a c::"letter \<Rightarrow> real"
   assumes fin: "finite S"
   assumes non_null: "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i" "\<And>i. i\<in> S \<Longrightarrow> 0 < c i"
