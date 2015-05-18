@@ -5,7 +5,7 @@ begin
 AIM: Formalize Shannon's theorems
 *)
 
-subsection{* Basic types and helpers *}
+section{* Basic types *}
 
 type_synonym bit = bool
 type_synonym bword = "bit list"
@@ -16,7 +16,9 @@ type_synonym encoder = "word \<Rightarrow> bword"
 type_synonym decoder = "bword \<Rightarrow> word option"
 type_synonym code = "encoder * decoder"
 
-subsection{* First locale, generic to both Shannon's theorems *}
+type_synonym prob = "letter \<Rightarrow> real"
+
+section{* First locale, generic to both Shannon's theorems *}
 (*
 X is the input, Y is the output.
 They are not independent (if they are, all of this serves no purpose)
@@ -32,7 +34,7 @@ TODO: explain a lil more
 TODO: link between bword and the variable b
 *)
 
-type_synonym prob = "letter \<Rightarrow> real"
+
 
 (* locale generic to both theorems *)
 locale information_space_discrete = information_space +
@@ -76,9 +78,8 @@ the size of the input, and use it.
 We will generalize the type "code" to any input by splitting the input in piece of length below a
 constant.
 *)
-subsection{* locale specific to the source coding theorem *}
-locale information_space_discrete_source = information_space_discrete +
-  fixes input_block_size::nat
+section{* Source coding theorem *}
+context information_space_discrete
 begin
 lemma fin_letters: "finite letters" using simple_distributed_finite[OF distr_i] bounded_input
     by simp
@@ -88,18 +89,6 @@ abbreviation "L \<equiv> letters"
 
 definition lossless_code :: "code \<Rightarrow> bool" where
   "lossless_code c = (\<forall>x. snd c (fst c x) = Some x)"
-
-definition non_singular_code :: "code \<Rightarrow> bool" where
-  "non_singular_code c = (\<forall>x. \<forall>y. length x \<le> input_block_size \<and> length y \<le> input_block_size
-  \<longrightarrow> snd c (fst c x) = snd c (fst c y) \<longrightarrow> x = y)"
-
-(*
-The definition automatically provides us with the extension of the code, we make sure this extension
-is sound.
-*)
-definition block_encoding_code :: "code \<Rightarrow> bool" where
-  "block_encoding_code c = (\<forall>x. length x = input_block_size \<longrightarrow> (\<forall>xs. (fst c) (x @ xs) = (fst c) x @
-(fst c) xs))"
 
 (*
 Concatenated code: code taken by encoding each letter and concatenate the result
@@ -161,9 +150,6 @@ shows "expectation (\<lambda>a. f (X a)) = (\<Sum>x \<in> X`space M. f x * Px x)
     using distributed_integral[OF simple_distributed[OF X], of f]
     by (simp add: lebesgue_integral_count_space_finite[OF simple_distributed_finite[OF X]] ac_simps)
 
-(* lebesgue_integral_count_space_finite *)
-(* nn_integral_count_space *)
-(* shows "(\<integral>x. f x \<partial>count_space A) = (\<Sum>a | a \<in> A \<and> f a \<noteq> 0. f a)" *)
 lemma code_rate_rw:
   "code_rate c = (\<Sum>i \<in> Input 0 ` space M. fi i * cw_len c i)" unfolding code_rate_def
     using simp_exp_composed[of "Input 0" _ "cw_len c"]
@@ -194,14 +180,10 @@ definition max_len :: "code \<Rightarrow> nat" where
 
 lemma max_cw:
   "\<And>l. l \<in> letters \<Longrightarrow> cw_len c l \<le> max_len c"
-  apply (simp add: letters_def max_len_def)
-  done
-
+  using letters_def max_len_def by simp
 
 definition kraft_sum :: "code \<Rightarrow> real" where
   "kraft_sum c = (\<Sum>i\<in>letters. 1 / b ^ (cw_len c i))"
-
-
 
 lemma pos_cw_len: "\<And>i. 0 < 1 / b ^ cw_len c i" using b_gt_1 by simp
 
@@ -251,17 +233,16 @@ next
   qed
 qed
 
-(* TODO: remove this version and prefer the alt one *)
 lemma bij_k_words:
-shows "\<forall>k. bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (letters \<times> (k_words k)) (k_words (Suc k))"
+shows "\<And>k. bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (letters \<times> (k_words k)) (k_words (Suc k))"
     unfolding bij_betw_def
 proof
     fix k
     let ?f = "(\<lambda>wi. Cons (fst wi) (snd wi))"
     let ?S = "letters \<times> (k_words k)"
     let ?T = "k_words (Suc k)"
-    have inj: "inj_on ?f ?S" by (simp add: inj_on_def)
-    moreover have surj: "?f`?S = ?T"
+    show "inj_on ?f ?S" by (simp add: inj_on_def)
+    show "?f`?S = ?T"
   proof (rule ccontr)
       assume "?f ` ?S \<noteq> ?T"
       hence "\<exists>w. w\<in> ?T \<and> w \<notin> ?f`?S" by auto
@@ -272,23 +253,14 @@ proof
       ultimately have "w \<in> ?f`?S" by blast
       thus "False" using asm by simp
   qed
-    ultimately show
-    "inj_on (\<lambda>wi. fst wi # snd wi) (letters \<times> {w. length w = k \<and> real_word w}) \<and> (\<lambda>wi. fst wi # snd wi)
-    ` (letters \<times> {w. length w = k \<and> real_word w}) = {w. length w = Suc k \<and> real_word w}"
-      using inj surj by simp
 qed
-
-lemma bij_k_words_alt:
-shows "\<And>k. bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (letters \<times> (k_words k)) (k_words (Suc k))"
-    using bij_k_words
-    by auto
 
 lemma finite_k_words: "finite (k_words k)"
 proof (induct k)
     case 0
     show ?case by simp
     case (Suc n)
-    thus ?case using bij_k_words_alt bij_betw_finite fin_letters by blast
+    thus ?case using bij_k_words bij_betw_finite fin_letters by blast
 qed
 
 lemma cartesian_product:
@@ -325,16 +297,13 @@ next
   (\<Sum>wi \<in> letters \<times> k_words n. 1 / b^cw_len_concat c (fst wi # snd wi))"
       by (metis (erased, lifting) add.commute comp_apply foldr.simps(2))
     also have "\<dots> = (\<Sum>w \<in> (k_words (Suc n)). 1 / b^(cw_len_concat c w))"
-      using bij_k_words_alt setsum.reindex_bij_betw by fastforce
+      using bij_k_words setsum.reindex_bij_betw by fastforce
     finally show ?case by simp
 qed
-
-
 
 lemma bound_len_concat:
 shows "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * max_len c"
     using max_cw maj_fold by blast
-
 
 subsection{* Inequality of the kraft sum (source coding theorem, direct) *}
 
@@ -413,8 +382,6 @@ qed
 definition set_of_k_words_length_m :: "code \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> word set" where
   "set_of_k_words_length_m c k m = { xk. xk \<in> k_words k} \<inter> (cw_len_concat c)-`{m}"
 
-
-(* REFACTOR BEGIN *)
 lemma am_inj_code :
   assumes lossless: "lossless_code c"
 shows "inj_on (fst c) ((cw_len_concat c)-`{m})" (is "inj_on ?enc ?s")
@@ -496,8 +463,6 @@ proof -
     thus ?thesis using assms am_maj_aux2[of _ m] by fastforce
 qed
 
-(* REFACTOR END )*)
-
 lemma empty_set_k_words:
   assumes "0 < k" and "real_code c"
 shows "set_of_k_words_length_m c k 0 = {}"
@@ -545,19 +510,13 @@ shows "(kraft_sum c)^k \<le> (k * max_len c)"
     using assms kraft_sum_power kraft_sum_rewrite kraft_sum_rewrite2
     by (simp add: set_of_k_words_length_m_def)
 
-lemma kraft_sum_posi:
-  "0 \<le> kraft_sum c"
-    unfolding kraft_sum_def
-    by (metis (erased, lifting) b_gt_1 divide_less_0_1_iff less_le_not_le not_le
-  order.trans setsum_nonneg zero_le_one zero_le_power)
-
 theorem McMillan :
 shows "real_code c \<Longrightarrow> kraft_inequality c"
 proof -
     assume "real_code c"
     hence ineq: "\<And>k. 0 < k \<Longrightarrow> (kraft_sum c) \<le> root k k * root k (max_len c)"
-      using kraft_sum_posi kraft_sum_power_bound
-      by (metis real_of_nat_mult real_root_mult real_root_le_iff real_root_power_cancel)
+      using kraft_sum_nonnull kraft_sum_power_bound
+      by (metis order_le_less real_of_nat_mult real_root_le_iff real_root_mult real_root_pow_pos2 real_root_power)
     moreover hence
     "0 < max_len c \<Longrightarrow> (\<lambda>k. root k k * root k (max_len c)) ----> 1"
       using LIMSEQ_root LIMSEQ_root_const tendsto_mult
@@ -618,6 +577,7 @@ proof -
     thus "x * log b (x*y) = x * log b (x) + x * log b y" using log_mult_ext[of x, of y, of 1] by simp
 qed
 
+subsubsection {* KL divergence and properties *}
 (*
 TODO (eventually): I use a custom definition of the KL_divergence, as it is far simpler for me to
 use. It'd be better if in the end I can use the real def definition KL_cus.
@@ -775,12 +735,6 @@ proof -
     ultimately show ?thesis by simp
 qed
 
-lemma simp_posi:
-  assumes "simple_distributed M X Px"
-shows "\<And>x. x \<in> X ` space M \<Longrightarrow> 0 \<le> Px x"
-    using assms simple_distributed_measure[OF assms]
-    by (metis measure_nonneg)
-
 (* Used in many theorems... *)
 lemma sum_div_1:
   fixes f::"'b\<Rightarrow>real"
@@ -789,8 +743,6 @@ lemma sum_div_1:
   defines "S \<equiv>\<Sum>i\<in>A. f i"
 shows "(\<Sum>i\<in>A. f i / S) = 1"
     by (metis (no_types) S_def assms(2) right_inverse_eq setsum_divide_distrib)
-
-
 
 (*
 _Kraft inequality for real codes using the McMillan theorem
