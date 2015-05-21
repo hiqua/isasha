@@ -138,17 +138,9 @@ set, the set of letters).
 definition code_rate :: "code \<Rightarrow> real" where
   "code_rate c = expectation (\<lambda>a. (cw_len c ((Input 0) a)))"
 
-
 (*
 Proof by Johannes Hölzl
 *)
-lemma (in prob_space) simp_exp:
-  assumes X: "simple_distributed M X Px"
-shows "expectation X = (\<Sum>x \<in> X`space M. x * Px x)"
-    using simple_distributed_finite[OF X]
-    using distributed_integral[OF simple_distributed[OF X], of "\<lambda>x. x"]
-    by (simp add: lebesgue_integral_count_space_finite ac_simps)
-
 lemma (in prob_space) simp_exp_composed:
   assumes X: "simple_distributed M X Px"
 shows "expectation (\<lambda>a. f (X a)) = (\<Sum>x \<in> X`space M. f x * Px x)"
