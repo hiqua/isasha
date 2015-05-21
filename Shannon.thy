@@ -62,7 +62,13 @@ locale information_space_discrete = information_space +
 The entropy depends on the value of b, which is the cardinal of the available
 output symbols.
 *)
-  assumes binary_space: "b = 2"
+(*
+I have tried to use statements that do not use the value of b explicitly, using b_gt_1 whenever
+possible. However it is not possible to avoid using this value altogether, since it is encoded in
+the output type of the code (which is a bword, a word of bits). This is one of the shortcomings of
+Isabelle vs Coq/SSreflect, where dependent parameter types are available.
+*)
+  assumes b_val: "b = 2"
   assumes entropy_defi: "source_entropy = \<H>(Input 0)"
   assumes letters_def: "letters = {0..input_bound}"
   assumes bounded_input: "\<And>i. (Input i) ` space M = letters"
@@ -411,7 +417,7 @@ proof -
     fix m
     have "card {b. set b \<subseteq> {True,False} \<and> length b = m} = card {True,False}^m"
       using card_lists_length_eq[of "{True,False}"] by simp
-    moreover have "card {True, False} = b" using binary_space by simp
+    moreover have "card {True, False} = b" using b_val by simp
     moreover have "\<And>d. d \<in> {c::(bool list). True} \<longleftrightarrow> set d \<subseteq> {True, False}" by auto
     ultimately show "card {b::(bool list). length b = m} = b^m" by simp
 qed
@@ -485,7 +491,7 @@ proof -
     have
     "(\<Sum>m=1..<Suc (k*max_len c). (card (set_of_k_words_length_m c k m) / b^m))
     \<le> (\<Sum>m=1..<Suc(k * max_len c). b^m / b^m)"
-      using assms(2) am_maj binary_space
+      using assms(2) am_maj b_val
     Groups_Big.setsum_mono[of "{1..<Suc(k*max_len c)}"
     "(\<lambda>m. (card (set_of_k_words_length_m c k m))/b^m)" "\<lambda>m. b^m /b^m"]
       by (metis divide_le_eq_1_pos divide_self_if linorder_not_le order_refl zero_less_numeral zero_less_power)
@@ -559,7 +565,7 @@ proof -
     {
     assume "x * z \<noteq> 0"
     hence "x * (log b y + log b (x * z)) = x * log b (x * (y * z))" using a1 a2 a3
-      by (metis binary_space eq_numeral_simps(2) less_eq_real_def less_numeral_simps(4)
+      by (metis b_val eq_numeral_simps(2) less_eq_real_def less_numeral_simps(4)
     log_mult mult.left_commute mult_nonneg_nonneg num.distinct(2))
     }
     ultimately show "x * log b (x * z * y) = x * log b (x * z) + x * log b y"
