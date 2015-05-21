@@ -85,6 +85,7 @@ We will generalize the type "code" to any input by splitting the input in piece 
 constant.
 *)
 section{* Source coding theorem, direct: the entropy is a lower bound *}
+subsection{* A few simple lemmas *}
 context information_space_discrete
 begin
 lemma fin_letters: "finite letters" using simple_distributed_finite[OF distr_i] bounded_input
@@ -93,6 +94,7 @@ lemma fin_letters: "finite letters" using simple_distributed_finite[OF distr_i] 
 lemma emp_letters: "letters \<noteq> {}" by (simp add: letters_def)
 abbreviation "L \<equiv> letters"
 
+subsection{* Codes and words *}
 (*
 It would be better if it were quantified over x with set x \<subseteq> letters. However we can also imagine
 extensions of code which would be allowed to be really inefficient if not set x \<subseteq> letters, and we
@@ -185,6 +187,7 @@ lemma max_cw:
   "\<And>l. l \<in> letters \<Longrightarrow> cw_len c l \<le> max_len c"
   using letters_def max_len_def by simp
 
+subsection{* Related to the Kraft theorem *}
 definition kraft_sum :: "code \<Rightarrow> real" where
   "kraft_sum c = (\<Sum>i\<in>letters. 1 / b ^ (cw_len c i))"
 
@@ -309,6 +312,7 @@ shows "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat c w \<le> k * 
     using max_cw maj_fold by blast
 
 subsection{* Inequality of the kraft sum (source coding theorem, direct) *}
+subsubsection{* Sum manipulation lemmas and McMillan theorem *}
 
 lemma real_plus_one:
 shows "\<And>n r. real ((n::nat) + 1) * r = (n * r + r)"
@@ -397,7 +401,7 @@ qed
 
 lemma img_inc:
   assumes "real_code c"
-shows "(fst c)`(cw_len_concat c)-`{m} \<subseteq> {b. length b = m}"
+shows "(fst c)`(cw_len_concat c)-`{m} \<subseteq> {bl. length bl = m}"
     using assms
     unfolding real_code_def concat_code_def by (metis list.distinct(1) list.sel)
 
@@ -814,7 +818,7 @@ proof -
     p i * log b (p i * ?c / (1/b powr l i)) + p i * log b (1 / kraft_sum c)"
       by simp
     have 1: "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * l i) + (\<Sum>i \<in> L. p i * log b (p i))"
-      using kraft_sum_def entropy_rewrite bounded_input simp_exp_composed distr_i
+      using kraft_sum_def entropy_rewrite bounded_input distr_i
       using code_rate_def code_rate_rw bounded_input l_def p_def by auto
     also have 2: "(\<Sum>i\<in>L. p i * l i) = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i)))))"
       using b_gt_1 log_divide by auto
