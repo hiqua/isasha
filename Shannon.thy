@@ -87,6 +87,11 @@ lemma fin_letters: "finite letters" using simple_distributed_finite[OF distr_i] 
 lemma emp_letters: "letters \<noteq> {}" by (simp add: letters_def)
 abbreviation "L \<equiv> letters"
 
+(*
+It would be better if it were quantified over x with set x \<subseteq> letters. However we can also imagine
+extensions of code which would be allowed to be really inefficient if not set x \<subseteq> letters, and we
+could still have this predicate.
+*)
 definition lossless_code :: "code \<Rightarrow> bool" where
   "lossless_code c = (\<forall>x. snd c (fst c x) = Some x)"
 
