@@ -46,7 +46,7 @@ locale information_space_discrete = information_space +
   fixes fo :: "prob"
 (* fixes N :: "'a measure" --"we should take M? ----> yes!" *)
   fixes N' :: "letter measure"
-  fixes letters :: "nat set"
+  fixes letters :: "letter set"
   assumes distr_i:
   "simple_distributed M (Input i) fi"
   assumes distr_o:
