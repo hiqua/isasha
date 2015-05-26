@@ -34,23 +34,18 @@ TODO: explain a lil more
 TODO: link between bword and the variable b
 *)
 
-
-
 (* locale generic to both theorems *)
 locale information_space_discrete = information_space +
-(* channnel *)
-  fixes Input :: "nat \<Rightarrow> ('a \<Rightarrow> letter)"
-  fixes input_bound :: letter
-  fixes Output :: "nat \<Rightarrow> ('a \<Rightarrow> letter)"
+(* information source *)
   fixes fi :: "prob"
-  fixes letters :: "letter set"
-  assumes distr_i: "simple_distributed M (Input i) fi"
+  fixes X::"'a \<Rightarrow> letter"
+  assumes distr_i: "simple_distributed M X fi"
 (*
 According to RAHM, this should be a rat: my impression is that they aim for a code that can achieve
 precisely this rate, however the gist is that we can achieve a rate equal OR better than
-H +\<epsilon>, so in my mind it is not that important. In the Shannon's original paper it is not clear either.
+H + \<epsilon>, so in my mind it is not that important. In the Shannon's original paper it is not clear either.
 *)
-  fixes source_entropy::real
+  fixes H::real
 
 (*
 The entropy depends on the value of b, which is the cardinal of the available
@@ -63,11 +58,13 @@ the output type of the code (which is a bword, a word of bits). This is one of t
 Isabelle vs Coq/SSreflect, where dependent parameter types are available.
 *)
   assumes b_val: "b = 2"
-  assumes entropy_defi: "source_entropy = \<H>(Input 0)"
-  assumes fin_letters: "finite letters"
-  assumes emp_letters: "letters \<noteq> {}"
+  assumes entropy_defi: "H = \<H>(X)"
 
-  assumes bounded_input: "\<And>i. (Input i) ` space M = letters"
+  fixes L :: "letter set"
+  assumes fin_L: "finite L"
+  assumes emp_L: "L \<noteq> {}"
+
+  assumes bounded_input: "X ` space M = L"
 (* TODO: check if this assumption is not redundant, i.e. simple_distributed \<Longrightarrow>? positive function *)
   assumes fi_pos: "\<And>i. 0 \<le> fi i"
 
@@ -81,11 +78,8 @@ We will generalize the type "code" to any input by splitting the input in piece 
 constant.
 *)
 section{* Source coding theorem, direct: the entropy is a lower bound *}
-subsection{* A few simple lemmas *}
 context information_space_discrete
 begin
-abbreviation "L \<equiv> letters"
-
 subsection{* Codes and words *}
 (*
 It would be better if it were quantified over x with set x \<subseteq> letters. However we can also imagine
@@ -108,7 +102,7 @@ definition u_decodable :: "code \<Rightarrow> bool" where
   "u_decodable c = (\<forall>x. \<forall>y. snd c (fst c x) = snd c (fst c y) \<longrightarrow> x = y)"
 
 abbreviation real_word :: "word \<Rightarrow> bool" where
-  "real_word w \<equiv> (set w \<subseteq> letters)"
+  "real_word w \<equiv> (set w \<subseteq> L)"
 
 
 abbreviation k_words :: "nat \<Rightarrow> word set" where
@@ -136,7 +130,7 @@ The code rate is the expectation of the length of the code taken on all inputs (
 set, the set of letters).
 *)
 definition code_rate :: "code \<Rightarrow> real" where
-  "code_rate c = expectation (\<lambda>a. (cw_len c ((Input 0) a)))"
+  "code_rate c = expectation (\<lambda>a. (cw_len c ((X) a)))"
 
 (*
 Proof by Johannes Hölzl
@@ -148,18 +142,16 @@ shows "expectation (\<lambda>a. f (X a)) = (\<Sum>x \<in> X`space M. f x * Px x)
     by (simp add: lebesgue_integral_count_space_finite[OF simple_distributed_finite[OF X]] ac_simps)
 
 lemma code_rate_rw:
-  "code_rate c = (\<Sum>i \<in> Input 0 ` space M. fi i * cw_len c i)" unfolding code_rate_def
-    using simp_exp_composed[of "Input 0" _ "cw_len c"]
-    by (metis (erased, lifting) distr_i mult.commute setsum.cong)
-
-
+  "code_rate c = (\<Sum>i \<in> X ` space M. fi i * cw_len c i)" unfolding code_rate_def
+  using simp_exp_composed[OF distr_i, of "cw_len c"]
+  by (simp add:mult.commute)
 
 abbreviation cw_len_concat :: "code \<Rightarrow> word \<Rightarrow> nat" where
   "cw_len_concat c w \<equiv> foldr (\<lambda>x s. (cw_len c x) + s) w 0"
 
 lemma maj_fold:
   fixes f::"letter \<Rightarrow> nat"
-  assumes "\<And>l. l\<in>letters \<Longrightarrow> f l \<le> bound"
+  assumes bounded: "\<And>l. l\<in>L \<Longrightarrow> f l \<le> bound"
 shows "real_word w \<Longrightarrow> foldr (\<lambda>x s. f x + s) w 0 \<le> length w * bound"
 proof (induction w)
     case Nil
@@ -173,23 +165,24 @@ next
 qed
 
 definition max_len :: "code \<Rightarrow> nat" where
-  "max_len c = Max ((\<lambda>x. cw_len c x) ` letters)"
+  "max_len c = Max ((\<lambda>x. cw_len c x) ` L)"
 
 lemma max_cw:
-  "\<And>l. l \<in> letters \<Longrightarrow> cw_len c l \<le> max_len c"
-  by (simp add: max_len_def fin_letters)
+  "\<And>l. l \<in> L \<Longrightarrow> cw_len c l \<le> max_len c"
+  by (simp add: max_len_def fin_L)
+
 
 subsection{* Related to the Kraft theorem *}
 definition kraft_sum :: "code \<Rightarrow> real" where
-  "kraft_sum c = (\<Sum>i\<in>letters. 1 / b ^ (cw_len c i))"
+  "kraft_sum c = (\<Sum>i\<in>L. 1 / b ^ (cw_len c i))"
 
 lemma pos_cw_len: "\<And>i. 0 < 1 / b ^ cw_len c i" using b_gt_1 by simp
 
 lemma kraft_sum_nonnull: "\<And>c. 0 < kraft_sum c" using kraft_sum_def b_gt_1
-  Groups_Big.ordered_comm_monoid_add_class.setsum_pos[OF fin_letters emp_letters pos_cw_len]
-    by (smt emp_letters fin_letters pos_cw_len powr_realpow setsum_pos)
+  Groups_Big.ordered_comm_monoid_add_class.setsum_pos[OF fin_L emp_L pos_cw_len]
+    by (smt emp_L fin_L pos_cw_len powr_realpow setsum_pos)
 
-lemma kraft_sum_powr: "kraft_sum c = (\<Sum>i\<in>letters. 1 / b powr (cw_len c i))"
+lemma kraft_sum_powr: "kraft_sum c = (\<Sum>i\<in>L. 1 / b powr (cw_len c i))"
     using powr_realpow b_gt_1 by (simp add: kraft_sum_def)
 
 definition kraft_inequality :: "code \<Rightarrow> bool" where
@@ -197,16 +190,16 @@ definition kraft_inequality :: "code \<Rightarrow> bool" where
 
 
 lemma k_words_rel:
-  "\<And>k. k_words (Suc k) = {w. (hd w \<in> letters \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
+  "\<And>k. k_words (Suc k) = {w. (hd w \<in> L \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
 proof
     fix k
-    show "k_words (Suc k) \<subseteq> {w. (hd w \<in> letters \<and> tl w \<in> k_words k \<and> w \<noteq> [] )}" (is "?l \<subseteq> ?r")
+    show "k_words (Suc k) \<subseteq> {w. (hd w \<in> L \<and> tl w \<in> k_words k \<and> w \<noteq> [] )}" (is "?l \<subseteq> ?r")
   proof
       fix w
       assume "w \<in> k_words (Suc k)"
       note asm = this
       hence "real_word w" by simp
-      hence "hd w \<in> letters"
+      hence "hd w \<in> L"
         by (metis (mono_tags) asm hd_in_set list.size(3) mem_Collect_eq nat.distinct(1) subset_code(1))
       moreover have len: "length w = Suc k" using asm by simp
       moreover hence "w \<noteq> []" by auto
@@ -217,13 +210,13 @@ proof
   qed
 next
     fix k
-    show "k_words (Suc k) \<supseteq> {w. (hd w \<in> letters \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
+    show "k_words (Suc k) \<supseteq> {w. (hd w \<in> L \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
   proof
       fix w
-      assume "w \<in> {w. hd w \<in> letters \<and> tl w \<in> {w. length w = k \<and> real_word w} \<and> w \<noteq>
+      assume "w \<in> {w. hd w \<in> L \<and> tl w \<in> {w. length w = k \<and> real_word w} \<and> w \<noteq>
       []}"
       note asm = this
-      hence " hd w \<in> letters \<and> length (tl w) = k \<and> real_word (tl w)" by simp
+      hence " hd w \<in> L \<and> length (tl w) = k \<and> real_word (tl w)" by simp
       hence "real_word w"
         by (metis empty_iff insert_subset list.collapse list.set(1) set_simps(2) subsetI)
       moreover hence "length w = Suc k" using asm by auto
@@ -232,12 +225,12 @@ next
 qed
 
 lemma bij_k_words:
-shows "\<And>k. bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (letters \<times> (k_words k)) (k_words (Suc k))"
+shows "\<And>k. bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (L \<times> (k_words k)) (k_words (Suc k))"
     unfolding bij_betw_def
 proof
     fix k
     let ?f = "(\<lambda>wi. Cons (fst wi) (snd wi))"
-    let ?S = "letters \<times> (k_words k)"
+    let ?S = "L \<times> (k_words k)"
     let ?T = "k_words (Suc k)"
     show "inj_on ?f ?S" by (simp add: inj_on_def)
     show "?f`?S = ?T"
@@ -258,7 +251,7 @@ proof (induct k)
     case 0
     show ?case by simp
     case (Suc n)
-    thus ?case using bij_k_words bij_betw_finite fin_letters by blast
+    thus ?case using bij_k_words bij_betw_finite fin_L by blast
 qed
 
 lemma cartesian_product:
@@ -280,19 +273,19 @@ next
     case (Suc n)
     have "kraft_sum c^Suc n = kraft_sum c^n * kraft_sum c" by simp
     also have "\<dots> =
-  (\<Sum>w \<in> k_words n. 1 / b^cw_len_concat c w) * (\<Sum>i\<in>letters. 1 / b^cw_len c i)"
+  (\<Sum>w \<in> k_words n. 1 / b^cw_len_concat c w) * (\<Sum>i\<in>L. 1 / b^cw_len c i)"
       by (metis Suc kraft_sum_def)
     also have
     "\<dots> =
-  (\<Sum>wi \<in> letters \<times> k_words n. 1/b^cw_len c (fst wi) * (1 / b^cw_len_concat c (snd wi)))"
-      using fin_letters finite_k_words[where k="n"] cartesian_product[where A="letters"]
+  (\<Sum>wi \<in> L \<times> k_words n. 1/b^cw_len c (fst wi) * (1 / b^cw_len_concat c (snd wi)))"
+      using fin_L finite_k_words[where k="n"] cartesian_product[where A="L"]
       by fastforce
     also have "\<dots> =
-  (\<Sum>wi \<in> letters \<times> k_words n. 1 / b^(cw_len_concat c (snd wi) + cw_len c (fst wi)))"
+  (\<Sum>wi \<in> L \<times> k_words n. 1 / b^(cw_len_concat c (snd wi) + cw_len c (fst wi)))"
       using b_gt_1 power_add
       by (metis (no_types, lifting) add.commute power_one_over)
     also have "\<dots> =
-  (\<Sum>wi \<in> letters \<times> k_words n. 1 / b^cw_len_concat c (fst wi # snd wi))"
+  (\<Sum>wi \<in> L \<times> k_words n. 1 / b^cw_len_concat c (fst wi # snd wi))"
       by (metis (erased, lifting) add.commute comp_apply foldr.simps(2))
     also have "\<dots> = (\<Sum>w \<in> (k_words (Suc n)). 1 / b^(cw_len_concat c w))"
       using bij_k_words setsum.reindex_bij_betw by fastforce
@@ -313,9 +306,9 @@ shows "\<And>n r. real ((n::nat) + 1) * r = (n * r + r)"
 lemma sum_vimage_proof:
   fixes g::"nat \<Rightarrow> real"
   assumes bounded: "\<And>w. f w < bd"
-shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bd. (card ((f-`{m}) \<inter> H) )* g
-  m)" (is "?fin \<Longrightarrow> ?s1 = (\<Sum> m=0..<bd. ?ff m H)")
-proof (induct H rule: finite_induct)
+shows "finite S \<Longrightarrow> (\<Sum>w\<in>S. g (f w)) = (\<Sum> m=0..<bd. (card ((f-`{m}) \<inter> S) )* g
+  m)" (is "?fin \<Longrightarrow> ?s1 = (\<Sum> m=0..<bd. ?ff m S)")
+proof (induct S rule: finite_induct)
     case empty
     show ?case by simp
 next
@@ -338,15 +331,15 @@ qed
 
 lemma sum_vimage:
   fixes g::"nat \<Rightarrow> real"
-  assumes bounded: "\<And>w. w \<in> H \<Longrightarrow> f w < bd" and "0 < bd"
-shows "finite H \<Longrightarrow> (\<Sum>w\<in>H. g (f w)) = (\<Sum> m=0..<bd. (card ((f-`{m}) \<inter> H) ) * g m)"
+  assumes bounded: "\<And>w. w \<in> S \<Longrightarrow> f w < bd" and "0 < bd"
+shows "finite S \<Longrightarrow> (\<Sum>w\<in>S. g (f w)) = (\<Sum> m=0..<bd. (card ((f-`{m}) \<inter> S) ) * g m)"
 (is "?fin \<Longrightarrow> ?s1 = ?s2")
 proof -
-    let ?ff = "(\<lambda>x. if x\<in>H then f x else 0)"
-    let ?ss1 = "(\<Sum>w\<in>H. g (?ff w))"
+    let ?ff = "(\<lambda>x. if x\<in>S then f x else 0)"
+    let ?ss1 = "(\<Sum>w\<in>S. g (?ff w))"
     have eq1: "?s1 =?ss1" by simp
-    let ?ss2 = "(\<Sum> m=0..<bd. (card ((?ff-`{m}) \<inter> H) ) * g m)"
-    have"\<And>m. ?ff -`{m} \<inter> H = f-`{m} \<inter> H" by auto
+    let ?ss2 = "(\<Sum> m=0..<bd. (card ((?ff-`{m}) \<inter> S) ) * g m)"
+    have"\<And>m. ?ff -`{m} \<inter> S = f-`{m} \<inter> S" by auto
     hence eq2: "?s2 = ?ss2" by simp
     have boundedff: "\<And>w . ?ff w < bd" using assms by simp
     hence "?fin \<Longrightarrow> ?ss1 = ?ss2"
@@ -528,23 +521,23 @@ proof -
 qed
 
 lemma entropy_rewrite:
-shows "source_entropy = -(\<Sum>i \<in> letters. fi i * log b (fi i))"
+shows "H = -(\<Sum>i \<in> L. fi i * log b (fi i))"
 proof -
-    have sum_set: "(Input 0) ` space M = letters" using bounded_input by simp
-    have "source_entropy = \<H>(Input 0)" using entropy_defi by simp
-    also have "\<dots> = entropy b (count_space ((Input 0)`space M)) (Input 0)" by simp
-    finally have "\<dots> = -(\<Sum>i \<in> letters. fi i * log b (fi i))"
+    have sum_set: "X ` space M = L" using bounded_input by simp
+    have "H = \<H>(X)" using entropy_defi by simp
+    also have "\<dots> = entropy b (count_space ((X)`space M)) (X)" by simp
+    finally have "\<dots> = -(\<Sum>i \<in> L. fi i * log b (fi i))"
       using distr_i entropy_simple_distributed sum_set by blast
     thus ?thesis by (metis entropy_defi)
 qed
 
 
 lemma entropy_rw:
-shows "source_entropy = -(\<Sum>i \<in> (Input 0) ` space M. fi i * log b (fi i))"
+shows "H = -(\<Sum>i \<in> (X) ` space M. fi i * log b (fi i))"
 proof -
-    have "source_entropy = \<H>(Input 0)" using entropy_defi by simp
-    also have "\<dots> = entropy b (count_space ((Input 0)`space M)) (Input 0)" by simp
-    finally have "\<dots> = -(\<Sum>i \<in> (Input 0) ` space M. fi i * log b (fi i))"
+    have "H = \<H>(X)" using entropy_defi by simp
+    also have "\<dots> = entropy b (count_space ((X)`space M)) (X)" by simp
+    finally have "\<dots> = -(\<Sum>i \<in> (X) ` space M. fi i * log b (fi i))"
       using distr_i entropy_simple_distributed by blast
     thus ?thesis
       by (metis entropy_defi)
@@ -752,20 +745,20 @@ theorem rate_lower_bound :
   defines "l \<equiv> (\<lambda>i. cw_len c i)"
   defines "p \<equiv> (\<lambda>i. fi i)"
   defines "LL \<equiv> L - {i. p i = 0}"
-  defines "F \<equiv> (Input 0 ` space M)"
-shows "source_entropy \<le> code_rate c"
+  defines "F \<equiv> (X ` space M)"
+shows "H \<le> code_rate c"
 proof -
     let ?c = "kraft_sum c"
     let ?r = "(\<lambda>i. 1 / ((b powr l i) * ?c))"
     {
     fix i
-    assume "i \<in> letters"
+    assume "i \<in> L"
   (* TODO using bounded_input *)
     hence "0 \<le> p i" using simple_distributed_nonneg[OF distr_i] p_def bounded_input by fast
-    } hence pos_pi: "\<And>i. i \<in> letters \<Longrightarrow> 0 \<le> p i" by simp
+    } hence pos_pi: "\<And>i. i \<in> L \<Longrightarrow> 0 \<le> p i" by simp
     {
     fix i
-    assume "i \<in> letters"
+    assume "i \<in> L"
     note asm = this
     hence
     "p i * (log b (1 / (1 / b powr (l i))) + log b (p i))
@@ -781,16 +774,16 @@ proof -
   qed
     }
     hence
-    eqpi: "\<And>i. i\<in> letters \<Longrightarrow> p i * (log b (1 / (1 / b powr (l i))) + log b (p i))
+    eqpi: "\<And>i. i\<in> L \<Longrightarrow> p i * (log b (1 / (1 / b powr (l i))) + log b (p i))
     = p i * log b (p i / (1 / b powr (l i)))"
       by simp
     have sum_one: "(\<Sum> i \<in> F. p i) = 1"
-      using simple_distributed_setsum_space[OF distr_i[of 0]] p_def F_def by simp
+      using simple_distributed_setsum_space[OF distr_i] p_def F_def by simp
   (* TODO using bounded_input *)
     hence sum_one_L: "(\<Sum> i \<in> L. p i) = 1" using bounded_input F_def by simp
     {
     fix i
-    assume "i \<in> letters"
+    assume "i \<in> L"
     note asm = this
     have
     "p i * log b (p i * ?c / (1/b powr l i) * (1 / kraft_sum c)) =
@@ -806,10 +799,10 @@ proof -
       divide_1 divide_pos_pos inverse_divide powr_gt_zero times_divide_eq_right)
   qed
     } hence
-    big_eq: "\<And>i. i \<in> letters \<Longrightarrow> p i * log b (p i * ?c / (1/b powr l i) * (1 / kraft_sum c)) =
+    big_eq: "\<And>i. i \<in> L \<Longrightarrow> p i * log b (p i * ?c / (1/b powr l i) * (1 / kraft_sum c)) =
     p i * log b (p i * ?c / (1/b powr l i)) + p i * log b (1 / kraft_sum c)"
       by simp
-    have 1: "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * l i) + (\<Sum>i \<in> L. p i * log b (p i))"
+    have 1: "code_rate c - H = (\<Sum>i \<in> L. p i * l i) + (\<Sum>i \<in> L. p i * log b (p i))"
       using kraft_sum_def entropy_rewrite bounded_input distr_i
       using code_rate_def code_rate_rw bounded_input l_def p_def by simp
     also have 2: "(\<Sum>i\<in>L. p i * l i) = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i)))))"
@@ -820,10 +813,10 @@ proof -
     [of "-1" "(\<lambda>i. p i * (- 1 * log b (1 / b powr (l i))))" L]
       by simp
     finally have
-    "code_rate c - source_entropy= -(\<Sum>i \<in> L. p i * log b (1/b powr l i)) + (\<Sum>i \<in> L. p i * log b (p i))"
+    "code_rate c - H= -(\<Sum>i \<in> L. p i * log b (1/b powr l i)) + (\<Sum>i \<in> L. p i * log b (p i))"
       by simp
     from 1 2 have
-    "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i))))) + (\<Sum>i \<in> L. p i * log b (p i))"
+    "code_rate c - H = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i))))) + (\<Sum>i \<in> L. p i * log b (p i))"
       by simp
     also have "\<dots> = (\<Sum>i \<in> L. p i * (log b (1/ (1/(b powr (l i)))))) + (\<Sum>i \<in> L. p i * log b (p i))"
       using b_gt_1 powr_minus_divide log_powr_cancel by (smt setsum.cong)
@@ -855,10 +848,10 @@ proof -
     also have "\<dots> = KL_cus L p ?r - log b ( ?c)" using sum_one by (simp add: KL_cus_def)
     also have "\<dots> = KL_cus L p ?r + log b (inverse ?c)"
       using log_inverse b_gt_1 kraft_sum_nonnull by simp
-    finally have code_ent_kl_log: "code_rate c - source_entropy = KL_cus L p ?r + log b (inverse ?c)"
+    finally have code_ent_kl_log: "code_rate c - H = KL_cus L p ?r + log b (inverse ?c)"
       by simp
     have sum_r_one: "setsum ?r L = 1"
-      using sum_div_1[OF fin_letters,
+      using sum_div_1[OF fin_L,
     of "\<lambda>i. 1 / (b powr (l i))"] kraft_sum_nonnull[of c]
     l_def kraft_sum_powr[of c] kraft_sum_def
       by simp
@@ -866,13 +859,13 @@ proof -
       using kraft_sum_nonnull by auto
     have sum_fi_one: "(\<Sum>i\<in>L. fi i) = 1" using bounded_input sum_one_L by (simp add: p_def)
     have "0 \<le> KL_cus L p ?r"
-      using KL_cus_pos2[OF fin_letters fi_pos r_non_null sum_fi_one sum_r_one] by (simp add: p_def)
-    hence "log b (inverse ?c) \<le> code_rate c -source_entropy" using code_ent_kl_log by simp
-    hence "log b (inverse (kraft_sum c)) \<le> code_rate c - source_entropy" by simp
+      using KL_cus_pos2[OF fin_L fi_pos r_non_null sum_fi_one sum_r_one] by (simp add: p_def)
+    hence "log b (inverse ?c) \<le> code_rate c -H" using code_ent_kl_log by simp
+    hence "log b (inverse (kraft_sum c)) \<le> code_rate c - H" by simp
     moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum c))"
       using kraft_sum_nonnull unfolding kraft_inequality_def
       by (metis b_gt_1 log_inverse_eq log_le_zero_cancel_iff neg_0_le_iff_le)
-    ultimately have "0 \<le> code_rate c - source_entropy" using McMillan assms by simp
+    ultimately have "0 \<le> code_rate c - H" using McMillan assms by simp
     thus ?thesis by simp
 qed
 end
