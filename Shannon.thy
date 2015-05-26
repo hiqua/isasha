@@ -819,7 +819,7 @@ proof -
       by simp
     have 1: "code_rate c - source_entropy = (\<Sum>i \<in> L. p i * l i) + (\<Sum>i \<in> L. p i * log b (p i))"
       using kraft_sum_def entropy_rewrite bounded_input distr_i
-      using code_rate_def code_rate_rw bounded_input l_def p_def by auto
+      using code_rate_def code_rate_rw bounded_input l_def p_def by simp
     also have 2: "(\<Sum>i\<in>L. p i * l i) = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i)))))"
       using b_gt_1 log_divide by auto
     also have "\<dots> = (\<Sum>i \<in> L. p i * (-1 * log b (1/(b powr (l i)))))" by simp
