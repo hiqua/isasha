@@ -43,19 +43,13 @@ locale information_space_discrete = information_space +
   fixes input_bound :: letter
   fixes Output :: "nat \<Rightarrow> ('a \<Rightarrow> letter)"
   fixes fi :: "prob"
-  fixes fo :: "prob"
-(* fixes N :: "'a measure" --"we should take M? ----> yes!" *)
-  fixes N' :: "letter measure"
   fixes letters :: "letter set"
-  assumes distr_i:
-  "simple_distributed M (Input i) fi"
-  assumes distr_o:
-  "simple_distributed M (Output i) fo"
-  assumes memoryless:
-  "(m \<noteq> n \<longrightarrow> (indep_var N' (Input m) N' (Output n)) \<and> indep_var N' (Output m) N' (Output n))"
-  assumes mutual_info:
-  "\<I>(Input n ; Output n) > 0"
-(* According to RAHM, this should be a rat, I'll look into this later *)
+  assumes distr_i: "simple_distributed M (Input i) fi"
+(*
+According to RAHM, this should be a rat: my impression is that they aim for a code that can achieve
+precisely this rate, however the gist is that we can achieve a rate equal OR better than
+H +\<epsilon>, so in my mind it is not that important. In the Shannon's original paper it is not clear either.
+*)
   fixes source_entropy::real
 
 (*
@@ -70,7 +64,9 @@ Isabelle vs Coq/SSreflect, where dependent parameter types are available.
 *)
   assumes b_val: "b = 2"
   assumes entropy_defi: "source_entropy = \<H>(Input 0)"
-  assumes letters_def: "letters = {0..input_bound}"
+  assumes fin_letters: "finite letters"
+  assumes emp_letters: "letters \<noteq> {}"
+
   assumes bounded_input: "\<And>i. (Input i) ` space M = letters"
 (* TODO: check if this assumption is not redundant, i.e. simple_distributed \<Longrightarrow>? positive function *)
   assumes fi_pos: "\<And>i. 0 \<le> fi i"
@@ -88,10 +84,6 @@ section{* Source coding theorem, direct: the entropy is a lower bound *}
 subsection{* A few simple lemmas *}
 context information_space_discrete
 begin
-lemma fin_letters: "finite letters" using simple_distributed_finite[OF distr_i] bounded_input
-    by simp
-
-lemma emp_letters: "letters \<noteq> {}" by (simp add: letters_def)
 abbreviation "L \<equiv> letters"
 
 subsection{* Codes and words *}
@@ -181,11 +173,11 @@ next
 qed
 
 definition max_len :: "code \<Rightarrow> nat" where
-  "max_len c = Max ((\<lambda>x. cw_len c x) ` {n. n \<le> input_bound})"
+  "max_len c = Max ((\<lambda>x. cw_len c x) ` letters)"
 
 lemma max_cw:
   "\<And>l. l \<in> letters \<Longrightarrow> cw_len c l \<le> max_len c"
-  using letters_def max_len_def by simp
+  by (simp add: max_len_def fin_letters)
 
 subsection{* Related to the Kraft theorem *}
 definition kraft_sum :: "code \<Rightarrow> real" where
