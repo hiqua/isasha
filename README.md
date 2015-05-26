@@ -1,10 +1,18 @@
 # isasha
+
 ## Gist
-Formalization and proofs of Shannon's theorems in Isabelle
+
+Attempt to formalize and proofs of Shannon's theorems in Isabelle, to replicate what has been done in Coq/SSReflect.
 
 ## How-to
 
+### Parse and explore the file
+
 Use [**Isabelle2015**](https://www.cl.cam.ac.uk/research/hvg/Isabelle) to open this file.
+
+### Indention
+
+I ended up writing a small python script to avoid indenting my code by hand, it's really [hackish](https://github.com/hiqua/isadent).
 
 ## References
 
