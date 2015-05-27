@@ -723,10 +723,10 @@ qed
 
 (* Used in many theorems... *)
 lemma sum_div_1:
-  fixes f::"'b\<Rightarrow>real"
+  fixes f::"'b \<Rightarrow> 'c::field"
   assumes fin: "finite A"
   assumes "(\<Sum>i\<in>A. f i) \<noteq> 0"
-  defines "S \<equiv>\<Sum>i\<in>A. f i"
+  defines "S \<equiv> \<Sum>i\<in>A. f i"
 shows "(\<Sum>i\<in>A. f i / S) = 1"
     by (metis (no_types) S_def assms(2) right_inverse_eq setsum_divide_distrib)
 
