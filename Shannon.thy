@@ -196,26 +196,24 @@ proof
     show "k_words (Suc k) \<subseteq> {w. (hd w \<in> L \<and> tl w \<in> k_words k \<and> w \<noteq> [] )}" (is "?l \<subseteq> ?r")
   proof
       fix w
-      assume "w \<in> k_words (Suc k)"
-      note asm = this
+      assume w_kw: "w \<in> k_words (Suc k)"
       hence "real_word w" by simp
       hence "hd w \<in> L"
-        by (metis (mono_tags) asm hd_in_set list.size(3) mem_Collect_eq nat.distinct(1) subset_code(1))
-      moreover have len: "length w = Suc k" using asm by simp
+        by (metis (mono_tags) w_kw hd_in_set list.size(3) mem_Collect_eq nat.distinct(1) subset_code(1))
+      moreover have len: "length w = Suc k" using w_kw by simp
       moreover hence "w \<noteq> []" by auto
       moreover have "length (tl w) = k" using len by simp
-      moreover have "real_word (tl w)" using asm
+      moreover have "real_word (tl w)" using w_kw
         by (metis `real_word w` calculation(2) list.size(3) nat.distinct(1) rw_tail)
-      ultimately show "w \<in> ?r" using asm by simp
+      ultimately show "w \<in> ?r" using w_kw by simp
   qed
 next
     fix k
     show "k_words (Suc k) \<supseteq> {w. (hd w \<in> L \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
   proof
       fix w
-      assume "w \<in> {w. hd w \<in> L \<and> tl w \<in> {w. length w = k \<and> real_word w} \<and> w \<noteq>
+      assume asm: "w \<in> {w. hd w \<in> L \<and> tl w \<in> {w. length w = k \<and> real_word w} \<and> w \<noteq>
       []}"
-      note asm = this
       hence " hd w \<in> L \<and> length (tl w) = k \<and> real_word (tl w)" by simp
       hence "real_word w"
         by (metis empty_iff insert_subset list.collapse list.set(1) set_simps(2) subsetI)
@@ -237,8 +235,7 @@ proof
   proof (rule ccontr)
       assume "?f ` ?S \<noteq> ?T"
       hence "\<exists>w. w\<in> ?T \<and> w \<notin> ?f`?S" by auto
-      then obtain w where "w\<in> ?T \<and> w \<notin> ?f`?S" by blast
-      note asm = this
+      then obtain w where asm: "w\<in> ?T \<and> w \<notin> ?f`?S" by blast
       hence "w = ?f ((hd w),(tl w))" using k_words_rel by simp
       moreover have "((hd w),(tl w)) \<in> ?S" using k_words_rel asm by simp
       ultimately have "w \<in> ?f`?S" by blast
@@ -461,8 +458,7 @@ shows "set_of_k_words_length_m c k 0 = {}"
 proof (rule ccontr)
     assume "\<not> set_of_k_words_length_m c k 0 = {}"
     hence "\<exists>x. x \<in> set_of_k_words_length_m c k 0" by auto
-    then obtain x where "x \<in> set_of_k_words_length_m c k 0" by auto
-    note x_def = this
+    then obtain x where x_def: "x \<in> set_of_k_words_length_m c k 0" by auto
     hence "x \<noteq> []" unfolding set_of_k_words_length_m_def using assms by auto
     moreover have "cw_len_concat c (hd x#tl x) = cw_len_concat c (tl x) + cw_len c (hd x)"
       by (metis add.commute comp_apply foldr.simps(2))
@@ -584,11 +580,10 @@ shows "KL_cus S a c \<ge> KL_cus S a (\<lambda>i. c i / d)"
     unfolding KL_cus_def
 proof -
     {fix i
-    assume "i\<in>S"
-    note asm = this
+    assume iS: "i\<in>S"
     hence "(a i / ((c i) / d)) \<le> (a i / c i)" using pos assms
       by (metis (no_types) divide_1 frac_le less_imp_triv not_less)
-    hence "log b (a i / (c i / d)) \<le> log b (a i / c i)" using log_less assms asm
+    hence "log b (a i / (c i / d)) \<le> log b (a i / c i)" using log_less assms iS
       by (metis (full_types) b_gt_1 divide_divide_eq_left inverse_divide le_less_linear log_le
     log_neg_const order_refl times_divide_eq_right zero_less_mult_iff)
     }
@@ -662,7 +657,6 @@ proof -
       thus ?thesis unfolding KL_cus_def by simp
   next
       case False
-      note asm = this
       let ?c = "\<lambda>i. c i / (\<Sum>j \<in>(S \<inter> {i. 0 < a i}). c j)"
     (* a pos *)
       have 1: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < a i)" by simp
@@ -676,13 +670,13 @@ proof -
         by (metis setsum_divide_distrib)
     (* sum ?c equals to 1 *)
       hence 5: "(\<Sum>i\<in>S \<inter> {j. 0 < a j}. ?c i) = 1"
-        using "2" asm by force
+        using "2" False by force
       hence "0 \<le> KL_cus (S \<inter> {j. 0 < a j}) a ?c" using
       KL_cus_pos_gen[
       OF finite_Int[OF disjI1, of S, of "{j. 0 < a j}"], of a, of ?c
       ] 1 2 3
         by (metis fin)
-      have fstdb: "0 < setsum c (S \<inter> {i. 0 < a i})" using non_null(2) asm
+      have fstdb: "0 < setsum c (S \<inter> {i. 0 < a i})" using non_null(2) False
         by (metis Int_Collect fin finite_Int setsum_pos)
       have "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < a i) \<Longrightarrow>
     (\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < c i / setsum c (S \<inter> {i. 0 < a i})) \<Longrightarrow>
@@ -754,12 +748,11 @@ proof -
     fix i
     assume "i \<in> L"
   (* TODO using bounded_input *)
-    hence "0 \<le> p i" using simple_distributed_nonneg[OF distr_i] p_def bounded_input by fast
+    hence "0 \<le> p i" using simple_distributed_nonneg[OF distr_i] p_def bounded_input by blast
     } hence pos_pi: "\<And>i. i \<in> L \<Longrightarrow> 0 \<le> p i" by simp
     {
     fix i
-    assume "i \<in> L"
-    note asm = this
+    assume iL: "i \<in> L"
     hence
     "p i * (log b (1 / (1 / b powr (l i))) + log b (p i))
     = p i * log b (p i / (1 / b powr (l i)))"
@@ -770,7 +763,7 @@ proof -
       thus ?thesis
         by (simp add:
       `\<And>y i. \<lbrakk>i \<in> L; 0 < y\<rbrakk> \<Longrightarrow> p i * log b (p i * y) = p i * log b (p i) + p i * log b y`
-      asm linordered_field_class.sign_simps(36))
+      iL linordered_field_class.sign_simps(36))
   qed
     }
     hence
@@ -783,12 +776,11 @@ proof -
     hence sum_one_L: "(\<Sum> i \<in> L. p i) = 1" using bounded_input F_def by simp
     {
     fix i
-    assume "i \<in> L"
-    note asm = this
+    assume iL: "i \<in> L"
     have
     "p i * log b (p i * ?c / (1/b powr l i) * (1 / kraft_sum c)) =
     p i * log b (p i * ?c / (1/b powr l i)) + p i * log b (1 / kraft_sum c)"
-      using log_mult_ext[OF pos_pi[OF asm]
+      using log_mult_ext[OF pos_pi[OF iL]
     Fields.linordered_field_class.positive_imp_inverse_positive[OF kraft_sum_nonnull[of c]],
     of "kraft_sum c / (1 / b powr (l i))"]
   proof -
@@ -853,7 +845,7 @@ proof -
     have sum_r_one: "setsum ?r L = 1"
       using sum_div_1[OF fin_L,
     of "\<lambda>i. 1 / (b powr (l i))"] kraft_sum_nonnull[of c]
-    l_def kraft_sum_powr[of c] kraft_sum_def
+    l_def kraft_sum_powr[of c]
       by simp
     have r_non_null: "\<And>i. 0 < ?r i" using b_gt_1
       using kraft_sum_nonnull by auto
