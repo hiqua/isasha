@@ -724,11 +724,10 @@ qed
 (* Used in many theorems... *)
 lemma sum_div_1:
   fixes f::"'b \<Rightarrow> 'c::field"
-  assumes fin: "finite A"
   assumes "(\<Sum>i\<in>A. f i) \<noteq> 0"
   defines "S \<equiv> \<Sum>i\<in>A. f i"
 shows "(\<Sum>i\<in>A. f i / S) = 1"
-    by (metis (no_types) S_def assms(2) right_inverse_eq setsum_divide_distrib)
+    by (metis (no_types) S_def assms right_inverse_eq setsum_divide_distrib)
 
 (*
 _Kraft inequality for real codes using the McMillan theorem
@@ -825,7 +824,7 @@ proof -
       using b_gt_1 kraft_sum_nonnull by (simp add: log_inverse KL_cus_def)
     finally have code_ent_kl_log: "code_rate c - H = KL_cus L p ?r + log b (inverse ?c)" by simp
     have sum_r_one: "setsum ?r L = 1"
-      using sum_div_1[OF fin_L, of "\<lambda>i. 1 / (b powr (l i))"]
+      using sum_div_1[of "\<lambda>i. 1 / (b powr (l i))"]
       kraft_sum_nonnull[of c] l_def kraft_sum_powr[of c]
       by simp
     have r_non_null: "\<And>i. 0 < ?r i" using b_gt_1
