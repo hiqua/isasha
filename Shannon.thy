@@ -516,28 +516,9 @@ proof -
     thus "kraft_inequality c" unfolding kraft_inequality_def by simp
 qed
 
-lemma entropy_rewrite:
-shows "H = -(\<Sum>i \<in> L. fi i * log b (fi i))"
-proof -
-    have sum_set: "X ` space M = L" using bounded_input by simp
-    have "H = \<H>(X)" using entropy_defi by simp
-    also have "\<dots> = entropy b (count_space ((X)`space M)) (X)" by simp
-    finally have "\<dots> = -(\<Sum>i \<in> L. fi i * log b (fi i))"
-      using distr_i entropy_simple_distributed sum_set by blast
-    thus ?thesis by (metis entropy_defi)
-qed
-
-
-lemma entropy_rw:
-shows "H = -(\<Sum>i \<in> (X) ` space M. fi i * log b (fi i))"
-proof -
-    have "H = \<H>(X)" using entropy_defi by simp
-    also have "\<dots> = entropy b (count_space ((X)`space M)) (X)" by simp
-    finally have "\<dots> = -(\<Sum>i \<in> (X) ` space M. fi i * log b (fi i))"
-      using distr_i entropy_simple_distributed by blast
-    thus ?thesis
-      by (metis entropy_defi)
-qed
+lemma entropy_rewrite: "H = -(\<Sum>i \<in> L. fi i * log b (fi i))"
+  using entropy_simple_distributed[OF distr_i] bounded_input
+  by (simp add: entropy_defi)
 
 lemma log_mult_ext: "\<And>x y z. 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow>
   x * log b (x*z*y) = x * log b (x*z) + x * log b y"
