@@ -738,9 +738,7 @@ proof -
     = p i * log b (p i / (1 / b powr (l i)))"
       using log_mult_ext2[OF pos_pi] powr_gt_zero
   proof -
-      have "1 < b"
-        using b_gt_1 by blast
-      thus ?thesis
+      from b_gt_1 show ?thesis
         by (simp add:
       `\<And>y i. \<lbrakk>i \<in> L; 0 < y\<rbrakk> \<Longrightarrow> p i * log b (p i * y) = p i * log b (p i) + p i * log b y`
       iL linordered_field_class.sign_simps(36))
@@ -770,15 +768,14 @@ proof -
       p i * log b (p i * (kraft_sum c / (1 / b powr (l i)))) + p i * log b (inverse (kraft_sum c))`
       divide_1 divide_pos_pos inverse_divide powr_gt_zero times_divide_eq_right)
   qed
-    } hence
-    big_eq: "\<And>i. i \<in> L \<Longrightarrow> p i * log b (p i * ?c / (1/b powr l i) * (1 / kraft_sum c)) =
+    } hence big_eq:
+    "\<And>i. i \<in> L \<Longrightarrow> p i * log b (p i * ?c / (1/b powr l i) * (1 / kraft_sum c)) =
     p i * log b (p i * ?c / (1/b powr l i)) + p i * log b (1 / kraft_sum c)"
       by simp
     have 1: "code_rate c - H = (\<Sum>i \<in> L. p i * l i) + (\<Sum>i \<in> L. p i * log b (p i))"
       using kraft_sum_def entropy_rewrite code_rate_rw bounded_input l_def p_def by simp
     also have 2: "(\<Sum>i\<in>L. p i * l i) = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i)))))"
       using b_gt_1 log_divide by simp
-    also have "\<dots> = (\<Sum>i \<in> L. p i * (-1 * log b (1/(b powr (l i)))))" by simp
     also have "\<dots> = -1 * (\<Sum>i \<in> L. p i * (log b (1/(b powr (l i)))))"
       using setsum_right_distrib[of "-1" "(\<lambda>i. p i * (- 1 * log b (1 / b powr (l i))))" L]
       by simp
@@ -786,7 +783,7 @@ proof -
     "code_rate c - H = -(\<Sum>i \<in> L. p i * log b (1/b powr l i)) + (\<Sum>i \<in> L. p i * log b (p i))"
       by simp
     have "code_rate c - H = (\<Sum>i \<in> L. p i * ((log b (1/ (1/(b powr (l i))))) +log b (p i)))"
-      using b_gt_1 1 2
+      using b_gt_1 1
       by (simp add: distrib_left setsum.distrib)
     also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i / (1/(b powr (l i)))))))"
       using Cartesian_Euclidean_Space.setsum_cong_aux[OF eqpi] by simp
@@ -794,30 +791,27 @@ proof -
     "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr (l i))))) + (\<Sum>i \<in> L. p i) * log b (1/ ?c)"
       using kraft_sum_nonnull[of c]
       by (simp add: setsum_left_distrib setsum.distrib)
-    also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr (l i))))) + log b (1/?c)"
-      by (simp add: sum_one_L)
     also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr (l i))))) - log b (?c)"
       using kraft_sum_nonnull
-      by (simp add: log_inverse_eq divide_inverse)
+      by (simp add: log_inverse_eq divide_inverse sum_one_L)
     also have "\<dots> = (\<Sum> i \<in> L. p i * log b (p i / ?r i)) - log b (?c)"
       by (metis (mono_tags, hide_lams) divide_divide_eq_left divide_divide_eq_right)
     also have "\<dots> = KL_cus L p ?r + log b (inverse ?c)"
       using b_gt_1 kraft_sum_nonnull by (simp add: log_inverse KL_cus_def)
     finally have code_ent_kl_log: "code_rate c - H = KL_cus L p ?r + log b (inverse ?c)" by simp
-    have sum_r_one: "setsum ?r L = 1"
+    have "setsum ?r L = 1"
       using sum_div_1[of "\<lambda>i. 1 / (b powr (l i))"]
       kraft_sum_nonnull[of c] l_def kraft_sum_powr[of c]
       by simp
-    have r_non_null: "\<And>i. 0 < ?r i" using b_gt_1
-      kraft_sum_nonnull by simp
-    have sum_fi_one: "(\<Sum>i\<in>L. fi i) = 1" using sum_one_L by (simp add: p_def)
-    have "0 \<le> KL_cus L p ?r"
-      using KL_cus_pos2[OF fin_L fi_pos r_non_null sum_fi_one sum_r_one] by (simp add: p_def)
-    hence "log b (inverse ?c) \<le> code_rate c -H" using code_ent_kl_log by simp
+    moreover have "\<And>i. 0 < ?r i" using b_gt_1 kraft_sum_nonnull by simp
+    moreover have "(\<Sum>i\<in>L. fi i) = 1" using sum_one_L by (simp add: p_def)
+    ultimately have "0 \<le> KL_cus L p ?r"
+      using KL_cus_pos2[OF fin_L fi_pos _ _ _] by (simp add: p_def)
+    hence "log b (inverse ?c) \<le> code_rate c - H" using code_ent_kl_log by simp
     hence "log b (inverse (kraft_sum c)) \<le> code_rate c - H" by simp
     moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum c))"
       using kraft_sum_nonnull unfolding kraft_inequality_def
-      by (simp add: b_gt_1 log_inverse_eq )
+      by (simp add: b_gt_1 log_inverse_eq)
     ultimately show ?thesis by simp
 qed
 end
