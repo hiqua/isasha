@@ -10,13 +10,13 @@ section{* Basic types *}
 type_synonym bit = bool
 type_synonym bword = "bit list"
 type_synonym letter = nat
-type_synonym word = "letter list"
+type_synonym 'b word = "'b list"
 
-type_synonym encoder = "word \<Rightarrow> bword"
-type_synonym decoder = "bword \<Rightarrow> word option"
-type_synonym code = "encoder * decoder"
+type_synonym 'b encoder = "'b word \<Rightarrow> bword"
+type_synonym 'b decoder = "bword \<Rightarrow> 'b word option"
+type_synonym 'b code = "'b encoder * 'b decoder"
 
-type_synonym prob = "letter \<Rightarrow> real"
+type_synonym 'b prob = "'b \<Rightarrow> real"
 
 section{* First locale, generic to both Shannon's theorems *}
 (*
@@ -37,8 +37,8 @@ TODO: link between bword and the variable b
 (* locale generic to both theorems *)
 locale information_space_discrete = information_space +
 (* information source *)
-  fixes fi :: "prob"
-  fixes X::"'a \<Rightarrow> letter"
+  fixes fi :: "'b \<Rightarrow> real"
+  fixes X::"'a \<Rightarrow> 'b"
   assumes distr_i: "simple_distributed M X fi"
 (*
 According to RAHM, this should be a rat: my impression is that they aim for a code that can achieve
@@ -60,7 +60,7 @@ Isabelle vs Coq/SSreflect, where dependent parameter types are available.
   assumes b_val: "b = 2"
   assumes entropy_defi: "H = \<H>(X)"
 
-  fixes L :: "letter set"
+  fixes L :: "'b set"
   assumes fin_L: "finite L"
   assumes emp_L: "L \<noteq> {}"
 
@@ -86,26 +86,26 @@ It would be better if it were quantified over x with set x \<subseteq> letters. 
 extensions of code which would be allowed to be really inefficient if not set x \<subseteq> letters, and we
 could still have this predicate.
 *)
-definition lossless_code :: "code \<Rightarrow> bool" where
+definition lossless_code :: "'b code \<Rightarrow> bool" where
   "lossless_code c = (\<forall>x. snd c (fst c x) = Some x)"
 
 (*
 Concatenated code: code taken by encoding each letter and concatenate the result
 *)
-definition concat_code :: "code \<Rightarrow> bool" where
+definition concat_code :: "'b code \<Rightarrow> bool" where
   "concat_code c = (\<forall>x. fst c x = (fst c) [(hd x)] @ (fst c) (tl x))"
 
 (*
 A code is uniquely decodable iff its concatenation is non-singular
 *)
-definition u_decodable :: "code \<Rightarrow> bool" where
+definition u_decodable :: "'b code \<Rightarrow> bool" where
   "u_decodable c = (\<forall>x. \<forall>y. snd c (fst c x) = snd c (fst c y) \<longrightarrow> x = y)"
 
-abbreviation real_word :: "word \<Rightarrow> bool" where
+abbreviation real_word :: "'b word \<Rightarrow> bool" where
   "real_word w \<equiv> (set w \<subseteq> L)"
 
 
-abbreviation k_words :: "nat \<Rightarrow> word set" where
+abbreviation k_words :: "nat \<Rightarrow> ('b word) set" where
   "k_words k \<equiv> {w. length w = k \<and> real_word w}"
 
 lemma rw_tail: "real_word w \<Longrightarrow> w = [] \<or> real_word (tl w)"
@@ -116,20 +116,20 @@ Is the code a real source encoding code?
 _lossless
 _uniquely decodable
 *)
-definition real_code ::"code \<Rightarrow> bool" where
+definition real_code ::"'b code \<Rightarrow> bool" where
   "real_code c = ((lossless_code c) \<and> (\<forall>w. (fst c) w = [] \<longleftrightarrow> w = []) \<and> concat_code c)"
 
 (*
 length of the codeword associated with the letter
 *)
-definition cw_len :: "code \<Rightarrow> letter \<Rightarrow> nat" where
+definition cw_len :: "'b code \<Rightarrow> 'b \<Rightarrow> nat" where
   "cw_len c l = length ((fst c) [l])"
 
 (*
 The code rate is the expectation of the length of the code taken on all inputs (which is a finite
 set, the set of letters).
 *)
-definition code_rate :: "code \<Rightarrow> real" where
+definition code_rate :: "'b code \<Rightarrow> real" where
   "code_rate c = expectation (\<lambda>a. (cw_len c ((X) a)))"
 
 (*
@@ -146,11 +146,11 @@ lemma code_rate_rw:
   using simp_exp_composed[OF distr_i, of "cw_len c"]
   by (simp add:mult.commute)
 
-abbreviation cw_len_concat :: "code \<Rightarrow> word \<Rightarrow> nat" where
+abbreviation cw_len_concat :: "'b code \<Rightarrow> 'b word \<Rightarrow> nat" where
   "cw_len_concat c w \<equiv> foldr (\<lambda>x s. (cw_len c x) + s) w 0"
 
 lemma maj_fold:
-  fixes f::"letter \<Rightarrow> nat"
+  fixes f::"'b \<Rightarrow> nat"
   assumes bounded: "\<And>l. l\<in>L \<Longrightarrow> f l \<le> bound"
 shows "real_word w \<Longrightarrow> foldr (\<lambda>x s. f x + s) w 0 \<le> length w * bound"
 proof (induction w)
@@ -164,7 +164,7 @@ next
     ultimately show ?case using assms Cons.IH by fastforce
 qed
 
-definition max_len :: "code \<Rightarrow> nat" where
+definition max_len :: "'b code \<Rightarrow> nat" where
   "max_len c = Max ((\<lambda>x. cw_len c x) ` L)"
 
 lemma max_cw:
@@ -173,7 +173,7 @@ lemma max_cw:
 
 
 subsection{* Related to the Kraft theorem *}
-definition kraft_sum :: "code \<Rightarrow> real" where
+definition kraft_sum :: "'b code \<Rightarrow> real" where
   "kraft_sum c = (\<Sum>i\<in>L. 1 / b ^ (cw_len c i))"
 
 lemma pos_cw_len: "\<And>i. 0 < 1 / b ^ cw_len c i" using b_gt_1 by simp
@@ -185,7 +185,7 @@ lemma kraft_sum_nonnull: "\<And>c. 0 < kraft_sum c" using kraft_sum_def b_gt_1
 lemma kraft_sum_powr: "kraft_sum c = (\<Sum>i\<in>L. 1 / b powr (cw_len c i))"
     using powr_realpow b_gt_1 by (simp add: kraft_sum_def)
 
-definition kraft_inequality :: "code \<Rightarrow> bool" where
+definition kraft_inequality :: "'b code \<Rightarrow> bool" where
   "kraft_inequality c = (kraft_sum c \<le> 1)"
 
 
@@ -253,7 +253,7 @@ qed
 
 lemma cartesian_product:
   fixes f::"('c \<Rightarrow> real)"
-  fixes g::"('b \<Rightarrow> real)"
+  fixes g::"('d \<Rightarrow> real)"
 shows "finite A \<Longrightarrow> finite B \<Longrightarrow>
 (\<Sum>b\<in>B. g b)* (\<Sum>a\<in>A. f a) = (\<Sum>ab\<in>A\<times>B. f (fst ab) * g (snd ab))"
     using bilinear_times bilinear_setsum[where h="(\<lambda>x y. x * y)" and f="f"
@@ -368,7 +368,7 @@ proof -
       by fastforce
 qed
 
-definition set_of_k_words_length_m :: "code \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> word set" where
+definition set_of_k_words_length_m :: "'b code \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'b word set" where
   "set_of_k_words_length_m c k m = { xk. xk \<in> k_words k} \<inter> (cw_len_concat c)-`{m}"
 
 lemma am_inj_code :
@@ -551,7 +551,7 @@ subsubsection {* KL divergence and properties *}
 TODO (eventually): I use a custom definition of the KL_divergence, as it is far simpler for me to
 use. It'd be better if in the end I can use the real def definition KL_cus.
 *)
-definition KL_cus ::"letter set \<Rightarrow> (letter \<Rightarrow> real) \<Rightarrow> (letter \<Rightarrow> real) \<Rightarrow> real" where
+definition KL_cus ::"'b set \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> real" where
   "KL_cus S a c = (\<Sum> i \<in> S. a i * log b (a i / c i))"
 
 lemma KL_cus_mul:
@@ -574,7 +574,7 @@ proof -
 qed
 
 lemma KL_cus_pos:
-  fixes a c::"letter \<Rightarrow> real"
+  fixes a c::"'b \<Rightarrow> real"
   assumes fin: "finite S"
   assumes nemp: "S \<noteq> {}"
   assumes non_null: "\<And>i. i\<in>S \<Longrightarrow> 0 < a i" "\<And>i. i\<in> S \<Longrightarrow> 0 < c i"
@@ -607,7 +607,7 @@ lemma KL_cus_pos_emp:
   "0 \<le> KL_cus {} a c" unfolding KL_cus_def by simp
 
 lemma KL_cus_pos_gen:
-  fixes a c::"letter \<Rightarrow> real"
+  fixes a c::"'b \<Rightarrow> real"
   assumes fin: "finite S"
   assumes non_null: "\<And>i. i\<in>S \<Longrightarrow> 0 < a i" "\<And>i. i\<in> S \<Longrightarrow> 0 < c i"
   assumes sum_a_one: "(\<Sum> i \<in> S. a i) = 1"
@@ -616,7 +616,7 @@ shows "0 \<le> KL_cus S a c"
     using KL_cus_pos KL_cus_pos_emp assms by metis
 
 theorem KL_cus_pos2:
-  fixes a c::"letter \<Rightarrow> real"
+  fixes a c::"'b \<Rightarrow> real"
   assumes fin: "finite S"
   assumes non_null: "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i" "\<And>i. i\<in> S \<Longrightarrow> 0 < c i"
   assumes sum_a_one: "(\<Sum> i \<in> S. a i) = 1"
