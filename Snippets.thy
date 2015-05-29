@@ -171,6 +171,26 @@ shows "(\<Sum>i| i \<in>F. f i * log b (f i))
 by (metis (no_types) Collect_mem_eq assms(1) assms(2) setsum.subset_diff)
 
 
+type_synonym ty = "nat list"
+locale loc =
+fixes i::'b
+fixes fi :: "'b \<Rightarrow> real"
+assumes 3: "fi i = 3"
+begin
+lemma lem: "\<And>j. fi j \<noteq> 3 \<Longrightarrow> j \<noteq> i" using 3 by auto
+
+end
+
+definition len :: "'c list \<Rightarrow> real" where
+  "len t = length t"
+
+interpretation ty: loc "[3::nat,1,3]" "len"
+proof unfold_locales
+show "len [3::nat,1,3] = 3" unfolding len_def by simp
+qed
+
+lemma qsdf: "\<And>j. len j \<noteq> 3 \<Longrightarrow> j \<noteq> [3::nat,1,3]" using ty.lem by simp
+
 
 end
 end
