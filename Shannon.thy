@@ -95,12 +95,6 @@ Concatenated code: code taken by encoding each letter and concatenate the result
 definition concat_code :: "'b code \<Rightarrow> bool" where
   "concat_code c = (\<forall>x. fst c x = (fst c) [(hd x)] @ (fst c) (tl x))"
 
-(*
-A code is uniquely decodable iff its concatenation is non-singular
-*)
-definition u_decodable :: "'b code \<Rightarrow> bool" where
-  "u_decodable c = (\<forall>x. \<forall>y. snd c (fst c x) = snd c (fst c y) \<longrightarrow> x = y)"
-
 abbreviation real_word :: "'b word \<Rightarrow> bool" where
   "real_word w \<equiv> (set w \<subseteq> L)"
 
