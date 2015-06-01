@@ -676,8 +676,7 @@ _Kraft inequality for real codes using the McMillan theorem
 (* TODO using bounded_input, is that ok? *)
 theorem rate_lower_bound :
   defines "l \<equiv> (\<lambda>i. cw_len i)"
-  defines "p \<equiv> (\<lambda>i. fi i)"
-  defines "LL \<equiv> L - {i. p i = 0}"
+  defines "LL \<equiv> L - {i. fi i = 0}"
   defines "F \<equiv> (X ` space M)"
 shows "H \<le> code_rate"
 proof -
@@ -687,85 +686,85 @@ proof -
     fix i
     assume "i \<in> L"
   (* TODO using bounded_input *)
-    hence "0 \<le> p i" using simple_distributed_nonneg[OF distr_i] p_def bounded_input by blast
-    } hence pos_pi: "\<And>i. i \<in> L \<Longrightarrow> 0 \<le> p i" by simp
+    hence "0 \<le> fi i" using simple_distributed_nonneg[OF distr_i]  bounded_input by blast
+    } hence pos_pi: "\<And>i. i \<in> L \<Longrightarrow> 0 \<le> fi i" by simp
     {
     fix i
     assume iL: "i \<in> L"
     hence
-    "p i * (log b (1 / (1 / b powr (l i))) + log b (p i))
-    = p i * log b (p i / (1 / b powr (l i)))"
+    "fi i * (log b (1 / (1 / b powr (l i))) + log b (fi i))
+    = fi i * log b (fi i / (1 / b powr (l i)))"
       using log_mult_ext2[OF pos_pi] powr_gt_zero
   proof -
       from b_gt_1 show ?thesis
         by (simp add:
-      `\<And>y i. \<lbrakk>i \<in> L; 0 < y\<rbrakk> \<Longrightarrow> p i * log b (p i * y) = p i * log b (p i) + p i * log b y`
+      `\<And>y i. \<lbrakk>i \<in> L; 0 < y\<rbrakk> \<Longrightarrow> fi i * log b (fi i * y) = fi i * log b (fi i) + fi i * log b y`
       iL linordered_field_class.sign_simps(36))
   qed
     }
     hence
-    eqpi: "\<And>i. i\<in> L \<Longrightarrow> p i * (log b (1 / (1 / b powr (l i))) + log b (p i))
-    = p i * log b (p i / (1 / b powr (l i)))"
+    eqpi: "\<And>i. i\<in> L \<Longrightarrow> fi i * (log b (1 / (1 / b powr (l i))) + log b (fi i))
+    = fi i * log b (fi i / (1 / b powr (l i)))"
       by simp
-    have sum_one: "(\<Sum> i \<in> F. p i) = 1"
-      using simple_distributed_setsum_space[OF distr_i] p_def F_def by simp
+    have sum_one: "(\<Sum> i \<in> F. fi i) = 1"
+      using simple_distributed_setsum_space[OF distr_i]  F_def by simp
   (* TODO using bounded_input *)
-    hence sum_one_L: "(\<Sum> i \<in> L. p i) = 1" using bounded_input F_def by simp
+    hence sum_one_L: "(\<Sum> i \<in> L. fi i) = 1" using bounded_input F_def by simp
     {
     fix i
     assume iL: "i \<in> L"
     have
-    "p i * log b (p i * ?c / (1/b powr l i) * (1 / kraft_sum)) =
-    p i * log b (p i * ?c / (1/b powr l i)) + p i * log b (1 / kraft_sum)"
+    "fi i * log b (fi i * ?c / (1/b powr l i) * (1 / kraft_sum)) =
+    fi i * log b (fi i * ?c / (1/b powr l i)) + fi i * log b (1 / kraft_sum)"
       using log_mult_ext[OF pos_pi[OF iL]
       positive_imp_inverse_positive[OF kraft_sum_nonnull],
       of "kraft_sum / (1 / b powr (l i))"]
   proof -
       show ?thesis using kraft_sum_nonnull b_gt_1
         by (smt `0 < kraft_sum / (1 / b powr (l i)) \<Longrightarrow>
-      p i * log b (p i * (kraft_sum / (1 / b powr (l i))) * inverse (kraft_sum)) =
-      p i * log b (p i * (kraft_sum / (1 / b powr (l i)))) + p i * log b (inverse (kraft_sum))`
+      fi i * log b (fi i * (kraft_sum / (1 / b powr (l i))) * inverse (kraft_sum)) =
+      fi i * log b (fi i * (kraft_sum / (1 / b powr (l i)))) + fi i * log b (inverse (kraft_sum))`
       divide_1 divide_pos_pos inverse_divide powr_gt_zero times_divide_eq_right)
   qed
     } hence big_eq:
-    "\<And>i. i \<in> L \<Longrightarrow> p i * log b (p i * ?c / (1/b powr l i) * (1 / kraft_sum)) =
-    p i * log b (p i * ?c / (1/b powr l i)) + p i * log b (1 / kraft_sum)"
+    "\<And>i. i \<in> L \<Longrightarrow> fi i * log b (fi i * ?c / (1/b powr l i) * (1 / kraft_sum)) =
+    fi i * log b (fi i * ?c / (1/b powr l i)) + fi i * log b (1 / kraft_sum)"
       by simp
-    have 1: "code_rate - H = (\<Sum>i \<in> L. p i * l i) + (\<Sum>i \<in> L. p i * log b (p i))"
-      using kraft_sum_def entropy_rewrite code_rate_rw bounded_input l_def p_def by simp
-    also have 2: "(\<Sum>i\<in>L. p i * l i) = (\<Sum>i \<in> L. p i * (-log b (1/(b powr (l i)))))"
+    have 1: "code_rate - H = (\<Sum>i \<in> L. fi i * l i) + (\<Sum>i \<in> L. fi i * log b (fi i))"
+      using kraft_sum_def entropy_rewrite code_rate_rw bounded_input l_def  by simp
+    also have 2: "(\<Sum>i\<in>L. fi i * l i) = (\<Sum>i \<in> L. fi i * (-log b (1/(b powr (l i)))))"
       using b_gt_1 log_divide by simp
-    also have "\<dots> = -1 * (\<Sum>i \<in> L. p i * (log b (1/(b powr (l i)))))"
-      using setsum_right_distrib[of "-1" "(\<lambda>i. p i * (- 1 * log b (1 / b powr (l i))))" L]
+    also have "\<dots> = -1 * (\<Sum>i \<in> L. fi i * (log b (1/(b powr (l i)))))"
+      using setsum_right_distrib[of "-1" "(\<lambda>i. fi i * (- 1 * log b (1 / b powr (l i))))" L]
       by simp
     finally have
-    "code_rate - H = -(\<Sum>i \<in> L. p i * log b (1/b powr l i)) + (\<Sum>i \<in> L. p i * log b (p i))"
+    "code_rate - H = -(\<Sum>i \<in> L. fi i * log b (1/b powr l i)) + (\<Sum>i \<in> L. fi i * log b (fi i))"
       by simp
-    have "code_rate - H = (\<Sum>i \<in> L. p i * ((log b (1/ (1/(b powr (l i))))) +log b (p i)))"
+    have "code_rate - H = (\<Sum>i \<in> L. fi i * ((log b (1/ (1/(b powr (l i))))) +log b (fi i)))"
       using b_gt_1 1
       by (simp add: distrib_left setsum.distrib)
-    also have "\<dots> = (\<Sum>i \<in> L. p i *((log b (p i / (1/(b powr (l i)))))))"
+    also have "\<dots> = (\<Sum>i \<in> L. fi i *((log b (fi i / (1/(b powr (l i)))))))"
       using Cartesian_Euclidean_Space.setsum_cong_aux[OF eqpi] by simp
     also from big_eq have
-    "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr (l i))))) + (\<Sum>i \<in> L. p i) * log b (1/ ?c)"
+    "\<dots> = (\<Sum>i\<in>L. fi i * (log b (fi i * ?c / (1 / b powr (l i))))) + (\<Sum>i \<in> L. fi i) * log b (1/ ?c)"
       using kraft_sum_nonnull
       by (simp add: setsum_left_distrib setsum.distrib)
-    also have "\<dots> = (\<Sum>i\<in>L. p i * (log b (p i * ?c / (1 / b powr (l i))))) - log b (?c)"
+    also have "\<dots> = (\<Sum>i\<in>L. fi i * (log b (fi i * ?c / (1 / b powr (l i))))) - log b (?c)"
       using kraft_sum_nonnull
       by (simp add: log_inverse_eq divide_inverse sum_one_L)
-    also have "\<dots> = (\<Sum> i \<in> L. p i * log b (p i / ?r i)) - log b (?c)"
+    also have "\<dots> = (\<Sum> i \<in> L. fi i * log b (fi i / ?r i)) - log b (?c)"
       by (metis (mono_tags, hide_lams) divide_divide_eq_left divide_divide_eq_right)
-    also have "\<dots> = KL_cus L p ?r + log b (inverse ?c)"
+    also have "\<dots> = KL_cus L fi ?r + log b (inverse ?c)"
       using b_gt_1 kraft_sum_nonnull by (simp add: log_inverse KL_cus_def)
-    finally have code_ent_kl_log: "code_rate - H = KL_cus L p ?r + log b (inverse ?c)" by simp
+    finally have code_ent_kl_log: "code_rate - H = KL_cus L fi ?r + log b (inverse ?c)" by simp
     have "setsum ?r L = 1"
       using sum_div_1[of "\<lambda>i. 1 / (b powr (l i))"]
       kraft_sum_nonnull l_def kraft_sum_powr
       by simp
     moreover have "\<And>i. 0 < ?r i" using b_gt_1 kraft_sum_nonnull by simp
-    moreover have "(\<Sum>i\<in>L. fi i) = 1" using sum_one_L by (simp add: p_def)
-    ultimately have "0 \<le> KL_cus L p ?r"
-      using KL_cus_pos2[OF fin_L fi_pos _ _ _] by (simp add: p_def)
+    moreover have "(\<Sum>i\<in>L. fi i) = 1" using sum_one_L by simp
+    ultimately have "0 \<le> KL_cus L fi ?r"
+      using KL_cus_pos2[OF fin_L fi_pos _ _ _] by simp
     hence "log b (inverse ?c) \<le> code_rate - H" using code_ent_kl_log by simp
     hence "log b (inverse (kraft_sum)) \<le> code_rate - H" by simp
     moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum))"
