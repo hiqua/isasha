@@ -48,7 +48,7 @@ H + \<epsilon>, so in my mind it is not that important. In the Shannon's origina
   fixes H::real
 
 (*
-The entropy depends on the value of b, which is the cardinal of the available
+The entropy depends on the value of b, which is the cardinal of the set of available
 output symbols.
 *)
 (*
