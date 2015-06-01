@@ -65,8 +65,7 @@ Isabelle vs Coq/SSreflect, where dependent parameter types are available.
   assumes emp_L: "L \<noteq> {}"
 
   assumes bounded_input: "X ` space M = L"
-(* TODO: check if this assumption is not redundant, i.e. simple_distributed \<Longrightarrow>? positive function *)
-  assumes fi_pos: "\<And>i. 0 \<le> fi i"
+  
   fixes c::"'b code"
   assumes real_code : "((\<forall>x. snd c (fst c x) = Some x) \<and>
 (\<forall>w. (fst c) w = [] \<longleftrightarrow> w = []) \<and>
@@ -107,6 +106,9 @@ set, the set of letters).
 *)
 definition code_rate :: "real" where
   "code_rate = expectation (\<lambda>a. (cw_len ((X) a)))"
+
+lemma fi_pos: "\<And>i. i\<in> L \<Longrightarrow> 0 \<le> fi i"
+using simple_distributed_nonneg[OF distr_i] bounded_input by auto
 
 (*
 Proof by Johannes Hölzl
