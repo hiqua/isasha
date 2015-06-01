@@ -1,4 +1,4 @@
-theory Shannon
+theory Source_Code
 imports "~~/src/HOL/Probability/Information" "~~/src/HOL/Library/NthRoot_Limits"
 begin
 (*
@@ -35,7 +35,7 @@ TODO: link between bword and the variable b
 *)
 
 (* locale generic to both theorems *)
-locale information_space_discrete = information_space +
+locale information_space_discrete_source_code = information_space +
 (* information source *)
   fixes fi :: "'b \<Rightarrow> real"
   fixes X::"'a \<Rightarrow> 'b"
@@ -80,7 +80,7 @@ We will generalize the type "code" to any input by splitting the input in piece 
 constant.
 *)
 section{* Source coding theorem, direct: the entropy is a lower bound *}
-context information_space_discrete
+context information_space_discrete_source_code
 begin
 subsection{* Codes and words *}
 
