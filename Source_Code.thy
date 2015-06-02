@@ -97,15 +97,21 @@ lemma rw_tail: "real_word w \<Longrightarrow> w = [] \<or> real_word (tl w)"
 (*
 length of the codeword associated with the letter
 *)
-definition cw_len :: "'b \<Rightarrow> nat" where
-  "cw_len l = length ((fst c) [l])"
+definition code_word_length :: "'e code \<Rightarrow> 'e \<Rightarrow> nat" where
+  "code_word_length co l = length ((fst co) [l])"
+
+abbreviation cw_len :: "'b \<Rightarrow> nat" where
+  "cw_len l \<equiv> code_word_length c l"
 
 (*
 The code rate is the expectation of the length of the code taken on all inputs (which is a finite
 set, the set of letters).
 *)
-definition code_rate :: "real" where
-  "code_rate = expectation (\<lambda>a. (cw_len ((X) a)))"
+definition code_rate :: "'e code \<Rightarrow> ('a \<Rightarrow> 'e) \<Rightarrow> real" where
+  "code_rate co Xo = expectation (\<lambda>a. (code_word_length co ((Xo) a)))"
+
+definition cr :: "real" where
+  "cr = expectation (\<lambda>a. (cw_len ((X) a)))"
 
 lemma fi_pos: "\<And>i. i\<in> L \<Longrightarrow> 0 \<le> fi i"
 using simple_distributed_nonneg[OF distr_i] bounded_input by auto
@@ -119,8 +125,8 @@ shows "expectation (\<lambda>a. f (X a)) = (\<Sum>x \<in> X`space M. f x * Px x)
     using distributed_integral[OF simple_distributed[OF X], of f]
     by (simp add: lebesgue_integral_count_space_finite[OF simple_distributed_finite[OF X]] ac_simps)
 
-lemma code_rate_rw:
-  "code_rate = (\<Sum>i \<in> X ` space M. fi i * cw_len i)" unfolding code_rate_def
+lemma cr_rw:
+  "cr = (\<Sum>i \<in> X ` space M. fi i * cw_len i)" unfolding cr_def
   using simp_exp_composed[OF distr_i, of "cw_len"]
   by (simp add:mult.commute)
 
@@ -424,7 +430,7 @@ proof (rule ccontr)
     moreover have "cw_len_concat (hd x#tl x) = cw_len_concat (tl x) + cw_len (hd x)"
       by (metis add.commute comp_apply foldr.simps(2))
     moreover have "(fst c) [(hd x)] \<noteq> []" using assms real_code by blast
-    moreover hence "0 < cw_len (hd x)" using cw_len_def by simp
+    moreover hence "0 < cw_len (hd x)" unfolding code_word_length_def by simp
     ultimately have "x \<notin> set_of_k_words_length_m k 0" by (simp add:set_of_k_words_length_m_def)
     thus "False" using x_def by simp
 qed
@@ -678,7 +684,7 @@ theorem rate_lower_bound :
   defines "l \<equiv> (\<lambda>i. cw_len i)"
   defines "LL \<equiv> L - {i. fi i = 0}"
   defines "F \<equiv> (X ` space M)"
-shows "H \<le> code_rate"
+shows "H \<le> cr"
 proof -
     let ?c = "kraft_sum"
     let ?r = "(\<lambda>i. 1 / ((b powr l i) * ?c))"
@@ -730,17 +736,17 @@ proof -
     "\<And>i. i \<in> L \<Longrightarrow> fi i * log b (fi i * ?c / (1/b powr l i) * (1 / kraft_sum)) =
     fi i * log b (fi i * ?c / (1/b powr l i)) + fi i * log b (1 / kraft_sum)"
       by simp
-    have 1: "code_rate - H = (\<Sum>i \<in> L. fi i * l i) + (\<Sum>i \<in> L. fi i * log b (fi i))"
-      using kraft_sum_def entropy_rewrite code_rate_rw bounded_input l_def  by simp
+    have 1: "cr - H = (\<Sum>i \<in> L. fi i * l i) + (\<Sum>i \<in> L. fi i * log b (fi i))"
+      using kraft_sum_def entropy_rewrite cr_rw bounded_input l_def  by simp
     also have 2: "(\<Sum>i\<in>L. fi i * l i) = (\<Sum>i \<in> L. fi i * (-log b (1/(b powr (l i)))))"
       using b_gt_1 log_divide by simp
     also have "\<dots> = -1 * (\<Sum>i \<in> L. fi i * (log b (1/(b powr (l i)))))"
       using setsum_right_distrib[of "-1" "(\<lambda>i. fi i * (- 1 * log b (1 / b powr (l i))))" L]
       by simp
     finally have
-    "code_rate - H = -(\<Sum>i \<in> L. fi i * log b (1/b powr l i)) + (\<Sum>i \<in> L. fi i * log b (fi i))"
+    "cr - H = -(\<Sum>i \<in> L. fi i * log b (1/b powr l i)) + (\<Sum>i \<in> L. fi i * log b (fi i))"
       by simp
-    have "code_rate - H = (\<Sum>i \<in> L. fi i * ((log b (1/ (1/(b powr (l i))))) +log b (fi i)))"
+    have "cr - H = (\<Sum>i \<in> L. fi i * ((log b (1/ (1/(b powr (l i))))) +log b (fi i)))"
       using b_gt_1 1
       by (simp add: distrib_left setsum.distrib)
     also have "\<dots> = (\<Sum>i \<in> L. fi i *((log b (fi i / (1/(b powr (l i)))))))"
@@ -756,7 +762,7 @@ proof -
       by (metis (mono_tags, hide_lams) divide_divide_eq_left divide_divide_eq_right)
     also have "\<dots> = KL_cus L fi ?r + log b (inverse ?c)"
       using b_gt_1 kraft_sum_nonnull by (simp add: log_inverse KL_cus_def)
-    finally have code_ent_kl_log: "code_rate - H = KL_cus L fi ?r + log b (inverse ?c)" by simp
+    finally have code_ent_kl_log: "cr - H = KL_cus L fi ?r + log b (inverse ?c)" by simp
     have "setsum ?r L = 1"
       using sum_div_1[of "\<lambda>i. 1 / (b powr (l i))"]
       kraft_sum_nonnull l_def kraft_sum_powr
@@ -765,8 +771,8 @@ proof -
     moreover have "(\<Sum>i\<in>L. fi i) = 1" using sum_one_L by simp
     ultimately have "0 \<le> KL_cus L fi ?r"
       using KL_cus_pos2[OF fin_L fi_pos _ _ _] by simp
-    hence "log b (inverse ?c) \<le> code_rate - H" using code_ent_kl_log by simp
-    hence "log b (inverse (kraft_sum)) \<le> code_rate - H" by simp
+    hence "log b (inverse ?c) \<le> cr - H" using code_ent_kl_log by simp
+    hence "log b (inverse (kraft_sum)) \<le> cr - H" by simp
     moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum))"
       using kraft_sum_nonnull unfolding kraft_inequality_def
       by (simp add: b_gt_1 log_inverse_eq)
