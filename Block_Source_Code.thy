@@ -13,6 +13,12 @@ locale block_source_code = information_space +
   assumes fin_L: "finite L"
   assumes emp_L: "L \<noteq> {}"
 
+  fixes L_enum :: "nat \<Rightarrow> 'b^'n"
+  assumes L_enum_bij: "bij_betw L_enum {1..card L} L"
+  assumes L_enum_dec: "\<And>i j. i\<in>{1..card L} \<Longrightarrow> j\<in>{1..card L} \<Longrightarrow> i \<le> j \<Longrightarrow>
+    fi (L_enum i) \<ge> fi (L_enum j)"
+
+
   assumes bounded_input: "X ` space M = L"
 
   fixes c::"('b^'n) code"
@@ -29,6 +35,7 @@ locale block_source_code = information_space +
   assumes H_i_def: "\<exists>i. H_i = \<H>(\<lambda>a. (X a)$i)"
   fixes S
   assumes space_img_1: "\<And>i. (\<lambda>a. (X a)$i) ` space M = S"
+  assumes L_S_eq: "L = {v. \<forall>i. v$i \<in> S}"
 
 print_locale information_space
 print_locale source_code
@@ -73,6 +80,9 @@ using entropy_simple_distributed[OF distr_comp] by simp
 ultimately show "\<H>(X_i i) = - (\<Sum>x\<in>(X_i i)`space M. f x * log b (f x))" by simp
 qed
 
+lemma entropy_sum_2: "\<And>i. \<H>(X_i i) = - (\<Sum>x\<in>S. f x * log b (f x ))"
+using entropy_sum space_img by simp
+
 lemma entropy_forall: "\<And>i j. \<H>(X_i i) = \<H>(X_i j)"
 using entropy_sum space_img
 proof -
@@ -92,10 +102,44 @@ ultimately show "H_i = \<H>(X_i i)" by simp
 qed
 
 
-lemma "\<forall>i. \<H>(X) = CARD('n) * H_i"
-using indep
+lemma "\<H>(X) = CARD('n) * H_i"
+sorry
+(*
+proof -
+have "\<H>(X) = - (\<Sum>x\<in>L. fi x * log b (fi x))"
+using entropy_simple_distributed[OF distr_i] bounded_input by simp
+*)
+
+subsection{* Construct a code complying with the upper bound *}
+
+definition llll::"int tree" where
+  "llll = Leaf"
+
+definition li::"'b^'n \<Rightarrow> int" where
+  "li x =  \<lceil>(log b (1/ fi x))\<rceil>"
+
+lemma "(\<Sum>x\<in>L. b powr (-li x)) \<le> 1"
 sorry
 
+
+(* define  function n_th_order that for an integer n from 1 to card S give the nth element with the
+order given by a certain function (the probability to occur, namely)
+*)
+(* done: L_enum *)
+
+lemma L_enum_inv:
+  "\<exists>g. bij_betw g L {1..card L}" using bij_betw_inv[OF L_enum_bij] by simp
+
+definition L_enum_inv :: "'b^'n \<Rightarrow> nat" where
+  "L_enum_inv = the_inv_into {1..card L} L_enum"
+
+lemma L_enum_inv_inj:
+  "bij_betw L_enum_inv L {1..card L}" using bij_betw_the_inv_into[OF L_enum_bij]
+by (simp add: L_enum_inv_def)
+
+(* when we have constructed the tree with n-1 encodings, encode the n_th element:
+take the length it is supposed to have
+ *)
 
 (* exists code for vectors such that code_rate \<le> H*)
 lemma "\<exists>co. code_rate co X \<le> H + 1"
