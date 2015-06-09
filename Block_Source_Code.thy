@@ -165,24 +165,35 @@ base tree, depth wanted
 output : Some new tree, None if not possible to insert in this tree at this depth
 We begin with a big tree with lots of possibilities
 *)
-fun add_to_tree :: "'a \<Rightarrow> 'a tree \<Rightarrow> nat \<Rightarrow> 'a tree option" where
+fun add_to_tree :: "'z \<Rightarrow> 'z tree \<Rightarrow> nat \<Rightarrow> 'z tree option" where
   "add_to_tree e \<langle>\<rangle> _ = None"|
   "add_to_tree e t 0 = Some \<langle>\<langle>\<rangle>, e, \<langle>\<rangle>\<rangle>"|
   "add_to_tree e t (Suc d) = (
 case ((add_to_tree e (left t) d),(add_to_tree e (right t) d)) of (None,None) \<Rightarrow> None
 |(Some left_t,_) \<Rightarrow> Some \<langle>left_t,val t, right t\<rangle>
 |(None,Some right_t) \<Rightarrow> Some \<langle>left t, val t, right_t\<rangle>
-)
-"
+)"
+
+(*
+build a complete tree of given depth
+*)
 fun build_basic_tree :: "nat \<Rightarrow> int tree" where
   "build_basic_tree 0 = \<langle>\<rangle>"|
   "build_basic_tree (Suc n) = \<langle>build_basic_tree n, -1, build_basic_tree n\<rangle>"
 
+(*
+the maximal depth is by the least frequent word
+*)
 definition basic_tree :: "int tree" where
   "basic_tree \<equiv> build_basic_tree (li (L_enum (card L)))"
 
-fun build_tree :: "'a set \<Rightarrow> ('a \<Rightarrow> int) \<Rightarrow> 'a tree" where
-  "build_tree _ _ = \<langle>\<rangle>"
+
+function build_tree_rec :: "nat \<Rightarrow> ('b^'n) tree \<Rightarrow> ('b^'n) tree option" where
+  "build_tree_rec n cur_tree = (if Suc (card L) \<le> n
+then Some cur_tree else case (add_to_tree (L_enum n) cur_tree (li (L_enum n))) of
+None \<Rightarrow> None
+|Some new_t \<Rightarrow> build_tree_rec (Suc n) new_t)"
+by auto
 
 fun encoding :: "'a tree \<Rightarrow> 'a \<Rightarrow> int list option" where
   "encoding \<langle>\<rangle> _ = None"|
@@ -199,7 +210,8 @@ case (encoding (left t) e, encoding (right t) e) of
 
 
 fun vec_number :: "'b^'n \<Rightarrow> nat set \<Rightarrow> nat" where
-  "vec_number v indexes = (if L_enum_inv v \<le> Min indexes \<or> indexes = {} then 0 else vec_number v  (indexes - {Min indexes}))"
+  "vec_number v indexes = (if L_enum_inv v \<le> Min indexes \<or> indexes = {}
+then 0 else vec_number v  (indexes - {Min indexes}))"
 
 (* when we have constructed the tree with n-1 encodings, encode the n_th element:
 take the length it is supposed to have
