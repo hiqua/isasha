@@ -117,8 +117,29 @@ subsection{* Construct a code complying with the upper bound *}
 definition llll::"int tree" where
   "llll = Leaf"
 
-definition li::"'b^'n \<Rightarrow> int" where
-  "li x =  \<lceil>(log b (1/ fi x))\<rceil>"
+definition li::"'b^'n \<Rightarrow> nat" where
+  "li x =   nat \<lceil>(log b (1/ fi x))\<rceil>"
+
+lemma "\<And>x. x\<in>L \<Longrightarrow> li x = \<lceil>(log b (1/ fi x))\<rceil>"
+sorry
+
+
+print_context
+print_locale block_source_code
+
+lemma prb_space: "prob_space M"
+using emeasure_space_1 prob_spaceI by blast
+
+
+lemma (in block_source_code) "\<And>x. x \<in> L \<Longrightarrow> fi x \<le> 1"
+using bounded_input Probability_Measure.prob_space.simple_distributed_setsum_space[OF prb_space, OF distr_i] fi_pos
+
+
+sorry
+
+lemma "\<And>x. x\<in> L \<Longrightarrow> 0 \<le> li x"
+using li_def fi_pos distr_i bounded_input
+sorry
 
 lemma "(\<Sum>x\<in>L. b powr (-li x)) \<le> 1"
 sorry
@@ -129,9 +150,6 @@ order given by a certain function (the probability to occur, namely)
 *)
 (* done: L_enum *)
 
-lemma L_enum_inv:
-  "\<exists>g. bij_betw g L {1..card L}" using bij_betw_inv[OF L_enum_bij] by simp
-
 definition L_enum_inv :: "'b^'n \<Rightarrow> nat" where
   "L_enum_inv = the_inv_into {1..card L} L_enum"
 
@@ -139,9 +157,56 @@ lemma L_enum_inv_inj:
   "bij_betw L_enum_inv L {1..card L}" using bij_betw_the_inv_into[OF L_enum_bij]
 by (simp add: L_enum_inv_def)
 
+
+
+
+(*
+base tree, depth wanted
+output : Some new tree, None if not possible to insert in this tree at this depth
+We begin with a big tree with lots of possibilities
+*)
+fun add_to_tree :: "'a \<Rightarrow> 'a tree \<Rightarrow> nat \<Rightarrow> 'a tree option" where
+  "add_to_tree e \<langle>\<rangle> _ = None"|
+  "add_to_tree e t 0 = Some \<langle>\<langle>\<rangle>, e, \<langle>\<rangle>\<rangle>"|
+  "add_to_tree e t (Suc d) = (
+case ((add_to_tree e (left t) d),(add_to_tree e (right t) d)) of (None,None) \<Rightarrow> None
+|(Some left_t,_) \<Rightarrow> Some \<langle>left_t,val t, right t\<rangle>
+|(None,Some right_t) \<Rightarrow> Some \<langle>left t, val t, right_t\<rangle>
+)
+"
+fun build_basic_tree :: "nat \<Rightarrow> int tree" where
+  "build_basic_tree 0 = \<langle>\<rangle>"|
+  "build_basic_tree (Suc n) = \<langle>build_basic_tree n, -1, build_basic_tree n\<rangle>"
+
+definition basic_tree :: "int tree" where
+  "basic_tree \<equiv> build_basic_tree (li (L_enum (card L)))"
+
+fun build_tree :: "'a set \<Rightarrow> ('a \<Rightarrow> int) \<Rightarrow> 'a tree" where
+  "build_tree _ _ = \<langle>\<rangle>"
+
+fun encoding :: "'a tree \<Rightarrow> 'a \<Rightarrow> int list option" where
+  "encoding \<langle>\<rangle> _ = None"|
+  "encoding \<langle>\<langle>\<rangle>,v,\<langle>\<rangle>\<rangle> e = (if e = v then Some [] else None)"|
+  "encoding t e = (
+case (encoding (left t) e, encoding (right t) e) of
+(None, None) \<Rightarrow> None
+|(Some l, _) \<Rightarrow> Some (0#l)
+|(_, Some l) \<Rightarrow> Some (1#l)
+)
+"
+
+
+
+
+fun vec_number :: "'b^'n \<Rightarrow> nat set \<Rightarrow> nat" where
+  "vec_number v indexes = (if L_enum_inv v \<le> Min indexes \<or> indexes = {} then 0 else vec_number v  (indexes - {Min indexes}))"
+
 (* when we have constructed the tree with n-1 encodings, encode the n_th element:
 take the length it is supposed to have
  *)
+definition max_set :: "('b^'n) set \<Rightarrow> ('b^'n) set" where
+  "max_set se = {x. li x = Max (li ` se)}"
+
 
 (* exists code for vectors such that code_rate \<le> H*)
 lemma "\<exists>co. code_rate co X \<le> H + 1"
