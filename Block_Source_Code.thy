@@ -18,6 +18,8 @@ locale block_source_code = information_space +
   assumes L_enum_dec: "\<And>i j. i\<in>{1..card L} \<Longrightarrow> j\<in>{1..card L} \<Longrightarrow> i \<le> j \<Longrightarrow>
     fi (L_enum i) \<ge> fi (L_enum j)"
 
+    assumes fi_pos: "\<And>x. x \<in> L \<Longrightarrow> 0 < fi x"
+
 
   assumes bounded_input: "X ` space M = L"
 
