@@ -1,5 +1,5 @@
 theory Block_Source_Code
-imports Source_Code
+imports Source_Code "~~/src/HOL/Library/Tree"
 begin
 locale block_source_code = information_space +
   fixes fi :: "'b^'n \<Rightarrow> real"
