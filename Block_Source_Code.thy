@@ -163,81 +163,12 @@ sorry
 definition kraft_sum_li ::"real" where
   "kraft_sum_li = (\<Sum>l\<in>L. 1 / b ^ li l)"
 
-(*
-args: base tree, depth wanted
-output : Some new tree, None if not possible to insert in this tree at this depth
-We begin with a big tree with lots of possibilities
-*)
-fun add_to_tree :: "'z \<Rightarrow> 'z tree \<Rightarrow> nat \<Rightarrow> 'z tree option" where
-  "add_to_tree e \<langle>\<rangle> _ = None"|
-  "add_to_tree e t 0 = Some \<langle>\<langle>\<rangle>, e, \<langle>\<rangle>\<rangle>"|
-  "add_to_tree e t (Suc d) = (
-case ((add_to_tree e (left t) d),(add_to_tree e (right t) d)) of (
-None,None) \<Rightarrow> None
-|(Some left_t,_) \<Rightarrow> Some \<langle>left_t,val t, right t\<rangle>
-|(None,Some right_t) \<Rightarrow> Some \<langle>left t, val t, right_t\<rangle>
-)"
-
-(*
-build a complete tree of given depth
-*)
-fun build_basic_tree :: "nat \<Rightarrow> ('b^'n) option tree" where
-  "build_basic_tree 0 = \<langle>\<rangle>"|
-  "build_basic_tree (Suc n) = \<langle>build_basic_tree n, None, build_basic_tree n\<rangle>"
-
-lemma "depth (build_basic_tree n) = n"
-proof (induct n)
-case 0
-show ?case by simp
-case (Suc n)
-moreover have "depth (build_basic_tree (Suc n)) = Suc (depth (build_basic_tree n))" by simp
-ultimately show ?case by simp
-qed
-
-(*
-the maximal depth is by the least frequent word
-*)
-definition basic_tree :: "('b^'n) option tree" where
-  "basic_tree \<equiv> build_basic_tree (li (L_enum (card L)))"
 
 
-function build_tree_rec :: "nat \<Rightarrow> ('b^'n) option tree \<Rightarrow> ('b^'n) option tree option" where
-  "build_tree_rec n cur_tree = (if Suc (card L) \<le> n
-then Some cur_tree else case (add_to_tree (Some (L_enum n)) cur_tree (li (L_enum n))) of
-None \<Rightarrow> None
-|Some new_t \<Rightarrow> build_tree_rec (Suc n) new_t)"
-by auto
 
-definition encoding_tree_op :: "('b^'n) option tree option" where
-  "encoding_tree_op \<equiv> build_tree_rec 1 basic_tree"
 
-(*
-hard
-using kraft_ineq
-recurrence on L?
-*)
-lemma some_enc_tree: "encoding_tree_op \<noteq> None"
-sorry
 
-lemma "\<exists>t. encoding_tree_op = Some t" using some_enc_tree by simp
-
-definition encoding_tree :: "('b^'n) option tree" where 
-  "encoding_tree \<equiv> the encoding_tree_op"
-
-(* bool list actually *)
-fun encoding_op :: "'z tree \<Rightarrow> 'z \<Rightarrow> nat list option" where
-  "encoding_op \<langle>\<rangle> _ = None"|
-  "encoding_op \<langle>\<langle>\<rangle>,v,\<langle>\<rangle>\<rangle> e = (if e = v then Some [] else None)"|
-  "encoding_op t e = (
-case (encoding_op (left t) e, encoding_op (right t) e) of
-(None, None) \<Rightarrow> None
-|(Some l, _) \<Rightarrow> Some (0#l)
-|(_, Some l) \<Rightarrow> Some (1#l)
-)
-"
-
-fun huffman_encoding :: "('b^'n) \<Rightarrow> nat list" where
-  "huffman_encoding e = the (encoding_op encoding_tree (Some e))"
+(* fun huffman_encoding :: "('b^'n) \<Rightarrow> nat list" where *)
 
 
 (* medium because of option tricks *)
