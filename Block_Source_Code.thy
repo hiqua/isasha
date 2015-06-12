@@ -1,5 +1,5 @@
 theory Block_Source_Code
-imports Source_Code "~~/src/HOL/Library/Tree"
+imports Source_Code
 begin
 locale block_source_code = information_space +
   fixes fi :: "'b^'n \<Rightarrow> real"
@@ -113,9 +113,6 @@ using entropy_simple_distributed[OF distr_i] bounded_input by simp
 *)
 
 subsection{* Construct a code complying with the upper bound *}
-
-definition llll::"int tree" where
-  "llll = Leaf"
 
 definition li::"'b^'n \<Rightarrow> nat" where
   "li x =   nat \<lceil>(log b (1/ fi x))\<rceil>"
