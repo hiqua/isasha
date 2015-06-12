@@ -1,6 +1,7 @@
 theory Block_Source_Code
 imports Source_Code
 begin
+section{* Locale definition *}
 locale block_source_code = information_space +
   fixes fi :: "'b^'n \<Rightarrow> real"
   fixes X::"'a \<Rightarrow> ('b^'n)"
@@ -57,9 +58,23 @@ show "(\<forall>x. snd c (fst c x) = Some x) \<and>
     (\<forall>x. fst c x = fst c [hd x] @ fst c (tl x))" using real_code by metis
 qed
 
-
+section{* Basics *}
 context block_source_code
 begin
+subsection{* Direct properties and definitions from the locale *}
+definition L_enum_inv :: "'b^'n \<Rightarrow> nat" where
+  "L_enum_inv = the_inv_into {0..card L - 1} L_enum"
+
+lemma L_enum_inv_inj:
+  "bij_betw L_enum_inv L {0..card L - 1}" using bij_betw_the_inv_into[OF L_enum_bij]
+by (simp add: L_enum_inv_def)
+
+lemma "\<And>l. l \<in> L \<Longrightarrow> li l \<le> li (L_enum (card L - 1))"
+sorry
+
+
+subsection{* simple lemmas about entropy *}
+
 lemma "H \<le> cr" using rate_lower_bound by simp
 
 
@@ -104,6 +119,7 @@ ultimately show "H_i = \<H>(X_i i)" by simp
 qed
 
 
+(* might be tedious *)
 lemma "\<H>(X) = CARD('n) * H_i"
 sorry
 (*
@@ -112,7 +128,7 @@ have "\<H>(X) = - (\<Sum>x\<in>L. fi x * log b (fi x))"
 using entropy_simple_distributed[OF distr_i] bounded_input by simp
 *)
 
-subsection{* Construct a code complying with the upper bound *}
+subsection{* Definition of li: the lengths of the future code *}
 
 definition li::"'b^'n \<Rightarrow> nat" where
   "li x =   nat \<lceil>(log b (1/ fi x))\<rceil>"
@@ -136,25 +152,16 @@ sorry
 lemma "(\<Sum>x\<in>L. b powr (-li x)) \<le> 1"
 sorry
 
-
-definition L_enum_inv :: "'b^'n \<Rightarrow> nat" where
-  "L_enum_inv = the_inv_into {0..card L - 1} L_enum"
-
-lemma L_enum_inv_inj:
-  "bij_betw L_enum_inv L {0..card L - 1}" using bij_betw_the_inv_into[OF L_enum_bij]
-by (simp add: L_enum_inv_def)
-
-lemma "\<And>l. l \<in> L \<Longrightarrow> li l \<le> li (L_enum (card L - 1))"
-sorry
-
 definition kraft_sum_li ::"real" where
   "kraft_sum_li = (\<Sum>l\<in>L. 1 / b ^ li l)"
 
 definition kraft_sum_li_ineq :: "bool" where
   "kraft_sum_li_ineq = (kraft_sum_li \<le> 1)"
 
+subsection{* Manipulation of list *}
+
 (* main three functions to do the encoding *)
-(* the lists are considered in reverse order, i.e. big [0] is a prefix of [1,0] *)
+(* the lists are considered in reverse order, i.e. [0] is a prefix of [1,0] *)
 fun next_list :: "bit list \<Rightarrow> bit list" where
   "next_list [] = []"|
   "next_list (x#xs) = (if x then False#(next_list xs) else True#xs)"
@@ -163,25 +170,14 @@ fun next_list_n :: "bit list \<Rightarrow> nat \<Rightarrow> bit list" where
   "next_list_n l 0 = l"|
   "next_list_n l (Suc n) = next_list_n (next_list l) n"
 
-lemma "\<And>l. True \<in> set l \<Longrightarrow> l \<noteq> next_list l"
-by (metis length_greater_0_conv length_pos_if_in_set list.inject next_list.elims)
-
-
 fun pad :: "bit list \<Rightarrow> nat \<Rightarrow> bit list" where
   "pad l 0 = l"|
   "pad l (Suc n) = False#(pad l n)"
 
+(* gives the nth encoding according to the lengths function *)
 fun encode :: "nat \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> bit list" where
   "encode 0 len = pad [] (len 0)"|
   "encode (Suc n) len = pad (next_list (encode n len)) (len (Suc n) - len n)"
-
-(* easy *)
-lemma "\<And>n. length (pad l n) = length l + n"
-sorry
-
-lemma "\<And>l. next_list l \<noteq> l"
-(* easy *)
-sorry
 
 (* is l1 a prefix of l2 *)
 fun is_prefix :: "'z list \<Rightarrow> 'z list \<Rightarrow> bool" where
@@ -195,14 +191,8 @@ lemma "\<And>l. length (next_list l) = length l"
 (* easy *)
 sorry
 
-fun huffman_encoding_u :: "('b^'n) \<Rightarrow> bit list" where
-  "huffman_encoding_u v = encode (L_enum_inv v) (\<lambda>n. li (L_enum n))"
-
-definition huffman_lists :: "bit list set" where
-  "huffman_lists = huffman_encoding_u ` L"
-
-subsection{* Order relation *}
-
+subsection{* Ordering lists used in Huffman *}
+subsubsection{* Order definition *}
 definition less_eq :: "bit list \<Rightarrow> bit list \<Rightarrow> bool" (infix "\<preceq>" 50) where
   "less_eq l1 l2 = (\<exists>n. l2 = next_list_n l1 n)"
 
@@ -218,6 +208,16 @@ sorry
 (* example using this interpretation *)
 lemma "less_eq l1 l2 \<longleftrightarrow> less l1 l2 \<or> l1 = l2"
 by (simp add: order_iff_strict)
+
+subsubsection{* Custom lemmas *}
+(* ? *)
+
+section{* Huffman Encoding *}
+fun huffman_encoding_u :: "('b^'n) \<Rightarrow> bit list" where
+  "huffman_encoding_u v = encode (L_enum_inv v) (\<lambda>n. li (L_enum n))"
+
+definition huffman_lists :: "bit list set" where
+  "huffman_lists = huffman_encoding_u ` L"
 
 (* hard *)
 lemma
@@ -267,6 +267,19 @@ definition huffman_encoding :: "('b^'n) list \<Rightarrow> bit list" where
 (* define the associated code *)
 definition huffman_code :: "('b^'n) code" where
   "huffman_code = (huffman_encoding, huffman_encoding_reverse)"
+
+section{* Proofs: it is a real code that respect certain properties *}
+subsection{* lemmas on lists *}
+lemma "\<And>l. True \<in> set l \<Longrightarrow> l \<noteq> next_list l"
+by (metis length_greater_0_conv length_pos_if_in_set list.inject next_list.elims)
+
+(* easy *)
+lemma "\<And>n. length (pad l n) = length l + n"
+sorry
+
+lemma "\<And>l. next_list l \<noteq> l"
+(* easy *)
+sorry
 
 (* prove that this is a real code *)
 
