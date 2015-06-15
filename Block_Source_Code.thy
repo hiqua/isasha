@@ -142,10 +142,6 @@ lemma (in block_source_code) "\<And>x. x \<in> L \<Longrightarrow> fi x \<le> 1"
 using bounded_input Probability_Measure.prob_space.simple_distributed_setsum_space[OF prb_space, OF distr_i] fi_pos
 sorry
 
-lemma "\<And>x. x\<in> L \<Longrightarrow> 0 \<le> li x"
-using li_def fi_pos distr_i bounded_input
-sorry
-
 lemma "(\<Sum>x\<in>L. b powr (-li x)) \<le> 1"
 sorry
 
