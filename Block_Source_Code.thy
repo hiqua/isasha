@@ -27,7 +27,7 @@ locale block_source_code = information_space +
   fixes c::"('b^'n) code"
   assumes real_code : "((\<forall>x. snd c (fst c x) = Some x) \<and>
     (\<forall>w. (fst c) w = [] \<longleftrightarrow> w = []) \<and>
-    (\<forall>x. fst c x = (fst c) [(hd x)] @ (fst c) (tl x)))"
+    (\<forall>x. x \<noteq> [] \<longrightarrow> fst c x = (fst c) [(hd x)] @ (fst c) (tl x)))"
 
   (* distribution according a law *)
   fixes f:: "'b \<Rightarrow> real"
@@ -55,7 +55,7 @@ show "L \<noteq> {}" by (simp add: emp_L)
 show "X ` space M = L" by (simp add: bounded_input)
 show "(\<forall>x. snd c (fst c x) = Some x) \<and>
     (\<forall>w. (fst c w = []) = (w = [])) \<and>
-    (\<forall>x. fst c x = fst c [hd x] @ fst c (tl x))" using real_code by metis
+    (\<forall>x. x \<noteq> [] \<longrightarrow> fst c x = fst c [hd x] @ fst c (tl x))" using real_code by metis
 qed
 
 section{* Basics *}
