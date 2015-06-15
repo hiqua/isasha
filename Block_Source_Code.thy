@@ -16,7 +16,7 @@ locale block_source_code = information_space +
 
   fixes L_enum :: "nat \<Rightarrow> 'b^'n"
   assumes L_enum_bij: "bij_betw L_enum {0..card L - 1} L"
-  assumes L_enum_dec: "\<And>i j. i\<in>{0..card L - 1} \<Longrightarrow> j\<in>{0..card L - 1} \<Longrightarrow> i < j \<Longrightarrow>
+  assumes L_enum_dec: "\<And>i j. j\<in>{0..card L - 1} \<Longrightarrow> i < j \<Longrightarrow>
     fi (L_enum i) \<ge> fi (L_enum j)"
 
   assumes fi_pos: "\<And>x. x \<in> L \<Longrightarrow> 0 < fi x"
