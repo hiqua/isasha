@@ -75,9 +75,6 @@ sorry
 
 subsection{* simple lemmas about entropy *}
 
-lemma "H \<le> cr" using rate_lower_bound by simp
-
-
 (* INTERESTING: not the same to have this def, and X_i i a = X a $ i *)
 definition X_i::"'n \<Rightarrow> 'a \<Rightarrow> 'b" where
   "X_i i = (\<lambda>a. X a $ i)"
