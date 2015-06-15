@@ -160,13 +160,15 @@ subsection{* Manipulation of list *}
 (* main three functions to do the encoding *)
 (* the lists are considered in reverse order, i.e. [0] is a prefix of [1,0] *)
 fun next_list :: "bit list \<Rightarrow> bit list" where
-  "next_list [] = []"|
+  "next_list [] = [False]"|
   "next_list (x#xs) = (if x then False#(next_list xs) else True#xs)"
 
+(* next_list applied n times *)
 fun next_list_n :: "bit list \<Rightarrow> nat \<Rightarrow> bit list" where
   "next_list_n l 0 = l"|
   "next_list_n l (Suc n) = next_list_n (next_list l) n"
 
+(* add n False (0) at the beginning of the list *)
 fun pad :: "bit list \<Rightarrow> nat \<Rightarrow> bit list" where
   "pad l 0 = l"|
   "pad l (Suc n) = False#(pad l n)"
