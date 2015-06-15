@@ -273,21 +273,34 @@ lemma "\<And>l. True \<in> set l \<Longrightarrow> l \<noteq> next_list l"
 by (metis length_greater_0_conv length_pos_if_in_set list.inject next_list.elims)
 
 (* easy *)
-lemma "\<And>n. length (pad l n) = length l + n"
+lemma "length (pad l n) = length l + n"
+proof (induction n)
+case 0
+show "length (pad l 0) = length l + 0" by simp
+case (Suc m)
+have "length (pad l (Suc m)) = length (pad l m) + 1" by simp
+thus ?case using Suc by simp
+qed
+
+lemma "\<And>l.  (next_list l \<noteq> l)"
+by (metis (full_types) list.sel(1) next_list.elims not_Cons_self2)
+
+subsection{* The Huffman code is a real code *}
+lemma "set x \<subseteq> L \<Longrightarrow> huffman_decoding (huffman_encoding x) = Some x"
 sorry
 
-lemma "\<And>l. next_list l \<noteq> l"
-(* easy *)
+lemma "set x \<subseteq> L \<Longrightarrow> huffman_encoding x = [] \<longleftrightarrow> x = []"
+
+
+lemma "x \<noteq> [] \<Longrightarrow> huffman_encoding x = huffman_encoding [(hd x)] @ (huffman_encoding (tl x))"
 sorry
 
-(* prove that this is a real code *)
+(* theorem huff_real_code = three previous lemmas *)
+
 
 (* find the average length of this code *)
-
-(* exists code for vectors such that code_rate \<le> H*)
-
-
-(* exists code for scalars such that code_rate \<le> H/n*)
+theorem "code_rate huffman_code X \<le> \<H>(X) + 1"
+sorry
 
 end
 end
