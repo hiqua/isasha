@@ -69,7 +69,7 @@ Isabelle vs Coq/SSreflect, where dependent parameter types are available.
   fixes c::"'b code"
   assumes real_code : "((\<forall>x. snd c (fst c x) = Some x) \<and>
 (\<forall>w. (fst c) w = [] \<longleftrightarrow> w = []) \<and>
-(\<forall>x. fst c x = (fst c) [(hd x)] @ (fst c) (tl x)))"
+(\<forall>x. x \<noteq> [] \<longrightarrow> fst c x = (fst c) [(hd x)] @ (fst c) (tl x)))"
 
 (*
 TODO: Have some predicates to allow reasonings about codes. Keep the input_block_size that limits
@@ -132,6 +132,16 @@ lemma cr_rw:
 
 abbreviation cw_len_concat :: "'b word \<Rightarrow> nat" where
   "cw_len_concat w \<equiv> foldr (\<lambda>x s. (cw_len x) + s) w 0"
+
+lemma cw_len_length: "cw_len_concat w = length (fst c w)"
+proof (induction w)
+case Nil
+show ?case using real_code by simp
+case (Cons a w)
+have "cw_len_concat (a # w) = cw_len a + cw_len_concat w" using foldr_Cons by simp
+thus ?case
+by (metis code_word_length_def length_append list.distinct(1) list.sel(1) list.sel(3) real_code Cons)
+qed
 
 lemma maj_fold:
   fixes f::"'b \<Rightarrow> nat"
@@ -366,8 +376,14 @@ qed
 
 lemma img_inc:
 shows "(fst c)`(cw_len_concat)-`{m} \<subseteq> {bl. length bl = m}"
-    using assms real_code
-     by (metis list.distinct(1) list.sel)
+proof
+fix y
+assume "y \<in>(fst c)`(cw_len_concat)-`{m}"
+then obtain x where y_def: "y = fst c x" "x\<in>(cw_len_concat)-`{m}" by auto
+hence "cw_len_concat x = m" by simp
+hence "length (fst c x) = m" using cw_len_length by simp
+thus "y \<in> {bl. length bl = m}" using y_def by simp
+qed
 
 lemma bool_list_fin:
   "\<And>m. finite {bl::(bool list). length bl = m}"
