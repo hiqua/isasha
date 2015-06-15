@@ -13,6 +13,7 @@ locale block_source_code = information_space +
   fixes L :: "('b^'n) set"
   assumes fin_L: "finite L"
   assumes emp_L: "L \<noteq> {}"
+  assumes card_L: "2 \<le> card L"
 
   fixes L_enum :: "nat \<Rightarrow> 'b^'n"
   assumes L_enum_bij: "bij_betw L_enum {0..card L - 1} L"
@@ -72,6 +73,25 @@ by (simp add: L_enum_inv_def)
 lemma "\<And>l. l \<in> L \<Longrightarrow> li l \<le> li (L_enum (card L - 1))"
 sorry
 
+lemma prb_space: "prob_space M"
+using emeasure_space_1 prob_spaceI by blast
+
+lemma fi_1: "\<And>x. x \<in> L \<Longrightarrow> fi x \<le> 1"
+proof (rule ccontr)
+fix x
+assume asm: "x \<in> L" "\<not> fi x \<le> 1"
+have "fi x \<le> (\<Sum>i\<in>L. fi i)" using fi_pos
+by (smt `x \<in> L` fin_L setsum.delta' setsum_mono)
+hence "1 < (\<Sum>i\<in>L. fi i)" using asm by simp
+moreover have "(\<Sum>i\<in>L. fi i) = 1"
+using Probability_Measure.prob_space.simple_distributed_setsum_space[OF prb_space, OF distr_i]
+bounded_input by simp
+ultimately show "False" by simp
+qed
+
+(* tedious, use the fact that 2 \<le> card L *)
+lemma fi_11: "\<And>x. x \<in> L \<Longrightarrow> fi x < 1"
+sorry
 
 subsection{* simple lemmas about entropy *}
 
@@ -130,17 +150,10 @@ subsection{* Definition of li: the lengths of the future code *}
 definition li::"'b^'n \<Rightarrow> nat" where
   "li x =   nat \<lceil>(log b (1/ fi x))\<rceil>"
 
-(* easy tedious *)
-lemma "\<And>x. x\<in>L \<Longrightarrow> li x = \<lceil>(log b (1/ fi x))\<rceil>"
-sorry
+lemma li_1: "\<And>x. x\<in>L \<Longrightarrow> 0 < log b (1/ fi x)" using fi_pos fi_11 b_val
+by fastforce
 
-lemma prb_space: "prob_space M"
-using emeasure_space_1 prob_spaceI by blast
-
-
-lemma (in block_source_code) "\<And>x. x \<in> L \<Longrightarrow> fi x \<le> 1"
-using bounded_input Probability_Measure.prob_space.simple_distributed_setsum_space[OF prb_space, OF distr_i] fi_pos
-sorry
+lemma "\<And>x. x\<in>L \<Longrightarrow> li x = \<lceil>(log b (1/ fi x))\<rceil>" using li_1 li_def by force
 
 lemma "(\<Sum>x\<in>L. b powr (-li x)) \<le> 1"
 sorry
@@ -173,6 +186,9 @@ fun pad :: "bit list \<Rightarrow> nat \<Rightarrow> bit list" where
 fun encode :: "nat \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> bit list" where
   "encode 0 len = pad [] (len 0)"|
   "encode (Suc n) len = pad (next_list (encode n len)) (len (Suc n) - len n)"
+
+lemma enc_nemp: "\<And>len n. len 0 \<noteq> 0 \<Longrightarrow> encode n len \<noteq> []"
+by (metis encode.elims list.distinct(1) next_list.elims pad.elims)
 
 (* is l1 a prefix of l2 *)
 fun is_prefix :: "'z list \<Rightarrow> 'z list \<Rightarrow> bool" where
@@ -286,7 +302,7 @@ lemma "set x \<subseteq> L \<Longrightarrow> huffman_decoding (huffman_encoding 
 sorry
 
 lemma "set x \<subseteq> L \<Longrightarrow> huffman_encoding x = [] \<longleftrightarrow> x = []"
-
+using enc_nemp
 
 lemma "x \<noteq> [] \<Longrightarrow> huffman_encoding x = huffman_encoding [(hd x)] @ (huffman_encoding (tl x))"
 sorry
