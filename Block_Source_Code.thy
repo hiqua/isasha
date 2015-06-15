@@ -257,15 +257,15 @@ huffman_encoding_reverse_aux (xs @ [y]) ys
 |Some res2 \<Rightarrow> Some (res # res2))
 )"
 
-definition huffman_encoding_reverse :: "bit list \<Rightarrow> ('b^'n) list option" where
-  "huffman_encoding_reverse xs = huffman_encoding_reverse_aux [] xs"
+definition huffman_decoding :: "bit list \<Rightarrow> ('b^'n) list option" where
+  "huffman_decoding xs = huffman_encoding_reverse_aux [] xs"
 
 definition huffman_encoding :: "('b^'n) list \<Rightarrow> bit list" where
   "huffman_encoding xs = (fold (\<lambda>vl res. (huffman_encoding_u vl) @ res) xs [])"
 
 (* define the associated code *)
 definition huffman_code :: "('b^'n) code" where
-  "huffman_code = (huffman_encoding, huffman_encoding_reverse)"
+  "huffman_code = (huffman_encoding, huffman_decoding)"
 
 section{* Proofs: it is a real code that respect certain properties *}
 subsection{* lemmas on lists *}
