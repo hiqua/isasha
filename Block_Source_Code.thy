@@ -153,7 +153,10 @@ definition li::"'b^'n \<Rightarrow> nat" where
 lemma li_1: "\<And>x. x\<in>L \<Longrightarrow> 0 < log b (1/ fi x)" using fi_pos fi_11 b_val
 by fastforce
 
-lemma "\<And>x. x\<in>L \<Longrightarrow> li x = \<lceil>(log b (1/ fi x))\<rceil>" using li_1 li_def by force
+lemma li_nat: "\<And>x. x\<in>L \<Longrightarrow> li x = \<lceil>(log b (1/ fi x))\<rceil>" using li_1 li_def by force
+
+lemma li_11: "\<And>x. x\<in>L \<Longrightarrow> 1 \<le> li x" using li_1 li_nat
+by (metis le_less_linear less_numeral_extra(3) less_one of_nat_0 zero_less_ceiling)
 
 lemma "(\<Sum>x\<in>L. b powr (-li x)) \<le> 1"
 sorry
@@ -224,8 +227,12 @@ subsubsection{* Custom lemmas *}
 (* ? *)
 
 section{* Huffman Encoding *}
-fun huffman_encoding_u :: "('b^'n) \<Rightarrow> bit list" where
+definition huffman_encoding_u :: "('b^'n) \<Rightarrow> bit list" where
   "huffman_encoding_u v = encode (L_enum_inv v) (\<lambda>n. li (L_enum n))"
+
+lemma huffman_encoding_u_nemp: "len 0 \<noteq> 0 \<longrightarrow> v\<in>L \<longrightarrow> huffman_encoding_u v \<noteq> []"
+using enc_nemp[of "\<lambda>n. li (L_enum n)",of "L_enum_inv v"]
+huffman_encoding_u_def li_11 L_enum_inv_inj sorry
 
 definition huffman_lists :: "bit list set" where
   "huffman_lists = huffman_encoding_u ` L"
@@ -255,6 +262,8 @@ sorry
 lemma "bij_betw huffman_encoding_u L (huffman_encoding_u`L)"
 using inj_on_imp_bij_betw[OF encoding_inj] by simp
 
+
+(* TODO: remove these definitions of the inverse, and use injections instead *)
 definition huffman_encoding_reverse_u :: "bit list \<Rightarrow> ('b^'n) option" where
   "huffman_encoding_reverse_u x = (if x \<in> (huffman_encoding_u ` L) then Some (the_inv_into L huffman_encoding_u x) else None)"
 
@@ -273,7 +282,18 @@ definition huffman_decoding :: "bit list \<Rightarrow> ('b^'n) list option" wher
   "huffman_decoding xs = huffman_encoding_reverse_aux [] xs"
 
 definition huffman_encoding :: "('b^'n) list \<Rightarrow> bit list" where
-  "huffman_encoding xs = (fold (\<lambda>vl res. (huffman_encoding_u vl) @ res) xs [])"
+  huffman_encoding_def: "huffman_encoding xs = (fold (\<lambda>vl res. (huffman_encoding_u vl) @ res) xs [])"
+
+(* the set of possible inputs *)
+definition valid_input_set :: "('b^'n) list set" where
+  "valid_input_set = {w. set w \<subseteq> L}"
+
+(* using prefix properties *)
+theorem "inj_on huffman_encoding valid_input_set"
+sorry
+
+definition huffman_decoding_alt :: "bit list \<Rightarrow> ('b^'n) list" where
+  "huffman_decoding_alt xs = the_inv_into valid_input_set huffman_encoding xs"
 
 (* define the associated code *)
 definition huffman_code :: "('b^'n) code" where
@@ -284,7 +304,6 @@ subsection{* lemmas on lists *}
 lemma "\<And>l. True \<in> set l \<Longrightarrow> l \<noteq> next_list l"
 by (metis length_greater_0_conv length_pos_if_in_set list.inject next_list.elims)
 
-(* easy *)
 lemma "length (pad l n) = length l + n"
 proof (induction n)
 case 0
@@ -294,18 +313,24 @@ have "length (pad l (Suc m)) = length (pad l m) + 1" by simp
 thus ?case using Suc by simp
 qed
 
-lemma "\<And>l.  (next_list l \<noteq> l)"
+lemma "\<And>l. next_list l \<noteq> l"
 by (metis (full_types) list.sel(1) next_list.elims not_Cons_self2)
 
 subsection{* The Huffman code is a real code *}
+
+(* really tedious to prove, I should only prove that huffman_encoding is injective on a set of lists,
+*)
 lemma "set x \<subseteq> L \<Longrightarrow> huffman_decoding (huffman_encoding x) = Some x"
 sorry
 
 lemma "set x \<subseteq> L \<Longrightarrow> huffman_encoding x = [] \<longleftrightarrow> x = []"
-using enc_nemp
+using enc_nemp huffman_encoding_def sorry
 
-lemma "x \<noteq> [] \<Longrightarrow> huffman_encoding x = huffman_encoding [(hd x)] @ (huffman_encoding (tl x))"
-sorry
+lemma "x \<noteq> [] \<Longrightarrow> huffman_encoding x = huffman_encoding_u (hd x) @ (huffman_encoding (tl x))"
+(* using huffman_encoding_def huffman_encoding_u_def *) unfolding huffman_encoding_def
+using fold_Cons
+fold_simps sorry
+
 
 (* theorem huff_real_code = three previous lemmas *)
 
