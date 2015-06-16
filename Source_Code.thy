@@ -174,7 +174,7 @@ lemma pos_cw_len: "\<And>i. 0 < 1 / b ^ cw_len i" using b_gt_1 by simp
 
 lemma kraft_sum_nonnull: "0 < kraft_sum" using kraft_sum_def b_gt_1
   Groups_Big.ordered_comm_monoid_add_class.setsum_pos[OF fin_L emp_L pos_cw_len]
-    by (smt emp_L fin_L pos_cw_len powr_realpow setsum_pos)
+    by (metis emp_L fin_L pos_cw_len setsum_pos)
 
 lemma kraft_sum_powr: "kraft_sum = (\<Sum>i\<in>L. 1 / b powr (cw_len i))"
     using powr_realpow b_gt_1 by (simp add: kraft_sum_def)
@@ -422,8 +422,15 @@ qed
 
 lemma am_maj_aux2:
 shows "finite ((cw_len_concat)-`{m}) \<and> (card ((cw_len_concat)-`{m})) \<le> b^m"
-using bool_list_fin img_card img_inc am_inj_code real_code
- by (smt bool_lists_card card_0_eq card_image card_infinite card_mono finite_imageI image_is_empty real_of_nat_le_iff rev_finite_subset)
+(* sledgehammer proof *)
+proof -
+  have "finite (cw_len_concat -` {m})"
+    by (metis (lifting) am_inj_code bool_list_fin card_0_eq card_image card_infinite finite_imageI
+      image_is_empty img_inc rev_finite_subset)
+  thus ?thesis
+    by (metis (lifting) am_inj_code bool_list_fin bool_lists_card card_image card_mono img_inc
+      real_of_nat_le_iff)
+qed
 
 lemma am_maj:
 shows "card (set_of_k_words_length_m k m)\<le> b^m" (is "?c \<le> ?b")
