@@ -583,10 +583,11 @@ proof -
     OF fin,OF nemp,OF minus_log_convex[OF b_gt_1],OF convex_real_interval(3)[of 0],
     OF sum_a_one, OF a_pos
     ]
-    f_pos
-      by fastforce
+    f_pos by fastforce
     also have "- log b (\<Sum>i\<in>S. a i * e i / a i) = -log b (\<Sum>i\<in>S. e i)"
-      by (smt non_null(1) nonzero_mult_divide_cancel_left setsum.cong)
+      proof -
+        from non_null(1) have "\<And>i. i \<in> S \<Longrightarrow> a i * e i / a i = e i" by force thus ?thesis by simp
+      qed
     finally have "0 \<le> (\<Sum>i\<in>S. a i * - log b (e i / a i))"using sum_c_one by simp
     thus "0 \<le> (\<Sum>i\<in>S. a i * log b (a i / e i))"
       using b_gt_1 log_divide non_null(1) non_null(2) by auto
@@ -631,11 +632,49 @@ proof -
     (* a pos *)
       have 1: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < a i)" by simp
     (* ?c pos *)
-      have 2: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < ?c i)" using non_null
-        by (smt divide_pos_pos empty_iff fin finite_Int inf_le1 setsum_pos subsetCE)
+      have 2: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < ?c i)"
+      (* try proof *)
+      proof -
+        fix i :: 'b
+        assume a1: "i \<in> S \<inter> {i. 0 < a i}"
+        have f2: "\<forall>x0 x1. ((0\<Colon>real) < setsum x0 (x1\<Colon>'b set)) = (\<not> setsum x0 x1 \<le> 0)"
+          by linarith
+        have "\<forall>x0 x1. ((0\<Colon>real) < x1 (x0\<Colon>'b)) = (\<not> x1 x0 \<le> 0)"
+          by auto
+        hence f3: "\<forall>B f. (infinite B \<or> B = {} \<or> (\<exists>b. (b\<Colon>'b) \<in> B \<and> f b \<le> (0\<Colon>real))) \<or> \<not> setsum f B \<le> 0"
+          using f2 by (metis (full_types) setsum_pos)
+        have f4: "finite (S \<inter> {b. 0 < a b})"
+          using fin by blast
+        have f5: "\<forall>x1. ((0\<Colon>real) < x1) = (\<not> x1 \<le> 0)"
+          by linarith
+        have "\<forall>b. b \<notin> S \<or> \<not> d b \<le> 0"
+          using non_null(2) by fastforce
+        thus "0 < d i / setsum d (S \<inter> {b. 0 < a b})"
+          using f5 f4 f3 a1 by (metis (no_types) UnCI `S = S \<inter> {i. 0 < a i} \<union> S \<inter> {i. 0 = a i}` divide_pos_pos empty_iff)
+      qed
     (* sum a equals to 1 *)
-      have 3: "setsum a (S \<inter> {i. 0 < a i}) = 1" using sum_a_one non_null
-        by (smt fin mem_Collect_eq setsum.cong setsum.inter_restrict)
+      have 3: "setsum a (S \<inter> {i. 0 < a i}) = 1" using
+  setsum.cong[of S, of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then a x else 0)", of a] setsum.inter_restrict[OF fin, of a, of " {i. 0 < a i}"]
+      (* try proof *)
+      proof -
+        have "(\<exists>b. b \<in> S \<and> (if b \<in> {b. 0 < a b} then a b else 0) \<noteq> a b) \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then a b else 0) = setsum a S"
+          using `\<lbrakk>S = S; \<And>x. x \<in> S \<Longrightarrow> (if x \<in> {i. 0 < a i} then a x else 0) = a x\<rbrakk> \<Longrightarrow> (\<Sum>x\<in>S. if x \<in> {i. 0 < a i} then a x else 0) = setsum a S` by blast
+        then obtain bb :: 'b where
+          "bb \<in> S \<and> (if bb \<in> {b. 0 < a b} then a bb else 0) \<noteq> a bb \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then a b else 0) = 1"
+          using sum_a_one by presburger
+        moreover
+        { assume "a bb \<noteq> (if bb \<in> {b. 0 < a b} then a bb else 0)"
+          moreover
+          { assume "a bb \<noteq> 0"
+            hence "\<not> 0 \<le> a bb \<or> \<not> a bb \<le> 0"
+              by linarith
+            hence "setsum a (S \<inter> {b. 0 < a b}) = 1 \<or> bb \<notin> S \<or> (if bb \<in> {b. 0 < a b} then a bb else 0) = a bb"
+              using non_null(1) by force }
+          ultimately have "setsum a (S \<inter> {b. 0 < a b}) = 1 \<or> bb \<notin> S \<or> (if bb \<in> {b. 0 < a b} then a bb else 0) = a bb"
+            by meson }
+        ultimately show ?thesis
+          by (metis (no_types) `setsum a (S \<inter> {i. 0 < a i}) = (\<Sum>x\<in>S. if x \<in> {i. 0 < a i} then a x else 0)`)
+      qed
       have "(\<Sum>i\<in>S \<inter> {j. 0 < a j}. ?c i) = (\<Sum>i\<in>S \<inter> {j. 0 < a j}. d i) / (\<Sum>i\<in>S \<inter> {j. 0 < a j}. d i)"
         by (metis setsum_divide_distrib)
     (* sum ?c equals to 1 *)
