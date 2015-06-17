@@ -525,12 +525,8 @@ proof -
     nonzero_mult_divide_cancel_right order_less_irrefl)
 qed
 
-lemma log_mult_ext2: "\<And>x y. 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * log b (x*y) = x * log b (x) + x * log b y"
-proof -
-    fix x y::real
-    assume "0 \<le> x" "0 < y"
-    thus "x * log b (x*y) = x * log b (x) + x * log b y" using log_mult_ext[of x, of y, of 1] by simp
-qed
+lemma log_mult_ext2: "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * log b (x*y) = x * log b (x) + x * log b y"
+  by (metis (no_types) log_mult_ext mult.right_neutral zero_less_one)
 
 subsubsection {* KL divergence and properties *}
 (*
