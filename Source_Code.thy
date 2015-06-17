@@ -113,7 +113,7 @@ definition code_rate :: "'e code \<Rightarrow> ('a \<Rightarrow> 'e) \<Rightarro
 definition cr :: "real" where
   "cr = expectation (\<lambda>a. (cw_len ((X) a)))"
 
-lemma fi_pos: "\<And>i. i\<in> L \<Longrightarrow> 0 \<le> fi i"
+lemma fi_pos: "i\<in> L \<Longrightarrow> 0 \<le> fi i"
 using simple_distributed_nonneg[OF distr_i] bounded_input by auto
 
 (*
@@ -170,7 +170,7 @@ subsection{* Related to the Kraft theorem *}
 definition kraft_sum :: "real" where
   "kraft_sum = (\<Sum>i\<in>L. 1 / b ^ (cw_len i))"
 
-lemma pos_cw_len: "\<And>i. 0 < 1 / b ^ cw_len i" using b_gt_1 by simp
+lemma pos_cw_len: "0 < 1 / b ^ cw_len i" using b_gt_1 by simp
 
 lemma kraft_sum_nonnull: "0 < kraft_sum" using kraft_sum_def b_gt_1
   Groups_Big.ordered_comm_monoid_add_class.setsum_pos[OF fin_L emp_L pos_cw_len]
@@ -290,7 +290,7 @@ subsection{* Inequality of the kraft sum (source coding theorem, direct) *}
 subsubsection{* Sum manipulation lemmas and McMillan theorem *}
 
 lemma real_plus_one:
-shows "\<And>n r. real ((n::nat) + 1) * r = (n * r + r)"
+shows "real ((n::nat) + 1) * r = (n * r + r)"
     by (metis Suc_eq_plus1 distrib_left mult.commute mult.right_neutral real_of_nat_Suc)
 
 lemma sum_vimage_proof:
@@ -384,7 +384,7 @@ thus "y \<in> {bl. length bl = m}" using y_def by simp
 qed
 
 lemma bool_list_fin:
-  "\<And>m. finite {bl::(bool list). length bl = m}"
+  "finite {bl::(bool list). length bl = m}"
 proof -
     fix m
     have "{bl. set bl \<subseteq> {True, False} \<and> length bl = m} = {bl. length bl= m}" by auto
@@ -394,7 +394,7 @@ proof -
 qed
 
 lemma bool_lists_card:
-shows "\<And>m. card {bl::(bool list). length bl = m} = b^m"
+shows "card {bl::(bool list). length bl = m} = b^m"
 proof -
     fix m
     have "card {b. set b \<subseteq> {True,False} \<and> length b = m} = card {True,False}^m"
@@ -408,7 +408,7 @@ lemma img_card:
   assumes "real_code c"
 shows "card (fst c`cw_len_concat-`{m}) \<le> b^m"
 proof -
-    have "\<And>m. card ((fst c)` (cw_len_concat)-`{m}) \<le> card {b::(bool list). length b = m}"
+    have "card ((fst c)` (cw_len_concat)-`{m}) \<le> card {b::(bool list). length b = m}"
   proof -
       fix m
       show "card ((fst c)` (cw_len_concat)-`{m}) \<le> card {b::(bool list). length b = m}"
