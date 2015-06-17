@@ -718,8 +718,30 @@ proof -
       hence
       "(\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i) \<Longrightarrow> KL_cus (S \<inter> {j. 0 < a j}) a
     (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))
-      \<le> KL_cus (S \<inter> {j. 0 < a j}) a d" using sum_c_one non_null
-        by (smt fin setsum.inter_restrict setsum_mono)
+      \<le> KL_cus (S \<inter> {j. 0 < a j}) a d" using setsum.inter_restrict[OF fin, of d, of "{i. 0 < a i}"]
+setsum_mono[of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then d x else 0)", of d]
+          (* this one seems to take forever... *)
+          (* by (metis order.strict_implies_order order_refl)  *)
+          (* sledgehammer proof *)
+      proof -
+        assume "\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i"
+        obtain bb :: 'b where
+          f1: "(bb \<in> S \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then d b else 0) \<le> setsum d S) \<and> (\<not> (if bb \<in> {b. 0 < a b} then d bb else 0) \<le> d bb \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then d b else 0) \<le> setsum d S)"
+          using `(\<And>i. i \<in> S \<Longrightarrow> (if i \<in> {i. 0 < a i} then d i else 0) \<le> d i) \<Longrightarrow> (\<Sum>i\<in>S. if i \<in> {i. 0 < a i} then d i else 0) \<le> setsum d S` by blast
+        hence f2: "bb \<in> S \<or> setsum d (S \<inter> {b. 0 < a b}) \<le> 1"
+          by (simp add: `setsum d (S \<inter> {i. 0 < a i}) = (\<Sum>x\<in>S. if x \<in> {i. 0 < a i} then d x else 0)` sum_c_one)
+        obtain bba :: 'b where
+          f3: "bba \<in> S \<inter> {b. 0 < a b} \<and> (\<not> setsum d (S \<inter> {b. 0 < a b}) \<le> 1 \<or> \<not> 0 \<le> a bba \<or> KL_cus (S \<inter> {b. 0 < a b}) a (\<lambda>b. d b / setsum d (S \<inter> {b. 0 < a b})) \<le> KL_cus (S \<inter> {b. 0 < a b}) a d)"
+          using False `\<lbrakk>setsum d (S \<inter> {i. 0 < a i}) \<le> 1; \<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i\<rbrakk> \<Longrightarrow> KL_cus (S \<inter> {j. 0 < a j}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i})) \<le> KL_cus (S \<inter> {j. 0 < a j}) a d` by blast
+        have "(0\<Colon>real) \<le> 1"
+          by linarith
+        hence "\<And>b. b \<notin> S \<or> 0 \<le> d b"
+          by (metis (no_types) `\<And>i. i \<in> S \<Longrightarrow> 0 < d i` divide_le_eq_1_pos divide_zero_left)
+        hence "setsum d (S \<inter> {b. 0 < a b}) \<le> 1"
+          using f2 f1 `setsum d (S \<inter> {i. 0 < a i}) = (\<Sum>x\<in>S. if x \<in> {i. 0 < a i} then d x else 0)` sum_c_one by force
+        thus ?thesis
+          using f3 by force
+      qed
       hence
       "KL_cus (S \<inter> {j. 0 < a j}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i})) \<le> KL_cus (S \<inter> {j. 0 < a j}) a d"
         using non_null by simp
@@ -782,22 +804,19 @@ proof -
     fix i
     assume iL: "i \<in> L"
     have
-    "fi i * log b (fi i * ?c / (1/b powr l i) * (1 / kraft_sum)) =
-    fi i * log b (fi i * ?c / (1/b powr l i)) + fi i * log b (1 / kraft_sum)"
+    "fi i * log b (fi i * ?c / (1/b powr l i) * (inverse kraft_sum)) =
+    fi i * log b (fi i * ?c / (1/b powr l i)) + fi i * log b (inverse kraft_sum)"
       using log_mult_ext[OF pos_pi[OF iL]
       positive_imp_inverse_positive[OF kraft_sum_nonnull],
-      of "kraft_sum / (1 / b powr (l i))"]
-  proof -
-      show ?thesis using kraft_sum_nonnull b_gt_1
-        by (smt `0 < kraft_sum / (1 / b powr (l i)) \<Longrightarrow>
-      fi i * log b (fi i * (kraft_sum / (1 / b powr (l i))) * inverse (kraft_sum)) =
-      fi i * log b (fi i * (kraft_sum / (1 / b powr (l i)))) + fi i * log b (inverse (kraft_sum))`
-      divide_1 divide_pos_pos inverse_divide powr_gt_zero times_divide_eq_right)
-  qed
+      of "kraft_sum / (1 / b powr (l i))"] divide_pos_pos[OF kraft_sum_nonnull] powr_gt_zero[of b]
+      Orderings.order_class.order.strict_implies_not_eq[
+      OF Orderings.order_class.order.strict_trans[OF zero_less_one, OF b_gt_1]
+      ]
+      by (metis (no_types) divide_1 inverse_divide inverse_positive_iff_positive times_divide_eq_right) 
     } hence big_eq:
     "\<And>i. i \<in> L \<Longrightarrow> fi i * log b (fi i * ?c / (1/b powr l i) * (1 / kraft_sum)) =
     fi i * log b (fi i * ?c / (1/b powr l i)) + fi i * log b (1 / kraft_sum)"
-      by simp
+      by (simp add: inverse_eq_divide)
     have 1: "cr - H = (\<Sum>i \<in> L. fi i * l i) + (\<Sum>i \<in> L. fi i * log b (fi i))"
       using kraft_sum_def entropy_rewrite cr_rw bounded_input l_def  by simp
     also have 2: "(\<Sum>i\<in>L. fi i * l i) = (\<Sum>i \<in> L. fi i * (-log b (1/(b powr (l i)))))"
