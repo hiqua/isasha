@@ -347,9 +347,7 @@ lemma kraft_sum_rewrite :
 ((cw_len_concat) -` {m})) * (1 / b^m))" (is "?L = ?R")
 proof -
     have "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat w < Suc ( k * max_len)"
-      using bound_len_concat
-  (* long metis *)
-      by (metis le_antisym lessI less_imp_le_nat not_less_eq)
+      by (simp add: bound_len_concat le_imp_less_Suc)
     moreover have
     "?R = (\<Sum>m = 0..<Suc (k * max_len).
   (card (cw_len_concat -` {m} \<inter> k_words k)) * (1 / b ^ m))"
@@ -391,7 +389,7 @@ proof -
     fix m
     have "{bl. set bl \<subseteq> {True, False} \<and> length bl = m} = {bl. length bl= m}" by auto
     moreover have "finite {bl. set bl \<subseteq> {True, False} \<and> length bl = m}"
-      by (metis finite_code finite_lists_length_eq)
+      by (simp add: finite_lists_length_eq)
     ultimately show "finite {bl::(bool list). length bl = m}" by simp
 qed
 
@@ -478,8 +476,7 @@ proof -
     "(\<Sum>m = 1..<Suc (k * max_len). (card (set_of_k_words_length_m k m)) / b ^ m) \<le>(k * max_len)"
       by (metis One_nat_def card_atLeastLessThan card_eq_setsum diff_Suc_Suc real_of_card)
     thus ?thesis using empty_set_k_words assms
-  (* long metis *)
-      by (metis One_nat_def card_empty divide_1 power_0 real_of_nat_zero setsum_shift_lb_Suc0_0_upt)
+      by (simp add: setsum_shift_lb_Suc0_0_upt split: split_if_asm)
 qed
 
 lemma kraft_sum_power_bound :
