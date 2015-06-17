@@ -65,7 +65,7 @@ Isabelle vs Coq/SSreflect, where dependent parameter types are available.
   assumes emp_L: "L \<noteq> {}"
 
   assumes bounded_input: "X ` space M = L"
-  
+
   fixes c::"'b code"
   assumes real_code : "((\<forall>x. snd c (fst c x) = Some x) \<and>
 (\<forall>w. (fst c) w = [] \<longleftrightarrow> w = []) \<and>
@@ -114,7 +114,7 @@ definition cr :: "real" where
   "cr = expectation (\<lambda>a. (cw_len ((X) a)))"
 
 lemma fi_pos: "i\<in> L \<Longrightarrow> 0 \<le> fi i"
-using simple_distributed_nonneg[OF distr_i] bounded_input by auto
+    using simple_distributed_nonneg[OF distr_i] bounded_input by auto
 
 (*
 Proof by Johannes Hölzl
@@ -127,20 +127,20 @@ shows "expectation (\<lambda>a. f (X a)) = (\<Sum>x \<in> X`space M. f x * Px x)
 
 lemma cr_rw:
   "cr = (\<Sum>i \<in> X ` space M. fi i * cw_len i)" unfolding cr_def
-  using simp_exp_composed[OF distr_i, of "cw_len"]
-  by (simp add:mult.commute)
+    using simp_exp_composed[OF distr_i, of "cw_len"]
+    by (simp add:mult.commute)
 
 abbreviation cw_len_concat :: "'b word \<Rightarrow> nat" where
   "cw_len_concat w \<equiv> foldr (\<lambda>x s. (cw_len x) + s) w 0"
 
 lemma cw_len_length: "cw_len_concat w = length (fst c w)"
 proof (induction w)
-case Nil
-show ?case using real_code by simp
-case (Cons a w)
-have "cw_len_concat (a # w) = cw_len a + cw_len_concat w" using foldr_Cons by simp
-thus ?case
-by (metis code_word_length_def length_append list.distinct(1) list.sel(1) list.sel(3) real_code Cons)
+    case Nil
+    show ?case using real_code by simp
+    case (Cons a w)
+    have "cw_len_concat (a # w) = cw_len a + cw_len_concat w" using foldr_Cons by simp
+    thus ?case
+      by (metis code_word_length_def length_append list.distinct(1) list.sel(1) list.sel(3) real_code Cons)
 qed
 
 lemma maj_fold:
@@ -163,7 +163,7 @@ definition max_len :: "nat" where
 
 lemma max_cw:
   "\<And>l. l \<in> L \<Longrightarrow> cw_len l \<le> max_len"
-  by (simp add: max_len_def fin_L)
+    by (simp add: max_len_def fin_L)
 
 
 subsection{* Related to the Kraft theorem *}
@@ -254,7 +254,7 @@ shows "finite A \<Longrightarrow> finite B \<Longrightarrow>
     by (metis (erased, lifting) setsum.cong split_beta' Groups.ab_semigroup_mult_class.mult.commute)
 
 lemma kraft_sum_power :
-shows "kraft_sum ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat  w))"
+shows "kraft_sum ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat w))"
 proof (induct k)
     case 0
     have "k_words 0 = {[]}" by auto
@@ -360,7 +360,7 @@ proof -
 qed
 
 definition set_of_k_words_length_m :: "nat \<Rightarrow> nat \<Rightarrow> 'b word set" where
-  "set_of_k_words_length_m k m = { xk. xk \<in> k_words k} \<inter> (cw_len_concat)-`{m}"
+  "set_of_k_words_length_m k m = {xk. xk \<in> k_words k} \<inter> (cw_len_concat)-`{m}"
 
 lemma am_inj_code :
 shows "inj_on (fst c) ((cw_len_concat)-`{m})" (is "inj_on ?enc ?s")
@@ -369,18 +369,18 @@ proof -
     let ?dec = "snd c"
     have "x \<in> ?s \<and> y \<in> ?s \<and> ?enc x = ?enc y \<longrightarrow> ?dec (?enc x) = ?dec (?enc y)" by auto
     moreover have "(\<forall>x. snd c (fst c x) = Some x)" using real_code by blast
-  ultimately show ?thesis using inj_on_def[of "?enc" "?s"] by (metis option.inject)
+    ultimately show ?thesis using inj_on_def[of "?enc" "?s"] by (metis option.inject)
 qed
 
 lemma img_inc:
 shows "(fst c)`(cw_len_concat)-`{m} \<subseteq> {bl. length bl = m}"
 proof
-fix y
-assume "y \<in>(fst c)`(cw_len_concat)-`{m}"
-then obtain x where y_def: "y = fst c x" "x\<in>(cw_len_concat)-`{m}" by auto
-hence "cw_len_concat x = m" by simp
-hence "length (fst c x) = m" using cw_len_length by simp
-thus "y \<in> {bl. length bl = m}" using y_def by simp
+    fix y
+    assume "y \<in>(fst c)`(cw_len_concat)-`{m}"
+    then obtain x where y_def: "y = fst c x" "x\<in>(cw_len_concat)-`{m}" by auto
+    hence "cw_len_concat x = m" by simp
+    hence "length (fst c x) = m" using cw_len_length by simp
+    thus "y \<in> {bl. length bl = m}" using y_def by simp
 qed
 
 lemma bool_list_fin:
@@ -422,12 +422,12 @@ lemma am_maj_aux2:
 shows "finite ((cw_len_concat)-`{m}) \<and> (card ((cw_len_concat)-`{m})) \<le> b^m"
 (* sledgehammer proof *)
 proof -
-  have "finite (cw_len_concat -` {m})"
-    by (metis (lifting) am_inj_code bool_list_fin card_0_eq card_image card_infinite finite_imageI
-      image_is_empty img_inc rev_finite_subset)
-  thus ?thesis
-    by (metis (lifting) am_inj_code bool_list_fin bool_lists_card card_image card_mono img_inc
-      real_of_nat_le_iff)
+    have "finite (cw_len_concat -` {m})"
+      by (metis (lifting) am_inj_code bool_list_fin card_0_eq card_image card_infinite finite_imageI
+    image_is_empty img_inc rev_finite_subset)
+    thus ?thesis
+      by (metis (lifting) am_inj_code bool_list_fin bool_lists_card card_image card_mono img_inc
+    real_of_nat_le_iff)
 qed
 
 lemma am_maj:
@@ -503,8 +503,8 @@ proof -
 qed
 
 lemma entropy_rewrite: "H = -(\<Sum>i \<in> L. fi i * log b (fi i))"
-  using entropy_simple_distributed[OF distr_i] bounded_input
-  by (simp add: entropy_defi)
+    using entropy_simple_distributed[OF distr_i] bounded_input
+    by (simp add: entropy_defi)
 
 lemma log_mult_ext: "\<And>x y z. 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow>
   x * log b (x*z*y) = x * log b (x*z) + x * log b y"
@@ -526,7 +526,7 @@ proof -
 qed
 
 lemma log_mult_ext2: "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * log b (x*y) = x * log b (x) + x * log b y"
-  by (metis (no_types) log_mult_ext mult.right_neutral zero_less_one)
+    by (metis (no_types) log_mult_ext mult.right_neutral zero_less_one)
 
 subsubsection {* KL divergence and properties *}
 (*
@@ -578,9 +578,9 @@ proof -
     ]
     f_pos by fastforce
     also have "- log b (\<Sum>i\<in>S. a i * e i / a i) = -log b (\<Sum>i\<in>S. e i)"
-      proof -
-        from non_null(1) have "\<And>i. i \<in> S \<Longrightarrow> a i * e i / a i = e i" by force thus ?thesis by simp
-      qed
+  proof -
+      from non_null(1) have "\<And>i. i \<in> S \<Longrightarrow> a i * e i / a i = e i" by force thus ?thesis by simp
+  qed
     finally have "0 \<le> (\<Sum>i\<in>S. a i * - log b (e i / a i))"using sum_c_one by simp
     thus "0 \<le> (\<Sum>i\<in>S. a i * log b (a i / e i))"
       using b_gt_1 log_divide non_null(1) non_null(2) by auto
@@ -626,8 +626,8 @@ proof -
       have 1: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < a i)" by simp
     (* ?c pos *)
       have 2: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < ?c i)"
-      (* try proof *)
-      proof -
+    (* try proof *)
+    proof -
         fix i :: 'b
         assume a1: "i \<in> S \<inter> {i. 0 < a i}"
         have f2: "\<forall>x0 x1. ((0\<Colon>real) < setsum x0 (x1\<Colon>'b set)) = (\<not> setsum x0 x1 \<le> 0)"
@@ -644,30 +644,30 @@ proof -
           using non_null(2) by fastforce
         thus "0 < d i / setsum d (S \<inter> {b. 0 < a b})"
           using f5 f4 f3 a1 by (metis (no_types) UnCI `S = S \<inter> {i. 0 < a i} \<union> S \<inter> {i. 0 = a i}` divide_pos_pos empty_iff)
-      qed
+    qed
     (* sum a equals to 1 *)
       have 3: "setsum a (S \<inter> {i. 0 < a i}) = 1" using
-  setsum.cong[of S, of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then a x else 0)", of a] setsum.inter_restrict[OF fin, of a, of " {i. 0 < a i}"]
-      (* try proof *)
-      proof -
+      setsum.cong[of S, of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then a x else 0)", of a] setsum.inter_restrict[OF fin, of a, of " {i. 0 < a i}"]
+    (* try proof *)
+    proof -
         have "(\<exists>b. b \<in> S \<and> (if b \<in> {b. 0 < a b} then a b else 0) \<noteq> a b) \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then a b else 0) = setsum a S"
           using `\<lbrakk>S = S; \<And>x. x \<in> S \<Longrightarrow> (if x \<in> {i. 0 < a i} then a x else 0) = a x\<rbrakk> \<Longrightarrow> (\<Sum>x\<in>S. if x \<in> {i. 0 < a i} then a x else 0) = setsum a S` by blast
         then obtain bb :: 'b where
-          "bb \<in> S \<and> (if bb \<in> {b. 0 < a b} then a bb else 0) \<noteq> a bb \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then a b else 0) = 1"
+        "bb \<in> S \<and> (if bb \<in> {b. 0 < a b} then a bb else 0) \<noteq> a bb \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then a b else 0) = 1"
           using sum_a_one by presburger
         moreover
         { assume "a bb \<noteq> (if bb \<in> {b. 0 < a b} then a bb else 0)"
-          moreover
-          { assume "a bb \<noteq> 0"
-            hence "\<not> 0 \<le> a bb \<or> \<not> a bb \<le> 0"
-              by linarith
-            hence "setsum a (S \<inter> {b. 0 < a b}) = 1 \<or> bb \<notin> S \<or> (if bb \<in> {b. 0 < a b} then a bb else 0) = a bb"
-              using non_null(1) by force }
-          ultimately have "setsum a (S \<inter> {b. 0 < a b}) = 1 \<or> bb \<notin> S \<or> (if bb \<in> {b. 0 < a b} then a bb else 0) = a bb"
-            by meson }
+        moreover
+        { assume "a bb \<noteq> 0"
+        hence "\<not> 0 \<le> a bb \<or> \<not> a bb \<le> 0"
+          by linarith
+        hence "setsum a (S \<inter> {b. 0 < a b}) = 1 \<or> bb \<notin> S \<or> (if bb \<in> {b. 0 < a b} then a bb else 0) = a bb"
+          using non_null(1) by force }
+        ultimately have "setsum a (S \<inter> {b. 0 < a b}) = 1 \<or> bb \<notin> S \<or> (if bb \<in> {b. 0 < a b} then a bb else 0) = a bb"
+          by meson }
         ultimately show ?thesis
           by (metis (no_types) `setsum a (S \<inter> {i. 0 < a i}) = (\<Sum>x\<in>S. if x \<in> {i. 0 < a i} then a x else 0)`)
-      qed
+    qed
       have "(\<Sum>i\<in>S \<inter> {j. 0 < a j}. ?c i) = (\<Sum>i\<in>S \<inter> {j. 0 < a j}. d i) / (\<Sum>i\<in>S \<inter> {j. 0 < a j}. d i)"
         by (metis setsum_divide_distrib)
     (* sum ?c equals to 1 *)
@@ -712,19 +712,19 @@ proof -
       "(\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i) \<Longrightarrow> KL_cus (S \<inter> {j. 0 < a j}) a
     (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))
       \<le> KL_cus (S \<inter> {j. 0 < a j}) a d" using setsum.inter_restrict[OF fin, of d, of "{i. 0 < a i}"]
-setsum_mono[of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then d x else 0)", of d]
-          (* this one seems to take forever... *)
-          (* by (metis order.strict_implies_order order_refl)  *)
-          (* sledgehammer proof *)
-      proof -
+      setsum_mono[of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then d x else 0)", of d]
+    (* this one seems to take forever... *)
+    (* by (metis order.strict_implies_order order_refl) *)
+    (* sledgehammer proof *)
+    proof -
         assume "\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i"
         obtain bb :: 'b where
-          f1: "(bb \<in> S \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then d b else 0) \<le> setsum d S) \<and> (\<not> (if bb \<in> {b. 0 < a b} then d bb else 0) \<le> d bb \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then d b else 0) \<le> setsum d S)"
+        f1: "(bb \<in> S \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then d b else 0) \<le> setsum d S) \<and> (\<not> (if bb \<in> {b. 0 < a b} then d bb else 0) \<le> d bb \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then d b else 0) \<le> setsum d S)"
           using `(\<And>i. i \<in> S \<Longrightarrow> (if i \<in> {i. 0 < a i} then d i else 0) \<le> d i) \<Longrightarrow> (\<Sum>i\<in>S. if i \<in> {i. 0 < a i} then d i else 0) \<le> setsum d S` by blast
         hence f2: "bb \<in> S \<or> setsum d (S \<inter> {b. 0 < a b}) \<le> 1"
           by (simp add: `setsum d (S \<inter> {i. 0 < a i}) = (\<Sum>x\<in>S. if x \<in> {i. 0 < a i} then d x else 0)` sum_c_one)
         obtain bba :: 'b where
-          f3: "bba \<in> S \<inter> {b. 0 < a b} \<and> (\<not> setsum d (S \<inter> {b. 0 < a b}) \<le> 1 \<or> \<not> 0 \<le> a bba \<or> KL_cus (S \<inter> {b. 0 < a b}) a (\<lambda>b. d b / setsum d (S \<inter> {b. 0 < a b})) \<le> KL_cus (S \<inter> {b. 0 < a b}) a d)"
+        f3: "bba \<in> S \<inter> {b. 0 < a b} \<and> (\<not> setsum d (S \<inter> {b. 0 < a b}) \<le> 1 \<or> \<not> 0 \<le> a bba \<or> KL_cus (S \<inter> {b. 0 < a b}) a (\<lambda>b. d b / setsum d (S \<inter> {b. 0 < a b})) \<le> KL_cus (S \<inter> {b. 0 < a b}) a d)"
           using False `\<lbrakk>setsum d (S \<inter> {i. 0 < a i}) \<le> 1; \<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i\<rbrakk> \<Longrightarrow> KL_cus (S \<inter> {j. 0 < a j}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i})) \<le> KL_cus (S \<inter> {j. 0 < a j}) a d` by blast
         have "(0\<Colon>real) \<le> 1"
           by linarith
@@ -734,7 +734,7 @@ setsum_mono[of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then d x else 0)", of
           using f2 f1 `setsum d (S \<inter> {i. 0 < a i}) = (\<Sum>x\<in>S. if x \<in> {i. 0 < a i} then d x else 0)` sum_c_one by force
         thus ?thesis
           using f3 by force
-      qed
+    qed
       hence
       "KL_cus (S \<inter> {j. 0 < a j}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i})) \<le> KL_cus (S \<inter> {j. 0 < a j}) a d"
         using non_null by simp
@@ -769,7 +769,7 @@ proof -
     fix i
     assume "i \<in> L"
   (* TODO using bounded_input *)
-    hence "0 \<le> fi i" using simple_distributed_nonneg[OF distr_i]  bounded_input by blast
+    hence "0 \<le> fi i" using simple_distributed_nonneg[OF distr_i] bounded_input by blast
     } hence pos_pi: "\<And>i. i \<in> L \<Longrightarrow> 0 \<le> fi i" by simp
     {
     fix i
@@ -790,7 +790,7 @@ proof -
     = fi i * log b (fi i / (1 / b powr (l i)))"
       by simp
     have sum_one: "(\<Sum> i \<in> F. fi i) = 1"
-      using simple_distributed_setsum_space[OF distr_i]  F_def by simp
+      using simple_distributed_setsum_space[OF distr_i] F_def by simp
   (* TODO using bounded_input *)
     hence sum_one_L: "(\<Sum> i \<in> L. fi i) = 1" using bounded_input F_def by simp
     {
@@ -800,18 +800,18 @@ proof -
     "fi i * log b (fi i * ?c / (1/b powr l i) * (inverse kraft_sum)) =
     fi i * log b (fi i * ?c / (1/b powr l i)) + fi i * log b (inverse kraft_sum)"
       using log_mult_ext[OF pos_pi[OF iL]
-      positive_imp_inverse_positive[OF kraft_sum_nonnull],
-      of "kraft_sum / (1 / b powr (l i))"] divide_pos_pos[OF kraft_sum_nonnull] powr_gt_zero[of b]
-      Orderings.order_class.order.strict_implies_not_eq[
-      OF Orderings.order_class.order.strict_trans[OF zero_less_one, OF b_gt_1]
-      ]
-      by (metis (no_types) divide_1 inverse_divide inverse_positive_iff_positive times_divide_eq_right) 
+    positive_imp_inverse_positive[OF kraft_sum_nonnull],
+    of "kraft_sum / (1 / b powr (l i))"] divide_pos_pos[OF kraft_sum_nonnull] powr_gt_zero[of b]
+    Orderings.order_class.order.strict_implies_not_eq[
+    OF Orderings.order_class.order.strict_trans[OF zero_less_one, OF b_gt_1]
+    ]
+      by (metis (no_types) divide_1 inverse_divide inverse_positive_iff_positive times_divide_eq_right)
     } hence big_eq:
     "\<And>i. i \<in> L \<Longrightarrow> fi i * log b (fi i * ?c / (1/b powr l i) * (1 / kraft_sum)) =
     fi i * log b (fi i * ?c / (1/b powr l i)) + fi i * log b (1 / kraft_sum)"
       by (simp add: inverse_eq_divide)
     have 1: "cr - H = (\<Sum>i \<in> L. fi i * l i) + (\<Sum>i \<in> L. fi i * log b (fi i))"
-      using kraft_sum_def entropy_rewrite cr_rw bounded_input l_def  by simp
+      using kraft_sum_def entropy_rewrite cr_rw bounded_input l_def by simp
     also have 2: "(\<Sum>i\<in>L. fi i * l i) = (\<Sum>i \<in> L. fi i * (-log b (1/(b powr (l i)))))"
       using b_gt_1 log_divide by simp
     also have "\<dots> = -1 * (\<Sum>i \<in> L. fi i * (log b (1/(b powr (l i)))))"
@@ -839,7 +839,7 @@ proof -
     finally have code_ent_kl_log: "cr - H = KL_cus L fi ?r + log b (inverse ?c)" by simp
     have "setsum ?r L = 1"
       using sum_div_1[of "\<lambda>i. 1 / (b powr (l i))"]
-      kraft_sum_nonnull l_def kraft_sum_powr
+    kraft_sum_nonnull l_def kraft_sum_powr
       by simp
     moreover have "\<And>i. 0 < ?r i" using b_gt_1 kraft_sum_nonnull by simp
     moreover have "(\<Sum>i\<in>L. fi i) = 1" using sum_one_L by simp
