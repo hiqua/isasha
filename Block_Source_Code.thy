@@ -17,7 +17,7 @@ locale block_source_code = information_space +
 
   fixes L_enum :: "nat \<Rightarrow> 'b^'n"
   assumes L_enum_bij: "bij_betw L_enum {0..card L - 1} L"
-  assumes L_enum_dec: "\<And>i j. j\<in>{0..card L - 1} \<Longrightarrow> i < j \<Longrightarrow>
+  assumes L_enum_dec: "\<And>i j. j \<in> {0..card L - 1} \<Longrightarrow> i \<le> j \<Longrightarrow>
     fi (L_enum i) \<ge> fi (L_enum j)"
 
   assumes fi_pos: "\<And>x. x \<in> L \<Longrightarrow> 0 < fi x"
@@ -70,8 +70,14 @@ lemma L_enum_inv_inj:
   "bij_betw L_enum_inv L {0..card L - 1}" using bij_betw_the_inv_into[OF L_enum_bij]
 by (simp add: L_enum_inv_def)
 
-lemma "\<And>l. l \<in> L \<Longrightarrow> li l \<le> li (L_enum (card L - 1))"
-sorry
+lemma "\<And>l. l \<in> L \<Longrightarrow> fi l \<ge> fi (L_enum (card L - 1))"
+proof -
+fix l
+assume "l\<in>L"
+from L_enum_bij obtain i where i_def: "L_enum i = l" "i\<in>{0.. card L - 1}"
+by (metis L_enum_inv_def L_enum_inv_inj `l \<in> L` bij_betwE f_the_inv_into_f_bij_betw)
+thus "fi l \<ge> fi (L_enum (card L - 1))" using L_enum_dec[of "card L - 1", of i] by simp
+qed
 
 lemma prb_space: "prob_space M"
 using emeasure_space_1 prob_spaceI by blast
@@ -158,6 +164,13 @@ lemma li_nat: "\<And>x. x\<in>L \<Longrightarrow> li x = \<lceil>(log b (1/ fi x
 lemma li_11: "\<And>x. x\<in>L \<Longrightarrow> 1 \<le> li x" using li_1 li_nat
 by (metis le_less_linear less_numeral_extra(3) less_one of_nat_0 zero_less_ceiling)
 
+lemma li_diff_0: "li (L_enum 0) \<noteq> 0"
+proof -
+have "L_enum 0 \<in> L" using L_enum_bij by (simp add: bij_betwE)
+hence "1 \<le> li (L_enum 0)" using li_11 by simp
+thus ?thesis by simp
+qed
+
 lemma "(\<Sum>x\<in>L. b powr (-li x)) \<le> 1"
 sorry
 
@@ -193,13 +206,72 @@ fun encode :: "nat \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> bit list"
 lemma enc_nemp: "\<And>len n. len 0 \<noteq> 0 \<Longrightarrow> encode n len \<noteq> []"
 by (metis encode.elims list.distinct(1) next_list.elims pad.elims)
 
-(* is l1 a prefix of l2 *)
-fun is_prefix :: "'z list \<Rightarrow> 'z list \<Rightarrow> bool" where
-  "is_prefix l1 l2 = (if length l1 \<ge> length l2 then l1 = l2
-                                              else case l2 of [] \<Rightarrow> False | x#xs \<Rightarrow> is_prefix l1 xs)"
+(* is l1 a prefix of l2
+prefix in the sense of the code, suffix for the real list
+ *)
+inductive is_prefix :: "'z list \<Rightarrow> 'z list \<Rightarrow> bool" where
+  is_pref_eq [simp, intro!]: "is_prefix l l"|
+  is_pref_Cons [simp, intro!]: "is_prefix xs ys \<Longrightarrow> is_prefix xs (x#ys)"
 
-lemma "\<not> is_prefix l1 l2 \<Longrightarrow> l1 \<noteq> l2"
+definition is_prefix_alt::"'z list \<Rightarrow> 'z list \<Rightarrow> bool" where
+  "is_prefix_alt l1 l2 \<longleftrightarrow> (\<exists>a. l2 = a@l1)"
+
+theorems is_pref_simp = is_pref_eq is_pref_Cons
+
+lemma "\<not> is_prefix l1 l2 \<Longrightarrow> l1 \<noteq> l2" using is_pref_eq
 by auto
+
+lemma "is_prefix l [] \<Longrightarrow> l = []" using is_prefix_def
+using is_prefix.cases by blast
+
+lemma is_pref_eq_or_tl: "is_prefix l1 l2 \<Longrightarrow> l1 = l2 \<or> is_prefix l1 (tl l2)"
+by (metis is_prefix.cases list.sel(3))
+
+lemma is_pref_tl: "is_prefix l1 l2 \<Longrightarrow> l1 \<noteq> l2 \<Longrightarrow> is_prefix l1 (tl l2)" using is_pref_eq_or_tl by auto
+
+lemma is_pref_len: "is_prefix l1 l2 \<Longrightarrow> length l1 \<le> length l2" by (induct rule:is_prefix.induct[OF assms]) auto
+
+lemma len_not_is_pref: "length l2 < length l1 \<Longrightarrow> \<not>is_prefix l1 l2" using is_pref_len using not_less by auto
+
+lemma
+assumes "is_prefix l1 l2" "length l1 = length l2"
+shows "l1 = l2"
+proof (cases l2)
+case Nil
+thus ?thesis using assms by simp
+next
+case Cons
+show ?thesis
+proof (rule ccontr)
+assume "l1 \<noteq> l2"
+have "l2 = hd l2 # tl l2" using Cons by simp
+hence "length (tl l2) < length l2" by (metis impossible_Cons le_less_linear)
+hence "length (tl l2) < length l1" using assms by simp
+moreover from assms `l1 \<noteq> l2` have "is_prefix l1 (tl l2)" using is_pref_tl by auto
+ultimately show False using len_not_is_pref by blast
+qed
+qed
+
+lemma "is_prefix l1 l2 \<Longrightarrow> (\<exists>a. l2 = a @ l1)"
+proof (induct rule: is_prefix.induct)
+show "\<And>l. \<exists>a. l = a @ l" by simp
+fix xs::"'z list"
+fix ys x
+assume "is_prefix xs ys" "\<exists>a. ys = a @ xs"
+then obtain a where "ys = a @ xs" by auto
+hence "x#ys = (x#a)@xs" by simp
+thus "\<exists>a. x # ys = a @ xs" by simp
+qed
+
+lemma
+assumes pref: "is_prefix l1 l2" "is_prefix l3 l2" "length l1 \<le> length l3"
+shows "is_prefix l1 l3"
+using pref
+sorry
+
+
+lemma "x@xr = y@yr \<Longrightarrow> length xr \<le> length yr \<Longrightarrow> is_prefix xr yr" using is_pref_simp
+sorry
 
 lemma "\<And>l. length (next_list l) = length l"
 (* easy *)
@@ -284,13 +356,89 @@ definition huffman_decoding :: "bit list \<Rightarrow> ('b^'n) list option" wher
 definition huffman_encoding :: "('b^'n) list \<Rightarrow> bit list" where
   huffman_encoding_def: "huffman_encoding xs = (fold (\<lambda>vl res. (huffman_encoding_u vl) @ res) xs [])"
 
+definition huffman_encoding_alt :: "('b^'n) list \<Rightarrow> bit list" where
+  huffman_encoding_alt_def: "huffman_encoding_alt x = concat (map huffman_encoding_u x)"
+
 (* the set of possible inputs *)
 definition valid_input_set :: "('b^'n) list set" where
-  "valid_input_set = {w. set w \<subseteq> L}"
+  "valid_input_set = {w. real_word w}"
+
+lemma "x#xs \<in> valid_input_set \<Longrightarrow> xs \<in> valid_input_set"
+using valid_input_set_def by auto
+
+lemma huff_nemp: "x \<in> L \<Longrightarrow> huffman_encoding_alt (x#xs) \<noteq> []"
+proof -
+  have "x\<in>L \<Longrightarrow> huffman_encoding_u x \<noteq> []"
+  using huffman_encoding_u_nemp by auto
+  thus "x \<in> L \<Longrightarrow> huffman_encoding_alt (x#xs) \<noteq> []" using huffman_encoding_alt_def by simp
+qed
+
+lemma huff_emp_1: "real_word x \<Longrightarrow> (huffman_encoding_alt x = [] \<longrightarrow> x = [])"
+proof
+show "real_word x \<Longrightarrow> huffman_encoding_alt x = [] \<Longrightarrow> x = []"
+  proof (rule ccontr)
+    assume asm: "real_word x" "huffman_encoding_alt x = []" "x \<noteq> []"
+    hence "x = (hd x) # tl x" by simp
+    hence "huffman_encoding_alt x = huffman_encoding_u (hd x) @ concat (map huffman_encoding_u (tl x))"
+    using huffman_encoding_alt_def by (metis List.bind_def bind_simps(2))
+    moreover have in_L: "hd x \<in> L" using asm by auto
+    hence "huffman_encoding_alt x \<noteq> []" using huffman_encoding_alt_def huff_nemp[OF in_L]
+    using calculation by auto
+    thus False using asm by simp
+  qed
+qed
+
+lemma huff_emp_2: "huffman_encoding_alt [] = []" using huffman_encoding_alt_def by simp
+
+theorems huff_emp = huff_emp_1 huff_emp_2
+
+(*
+lemma "x \<noteq> [] \<Longrightarrow> huffman_encoding_alt x = huffman_encoding_alt (tl x) @ huffman_encoding_u (hd x)"
+using huffman_encoding_def fold_Cons
+proof -
+let ?f = "\<lambda>vl res. (huffman_encoding_u vl) @ res"
+fix x::"('b,'n) vec list"
+assume "x \<noteq> []"
+hence nemp: "x = hd x # tl x" by simp
+hence "huffman_encoding x = (fold ?f x [])"
+using huffman_encoding_def by simp
+hence "huffman_encoding x = (fold ?f (hd x#tl x) [])"
+using nemp by simp
+also have "\<dots> = (fold ?f (tl x) \<circ> ?f (hd x)) []" using fold_Cons by simp
+also have "\<dots> = (fold ?f (tl x)) ((?f (hd x)) [])" by simp
+also have "\<dots> = (fold ?f (tl x)) (huffman_encoding_u (hd x))" by simp
+also have "\<dots> = huffman_encoding (tl x) @ huffman_encoding_u (hd x)" using huffman_encoding_def
+*)
+
+lemma rw_hd: "real_word (x#xs) \<Longrightarrow> x \<in> L" by simp
 
 (* using prefix properties *)
-theorem "inj_on huffman_encoding valid_input_set"
-sorry
+(* theorem "inj_on huffman_encoding valid_input_set" *)
+theorem huffman_encoding_inj:
+"real_word x \<Longrightarrow> real_word y \<Longrightarrow> huffman_encoding_alt x = huffman_encoding_alt y \<Longrightarrow> x = y"
+proof (induction x arbitrary: y)
+case Nil
+hence "huffman_encoding_alt y = []" sorry
+hence "y = []" sorry
+thus ?case by simp
+next
+case (Cons xh xt)
+have "y \<noteq> []" using huff_nemp Cons huff_emp rw_hd by auto
+hence "y = hd y # tl y" by simp
+hence "huffman_encoding_alt y = huffman_encoding_u (hd y) @ huffman_encoding_alt (tl y)"
+by (metis concat.simps(2) huffman_encoding_alt_def list.simps(9))
+have "xh # xt = y" sorry
+thus ?case by simp
+
+oops
+(*
+using encoding_inj huffman_encoding_def sorry
+
+qed
+thus "inj_on huffman_encoding valid_input_set" by (simp add: inj_on_def)
+qed
+oops
+*)
 
 definition huffman_decoding_alt :: "bit list \<Rightarrow> ('b^'n) list" where
   "huffman_decoding_alt xs = the_inv_into valid_input_set huffman_encoding xs"
@@ -335,7 +483,7 @@ fold_simps sorry
 (* theorem huff_real_code = three previous lemmas *)
 
 
-(* find the average length of this code *)
+(* Main theorem: find the average length of this code *)
 theorem "code_rate huffman_code X \<le> \<H>(X) + 1"
 sorry
 
