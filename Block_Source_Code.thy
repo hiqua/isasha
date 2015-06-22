@@ -209,73 +209,39 @@ by (metis encode.elims list.distinct(1) next_list.elims pad.elims)
 (* is l1 a prefix of l2
 prefix in the sense of the code, suffix for the real list
  *)
-inductive is_prefix :: "'z list \<Rightarrow> 'z list \<Rightarrow> bool" where
-  is_pref_eq [simp, intro!]: "is_prefix l l"|
-  is_pref_Cons [simp, intro!]: "is_prefix xs ys \<Longrightarrow> is_prefix xs (x#ys)"
+definition is_prefix::"'z list \<Rightarrow> 'z list \<Rightarrow> bool" where
+  "is_prefix l1 l2 \<longleftrightarrow> (\<exists>a. l2 = a@l1)"
 
-definition is_prefix_alt::"'z list \<Rightarrow> 'z list \<Rightarrow> bool" where
-  "is_prefix_alt l1 l2 \<longleftrightarrow> (\<exists>a. l2 = a@l1)"
+lemma "\<not> is_prefix l1 l2 \<Longrightarrow> l1 \<noteq> l2" using is_prefix_def by auto
 
-theorems is_pref_simp = is_pref_eq is_pref_Cons
+lemma "is_prefix l [] \<Longrightarrow> l = []" using is_prefix_def by auto
 
-lemma "\<not> is_prefix l1 l2 \<Longrightarrow> l1 \<noteq> l2" using is_pref_eq
+lemma is_pref_eq_or_tl: "is_prefix l1 l2 \<Longrightarrow> l1 = l2 \<or> is_prefix l1 (tl l2)" using is_prefix_def
+by (metis (no_types) append_Nil tl_append2)
+
+lemma is_pref_tl: "is_prefix l1 l2 \<Longrightarrow> l1 \<noteq> l2 \<Longrightarrow> is_prefix l1 (tl l2)" using is_pref_eq_or_tl
 by auto
 
-lemma "is_prefix l [] \<Longrightarrow> l = []" using is_prefix_def
-using is_prefix.cases by blast
+lemma is_pref_len: "is_prefix l1 l2 \<Longrightarrow> length l1 \<le> length l2" using is_prefix_def
+by (metis (no_types) le_add2 length_append)
 
-lemma is_pref_eq_or_tl: "is_prefix l1 l2 \<Longrightarrow> l1 = l2 \<or> is_prefix l1 (tl l2)"
-by (metis is_prefix.cases list.sel(3))
+lemma len_not_is_pref: "length l2 < length l1 \<Longrightarrow> \<not>is_prefix l1 l2" using is_pref_len not_less
+by auto
 
-lemma is_pref_tl: "is_prefix l1 l2 \<Longrightarrow> l1 \<noteq> l2 \<Longrightarrow> is_prefix l1 (tl l2)" using is_pref_eq_or_tl by auto
-
-lemma is_pref_len: "is_prefix l1 l2 \<Longrightarrow> length l1 \<le> length l2" by (induct rule:is_prefix.induct[OF assms]) auto
-
-lemma len_not_is_pref: "length l2 < length l1 \<Longrightarrow> \<not>is_prefix l1 l2" using is_pref_len using not_less by auto
+lemma "is_prefix l1 l2 \<Longrightarrow> length l1 = length l2 \<Longrightarrow> l1 = l2" using is_prefix_def
+by (metis append_Nil append_eq_append_conv)
 
 lemma
-assumes "is_prefix l1 l2" "length l1 = length l2"
-shows "l1 = l2"
-proof (cases l2)
-case Nil
-thus ?thesis using assms by simp
-next
-case Cons
-show ?thesis
-proof (rule ccontr)
-assume "l1 \<noteq> l2"
-have "l2 = hd l2 # tl l2" using Cons by simp
-hence "length (tl l2) < length l2" by (metis impossible_Cons le_less_linear)
-hence "length (tl l2) < length l1" using assms by simp
-moreover from assms `l1 \<noteq> l2` have "is_prefix l1 (tl l2)" using is_pref_tl by auto
-ultimately show False using len_not_is_pref by blast
-qed
-qed
-
-lemma "is_prefix l1 l2 \<Longrightarrow> (\<exists>a. l2 = a @ l1)"
-proof (induct rule: is_prefix.induct)
-show "\<And>l. \<exists>a. l = a @ l" by simp
-fix xs::"'z list"
-fix ys x
-assume "is_prefix xs ys" "\<exists>a. ys = a @ xs"
-then obtain a where "ys = a @ xs" by auto
-hence "x#ys = (x#a)@xs" by simp
-thus "\<exists>a. x # ys = a @ xs" by simp
-qed
-
-lemma
-assumes pref: "is_prefix l1 l2" "is_prefix l3 l2" "length l1 \<le> length l3"
+assumes pref: "is_prefix l1 l2" "is_prefix l3 l2"
+assumes len:"length l1 \<le> length l3"
 shows "is_prefix l1 l3"
-using pref
-sorry
-
-
-lemma "x@xr = y@yr \<Longrightarrow> length xr \<le> length yr \<Longrightarrow> is_prefix xr yr" using is_pref_simp
-sorry
-
-lemma "\<And>l. length (next_list l) = length l"
-(* easy *)
-sorry
+proof -
+from pref obtain a where "l2 = a@l1" using is_prefix_def by auto
+moreover from pref obtain b where "l2 = b@l3" using is_prefix_def by auto
+ultimately have "a@l1 = b@l3" by simp
+thus ?thesis using len is_prefix_def
+by (metis append_eq_append_conv append_eq_append_conv2 le_neq_implies_less len_not_is_pref)
+qed
 
 subsection{* Ordering lists used in Huffman *}
 subsubsection{* Order definition *}
