@@ -269,8 +269,7 @@ definition huffman_encoding_u :: "('b^'n) \<Rightarrow> bit list" where
   "huffman_encoding_u v = encode (L_enum_inv v) (\<lambda>n. li (L_enum n))"
 
 lemma huffman_encoding_u_nemp: "len 0 \<noteq> 0 \<longrightarrow> v\<in>L \<longrightarrow> huffman_encoding_u v \<noteq> []"
-using enc_nemp[of "\<lambda>n. li (L_enum n)",of "L_enum_inv v"]
-huffman_encoding_u_def li_11 L_enum_inv_inj sorry
+using enc_nemp[of "\<lambda>n. li (L_enum n)"] huffman_encoding_u_def by (simp add: li_diff_0)
 
 definition huffman_lists :: "bit list set" where
   "huffman_lists = huffman_encoding_u ` L"
