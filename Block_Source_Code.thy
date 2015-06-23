@@ -186,6 +186,8 @@ subsection{* Manipulation of list *}
 (* the lists are considered in reverse order, i.e. [0] is a prefix of [1,0] *)
 (* nxt_list has an appropriate behaviour only on the predefined set of lists, not if the kraft
 inequality is not satisfied *)
+
+subsubsection{* nxt_list *}
 fun nxt_list :: "bit list \<Rightarrow> bit list" where
   nxt_list_Nil: "nxt_list [] = [False]"|
   nxt_list_Cons_True: "nxt_list (True#xs) = False#(nxt_list xs)"|
@@ -220,6 +222,7 @@ fun nxt_list_n :: "bit list \<Rightarrow> nat \<Rightarrow> bit list" where
   nxt_list_n_Nil: "nxt_list_n l 0 = l"|
   nxt_list_n_Suc: "nxt_list_n l (Suc n) = nxt_list_n (nxt_list l) n"
 
+subsubsection{* pad *}
 (* add n False (0) at the beginning of the list *)
 fun pad :: "bit list \<Rightarrow> nat \<Rightarrow> bit list" where
   pad_0: "pad l 0 = l"|
@@ -227,6 +230,7 @@ fun pad :: "bit list \<Rightarrow> nat \<Rightarrow> bit list" where
 
 theorems pad_simp = pad_0 pad_Suc
 
+subsubsection{* encode *}
 (* gives the nth encoding according to the lengths function *)
 fun encode :: "nat \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> bit list" where
   enc_0: "encode 0 len = pad [] (len 0)"|
@@ -240,6 +244,7 @@ lemma enc_nemp: "len 0 \<noteq> 0 \<Longrightarrow> encode n len \<noteq> []"
 lemma enc_len: "False \<in> set (encode n len) \<Longrightarrow> length (encode n len) = (len n)
   \<Longrightarrow> length (encode (Suc n) len) = len (Suc n)" using enc_simp pad_simp sorry
 
+subsubsection{* is_prefix *}
 (* is l1 a prefix of l2
 prefix in the sense of the code, suffix for the real list
 *)
@@ -309,7 +314,7 @@ definition huffman_lists :: "bit list set" where
   "huffman_lists = huffman_encoding_u ` L"
 
 (* hard *)
-lemma
+lemma kraft_sum_huff_inc:
   assumes kraft_sum_li_ineq
 shows "\<And>i j. j < card L \<Longrightarrow> i < j \<Longrightarrow> (huffman_encoding (L_enum i) \<prec> huffman_encoding (L_enum j))"
   sorry
@@ -390,7 +395,8 @@ qed
 
 lemma huff_emp_2: "huffman_encoding [] = []" using huffman_encoding_def by simp
 
-theorems huff_emp = huff_emp_1 huff_emp_2
+lemma huff_emp: "real_word x \<Longrightarrow> huffman_encoding x = [] \<longleftrightarrow> x = []" using huff_emp_1 huff_emp_2
+by auto
 
 (*
 lemma "x \<noteq> [] \<Longrightarrow> huffman_encoding_alt x = huffman_encoding_alt (tl x) @ huffman_encoding_u (hd x)"
@@ -412,21 +418,26 @@ also have "\<dots> = huffman_encoding (tl x) @ huffman_encoding_u (hd x)" using 
 
 lemma rw_hd: "real_word (x#xs) \<Longrightarrow> x \<in> L" by simp
 
+theorem "real_word [x] \<Longrightarrow> real_word [y] \<Longrightarrow>
+is_prefix (huffman_encoding_u x) (huffman_encoding_u y) \<Longrightarrow> x = y"
+sorry
+
 (* using prefix properties *)
 (* theorem "inj_on huffman_encoding valid_input_set" *)
 theorem huffman_encoding_inj:
   "real_word x \<Longrightarrow> real_word y \<Longrightarrow> huffman_encoding x = huffman_encoding y \<Longrightarrow> x = y"
 proof (induction x arbitrary: y)
     case Nil
-    hence "huffman_encoding y = []" sorry
-    hence "y = []" sorry
+    hence "huffman_encoding y = []" using huffman_encoding_def by simp
+    hence "y = []" using huffman_encoding_def huff_emp Nil by simp
     thus ?case by simp
 next
     case (Cons xh xt)
-    have "y \<noteq> []" using huff_nemp Cons huff_emp rw_hd by auto
+    have "y \<noteq> []" using huff_nemp Cons huff_emp rw_hd by (metis (no_types))
     hence "y = hd y # tl y" by simp
     hence "huffman_encoding y = huffman_encoding_u (hd y) @ huffman_encoding (tl y)"
-      by (metis concat.simps(2) huffman_encoding_def list.simps(9))
+      using huffman_encoding_def by (metis (no_types) List.bind_def bind_simps(2)) 
+(* use prefix *)
     have "xh # xt = y" sorry
     thus ?case by simp
 
