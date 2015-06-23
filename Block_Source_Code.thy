@@ -184,27 +184,61 @@ subsection{* Manipulation of list *}
 
 (* main three functions to do the encoding *)
 (* the lists are considered in reverse order, i.e. [0] is a prefix of [1,0] *)
-fun next_list :: "bit list \<Rightarrow> bit list" where
-  "next_list [] = [False]"|
-  "next_list (x#xs) = (if x then False#(next_list xs) else True#xs)"
+(* nxt_list has an appropriate behaviour only on the predefined set of lists, not if the kraft
+inequality is not satisfied *)
+fun nxt_list :: "bit list \<Rightarrow> bit list" where
+  nxt_list_Nil: "nxt_list [] = [False]"|
+  nxt_list_Cons_True: "nxt_list (True#xs) = False#(nxt_list xs)"|
+  nxt_list_Cons_False: "nxt_list (False#xs) = True#xs"
 
-(* next_list applied n times *)
-fun next_list_n :: "bit list \<Rightarrow> nat \<Rightarrow> bit list" where
-  "next_list_n l 0 = l"|
-  "next_list_n l (Suc n) = next_list_n (next_list l) n"
+theorems nxt_list_simp = nxt_list_Cons_False nxt_list_Cons_True nxt_list_Nil
+
+lemma "length (nxt_list (False#l)) = (length (False#l))" by simp
+
+lemma nxt_list_false: "length (nxt_list l) = length l \<longleftrightarrow> False \<in> set l"
+proof (induct l)
+case Nil
+show ?case by simp
+next
+case (Cons a l)
+show "(length (nxt_list l) = length l) = (False \<in> set l)
+      \<Longrightarrow> (length (nxt_list (a # l)) = length (a # l)) = (False \<in> set (a # l))"
+    proof (cases a)
+      case True
+      assume "(length (nxt_list l) = length l) = (False \<in> set l)"
+      thus "(length (nxt_list (a # l)) = length (a # l)) = (False \<in> set (a # l))"
+        using True by simp
+      next
+     case False
+      show "(length (nxt_list (a # l)) = length (a # l)) = (False \<in> set (a # l))"
+using False by simp
+qed
+qed
+
+(* nxt_list applied n times *)
+fun nxt_list_n :: "bit list \<Rightarrow> nat \<Rightarrow> bit list" where
+  nxt_list_n_Nil: "nxt_list_n l 0 = l"|
+  nxt_list_n_Suc: "nxt_list_n l (Suc n) = nxt_list_n (nxt_list l) n"
 
 (* add n False (0) at the beginning of the list *)
 fun pad :: "bit list \<Rightarrow> nat \<Rightarrow> bit list" where
-  "pad l 0 = l"|
-  "pad l (Suc n) = False#(pad l n)"
+  pad_0: "pad l 0 = l"|
+  pad_Suc: "pad l (Suc n) = False#(pad l n)"
+
+theorems pad_simp = pad_0 pad_Suc
 
 (* gives the nth encoding according to the lengths function *)
 fun encode :: "nat \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> bit list" where
-  "encode 0 len = pad [] (len 0)"|
-  "encode (Suc n) len = pad (next_list (encode n len)) (len (Suc n) - len n)"
+  enc_0: "encode 0 len = pad [] (len 0)"|
+  enc_Suc: "encode (Suc n) len = pad (nxt_list (encode n len)) (len (Suc n) - len n)"
 
-lemma enc_nemp: "\<And>len n. len 0 \<noteq> 0 \<Longrightarrow> encode n len \<noteq> []"
-by (metis encode.elims list.distinct(1) next_list.elims pad.elims)
+theorems enc_simp = enc_0 enc_Suc
+
+lemma enc_nemp: "len 0 \<noteq> 0 \<Longrightarrow> encode n len \<noteq> []"
+by (metis encode.elims list.distinct(1) nxt_list.elims pad.elims)
+
+lemma enc_len: "False \<in> set (encode n len) \<Longrightarrow> length (encode n len) = (len n)
+\<Longrightarrow> length (encode (Suc n) len) = len (Suc n)" using enc_simp pad_simp sorry
 
 (* is l1 a prefix of l2
 prefix in the sense of the code, suffix for the real list
@@ -246,7 +280,7 @@ qed
 subsection{* Ordering lists used in Huffman *}
 subsubsection{* Order definition *}
 definition less_eq :: "bit list \<Rightarrow> bit list \<Rightarrow> bool" (infix "\<preceq>" 50) where
-  "less_eq l1 l2 = (\<exists>n. l2 = next_list_n l1 n)"
+  "less_eq l1 l2 = (\<exists>n. l2 = nxt_list_n l1 n)"
 
 definition less :: "bit list \<Rightarrow> bit list \<Rightarrow> bool" (infix "\<prec>" 50) where
   "l1 \<prec> l2 = (l1 \<preceq> l2 \<and> l1 \<noteq> l2)"
@@ -289,8 +323,7 @@ shows "\<And>a b. a\<in>L \<Longrightarrow> b\<in>L \<Longrightarrow> a \<noteq>
 sorry
 
 (* easy? *)
-lemma "\<And>l. l\<in>L \<Longrightarrow> length (huffman_encoding_u l) = li l"
-sorry
+lemma "\<And>l. l\<in>L \<Longrightarrow> length (huffman_encoding_u l) = li l" using huffman_encoding_u_def sorry
 
 (* easy *)
 lemma encoding_inj: "inj_on huffman_encoding_u L"
@@ -318,11 +351,13 @@ huffman_encoding_reverse_aux (xs @ [y]) ys
 definition huffman_decoding :: "bit list \<Rightarrow> ('b^'n) list option" where
   "huffman_decoding xs = huffman_encoding_reverse_aux [] xs"
 
+(*
 definition huffman_encoding :: "('b^'n) list \<Rightarrow> bit list" where
   huffman_encoding_def: "huffman_encoding xs = (fold (\<lambda>vl res. (huffman_encoding_u vl) @ res) xs [])"
+*)
 
-definition huffman_encoding_alt :: "('b^'n) list \<Rightarrow> bit list" where
-  huffman_encoding_alt_def: "huffman_encoding_alt x = concat (map huffman_encoding_u x)"
+definition huffman_encoding :: "('b^'n) list \<Rightarrow> bit list" where
+  huffman_encoding_def: "huffman_encoding x = concat (map huffman_encoding_u x)"
 
 (* the set of possible inputs *)
 definition valid_input_set :: "('b^'n) list set" where
@@ -331,29 +366,29 @@ definition valid_input_set :: "('b^'n) list set" where
 lemma "x#xs \<in> valid_input_set \<Longrightarrow> xs \<in> valid_input_set"
 using valid_input_set_def by auto
 
-lemma huff_nemp: "x \<in> L \<Longrightarrow> huffman_encoding_alt (x#xs) \<noteq> []"
+lemma huff_nemp: "x \<in> L \<Longrightarrow> huffman_encoding (x#xs) \<noteq> []"
 proof -
   have "x\<in>L \<Longrightarrow> huffman_encoding_u x \<noteq> []"
   using huffman_encoding_u_nemp by auto
-  thus "x \<in> L \<Longrightarrow> huffman_encoding_alt (x#xs) \<noteq> []" using huffman_encoding_alt_def by simp
+  thus "x \<in> L \<Longrightarrow> huffman_encoding (x#xs) \<noteq> []" using huffman_encoding_def by simp
 qed
 
-lemma huff_emp_1: "real_word x \<Longrightarrow> (huffman_encoding_alt x = [] \<longrightarrow> x = [])"
+lemma huff_emp_1: "real_word x \<Longrightarrow> (huffman_encoding x = [] \<longrightarrow> x = [])"
 proof
-show "real_word x \<Longrightarrow> huffman_encoding_alt x = [] \<Longrightarrow> x = []"
+show "real_word x \<Longrightarrow> huffman_encoding x = [] \<Longrightarrow> x = []"
   proof (rule ccontr)
-    assume asm: "real_word x" "huffman_encoding_alt x = []" "x \<noteq> []"
+    assume asm: "real_word x" "huffman_encoding x = []" "x \<noteq> []"
     hence "x = (hd x) # tl x" by simp
-    hence "huffman_encoding_alt x = huffman_encoding_u (hd x) @ concat (map huffman_encoding_u (tl x))"
-    using huffman_encoding_alt_def by (metis List.bind_def bind_simps(2))
+    hence "huffman_encoding x = huffman_encoding_u (hd x) @ concat (map huffman_encoding_u (tl x))"
+    using huffman_encoding_def by (metis List.bind_def bind_simps(2))
     moreover have in_L: "hd x \<in> L" using asm by auto
-    hence "huffman_encoding_alt x \<noteq> []" using huffman_encoding_alt_def huff_nemp[OF in_L]
+    hence "huffman_encoding x \<noteq> []" using huffman_encoding_def huff_nemp[OF in_L]
     using calculation by auto
     thus False using asm by simp
   qed
 qed
 
-lemma huff_emp_2: "huffman_encoding_alt [] = []" using huffman_encoding_alt_def by simp
+lemma huff_emp_2: "huffman_encoding [] = []" using huffman_encoding_def by simp
 
 theorems huff_emp = huff_emp_1 huff_emp_2
 
@@ -380,18 +415,18 @@ lemma rw_hd: "real_word (x#xs) \<Longrightarrow> x \<in> L" by simp
 (* using prefix properties *)
 (* theorem "inj_on huffman_encoding valid_input_set" *)
 theorem huffman_encoding_inj:
-"real_word x \<Longrightarrow> real_word y \<Longrightarrow> huffman_encoding_alt x = huffman_encoding_alt y \<Longrightarrow> x = y"
+"real_word x \<Longrightarrow> real_word y \<Longrightarrow> huffman_encoding x = huffman_encoding y \<Longrightarrow> x = y"
 proof (induction x arbitrary: y)
 case Nil
-hence "huffman_encoding_alt y = []" sorry
+hence "huffman_encoding y = []" sorry
 hence "y = []" sorry
 thus ?case by simp
 next
 case (Cons xh xt)
 have "y \<noteq> []" using huff_nemp Cons huff_emp rw_hd by auto
 hence "y = hd y # tl y" by simp
-hence "huffman_encoding_alt y = huffman_encoding_u (hd y) @ huffman_encoding_alt (tl y)"
-by (metis concat.simps(2) huffman_encoding_alt_def list.simps(9))
+hence "huffman_encoding y = huffman_encoding_u (hd y) @ huffman_encoding (tl y)"
+by (metis concat.simps(2) huffman_encoding_def list.simps(9))
 have "xh # xt = y" sorry
 thus ?case by simp
 
@@ -414,8 +449,8 @@ definition huffman_code :: "('b^'n) code" where
 
 section{* Proofs: it is a real code that respect certain properties *}
 subsection{* lemmas on lists *}
-lemma "\<And>l. True \<in> set l \<Longrightarrow> l \<noteq> next_list l"
-by (metis length_greater_0_conv length_pos_if_in_set list.inject next_list.elims)
+lemma "\<And>l. True \<in> set l \<Longrightarrow> l \<noteq> nxt_list l"
+by (metis length_greater_0_conv length_pos_if_in_set list.inject nxt_list.elims)
 
 lemma "length (pad l n) = length l + n"
 proof (induction n)
@@ -426,27 +461,34 @@ have "length (pad l (Suc m)) = length (pad l m) + 1" by simp
 thus ?case using Suc by simp
 qed
 
-lemma "\<And>l. next_list l \<noteq> l"
-by (metis (full_types) list.sel(1) next_list.elims not_Cons_self2)
+lemma "\<And>l. nxt_list l \<noteq> l"
+by (metis (full_types) list.sel(1) nxt_list.elims not_Cons_self2)
 
 subsection{* The Huffman code is a real code *}
 
-(* really tedious to prove, I should only prove that huffman_encoding is injective on a set of lists,
+(*
+[KEEP THREE FOLLOWING]
+\<longleftrightarrow> Proof that the main constraint is satisfied
+*)
+
+(*
+easy with definition stemming from bijection
 *)
 lemma "set x \<subseteq> L \<Longrightarrow> huffman_decoding (huffman_encoding x) = Some x"
 sorry
 
+(*
+easy
+*)
 lemma "set x \<subseteq> L \<Longrightarrow> huffman_encoding x = [] \<longleftrightarrow> x = []"
 using enc_nemp huffman_encoding_def sorry
 
 lemma "x \<noteq> [] \<Longrightarrow> huffman_encoding x = huffman_encoding_u (hd x) @ (huffman_encoding (tl x))"
 (* using huffman_encoding_def huffman_encoding_u_def *) unfolding huffman_encoding_def
-using fold_Cons
-fold_simps sorry
-
+using fold_Cons fold_simps sorry
 
 (* theorem huff_real_code = three previous lemmas *)
-
+(* [/KEEP THESE THREE] *)
 
 (* Main theorem: find the average length of this code *)
 theorem "code_rate huffman_code X \<le> \<H>(X) + 1"
