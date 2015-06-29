@@ -713,7 +713,7 @@ proof -
     (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))
       \<le> KL_cus (S \<inter> {j. 0 < a j}) a d" using setsum.inter_restrict[OF fin, of d, of "{i. 0 < a i}"]
       setsum_mono[of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then d x else 0)", of d] non_null(2) sum_c_one
-      by (force)
+      by force
       hence
       "KL_cus (S \<inter> {j. 0 < a j}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i})) \<le> KL_cus (S \<inter> {j. 0 < a j}) a d"
         using non_null by simp
