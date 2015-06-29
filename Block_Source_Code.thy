@@ -488,15 +488,11 @@ easy with definition stemming from bijection
 lemma "set x \<subseteq> L \<Longrightarrow> huffman_decoding (huffman_encoding x) = Some x"
   sorry
 
-(*
-easy
-*)
 lemma "set x \<subseteq> L \<Longrightarrow> huffman_encoding x = [] \<longleftrightarrow> x = []"
-    using enc_nemp huffman_encoding_def sorry
+    using huff_emp by simp
 
 lemma "x \<noteq> [] \<Longrightarrow> huffman_encoding x = huffman_encoding_u (hd x) @ (huffman_encoding (tl x))"
-(* using huffman_encoding_def huffman_encoding_u_def *) unfolding huffman_encoding_def
-    using fold_Cons fold_simps sorry
+unfolding huffman_encoding_def by (metis (no_types) concat.simps(2) hd_Cons_tl list.simps(9))
 
 (* theorem huff_real_code = three previous lemmas *)
 (* [/KEEP THESE THREE] *)
