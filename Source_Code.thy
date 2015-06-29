@@ -712,29 +712,8 @@ proof -
       "(\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i) \<Longrightarrow> KL_cus (S \<inter> {j. 0 < a j}) a
     (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))
       \<le> KL_cus (S \<inter> {j. 0 < a j}) a d" using setsum.inter_restrict[OF fin, of d, of "{i. 0 < a i}"]
-      setsum_mono[of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then d x else 0)", of d]
-    (* this one seems to take forever... *)
-    (* by (metis order.strict_implies_order order_refl) *)
-    (* sledgehammer proof *)
-    proof -
-        assume "\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i"
-        obtain bb :: 'b where
-        f1: "(bb \<in> S \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then d b else 0) \<le> setsum d S) \<and> (\<not> (if bb \<in> {b. 0 < a b} then d bb else 0) \<le> d bb \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then d b else 0) \<le> setsum d S)"
-          using `(\<And>i. i \<in> S \<Longrightarrow> (if i \<in> {i. 0 < a i} then d i else 0) \<le> d i) \<Longrightarrow> (\<Sum>i\<in>S. if i \<in> {i. 0 < a i} then d i else 0) \<le> setsum d S` by blast
-        hence f2: "bb \<in> S \<or> setsum d (S \<inter> {b. 0 < a b}) \<le> 1"
-          by (simp add: `setsum d (S \<inter> {i. 0 < a i}) = (\<Sum>x\<in>S. if x \<in> {i. 0 < a i} then d x else 0)` sum_c_one)
-        obtain bba :: 'b where
-        f3: "bba \<in> S \<inter> {b. 0 < a b} \<and> (\<not> setsum d (S \<inter> {b. 0 < a b}) \<le> 1 \<or> \<not> 0 \<le> a bba \<or> KL_cus (S \<inter> {b. 0 < a b}) a (\<lambda>b. d b / setsum d (S \<inter> {b. 0 < a b})) \<le> KL_cus (S \<inter> {b. 0 < a b}) a d)"
-          using False `\<lbrakk>setsum d (S \<inter> {i. 0 < a i}) \<le> 1; \<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i\<rbrakk> \<Longrightarrow> KL_cus (S \<inter> {j. 0 < a j}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i})) \<le> KL_cus (S \<inter> {j. 0 < a j}) a d` by blast
-        have "(0\<Colon>real) \<le> 1"
-          by linarith
-        hence "\<And>b. b \<notin> S \<or> 0 \<le> d b"
-          by (metis (no_types) `\<And>i. i \<in> S \<Longrightarrow> 0 < d i` divide_le_eq_1_pos divide_zero_left)
-        hence "setsum d (S \<inter> {b. 0 < a b}) \<le> 1"
-          using f2 f1 `setsum d (S \<inter> {i. 0 < a i}) = (\<Sum>x\<in>S. if x \<in> {i. 0 < a i} then d x else 0)` sum_c_one by force
-        thus ?thesis
-          using f3 by force
-    qed
+      setsum_mono[of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then d x else 0)", of d] non_null(2) sum_c_one
+      by (force)
       hence
       "KL_cus (S \<inter> {j. 0 < a j}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i})) \<le> KL_cus (S \<inter> {j. 0 < a j}) a d"
         using non_null by simp
