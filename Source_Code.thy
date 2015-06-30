@@ -506,27 +506,16 @@ lemma entropy_rewrite: "H = -(\<Sum>i \<in> L. fi i * log b (fi i))"
     using entropy_simple_distributed[OF distr_i] bounded_input
     by (simp add: entropy_defi)
 
-lemma log_mult_ext: "\<And>x y z. 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow>
-  x * log b (x*z*y) = x * log b (x*z) + x * log b y"
-proof -
-    fix x :: real and y :: real and z :: real
-    assume a1: "0 < y"
-    assume a2: "0 \<le> x"
-    assume a3: "0 < z"
-    moreover
-    {
-    assume "x * z \<noteq> 0"
-    hence "x * (log b y + log b (x * z)) = x * log b (x * (y * z))" using a1 a2 a3
-      by (metis b_val eq_numeral_simps(2) less_eq_real_def less_numeral_simps(4)
-    log_mult mult.left_commute mult_nonneg_nonneg num.distinct(2))
-    }
-    ultimately show "x * log b (x * z * y) = x * log b (x * z) + x * log b y"
-      by (metis (no_types) add.commute distrib_left mult.commute mult.left_commute mult_zero_right
-    nonzero_mult_divide_cancel_right order_less_irrefl)
-qed
+lemma log_mult_ext_not_0:
+    "0 < x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
+    using b_gt_1 distrib_left log_mult by auto
+
+lemma log_mult_ext_3:
+    " 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
+    using log_mult_ext_not_0[of x] mult_zero_left[of "log b (0 * z * y)"] by fastforce
 
 lemma log_mult_ext2: "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * log b (x*y) = x * log b (x) + x * log b y"
-    by (metis (no_types) log_mult_ext mult.right_neutral zero_less_one)
+    by (metis (no_types) log_mult_ext_3 mult.right_neutral zero_less_one)
 
 subsubsection {* KL divergence and properties *}
 (*
@@ -778,7 +767,7 @@ proof -
     have
     "fi i * log b (fi i * ?c / (1/b powr l i) * (inverse kraft_sum)) =
     fi i * log b (fi i * ?c / (1/b powr l i)) + fi i * log b (inverse kraft_sum)"
-      using log_mult_ext[OF pos_pi[OF iL]
+      using log_mult_ext_3[OF pos_pi[OF iL]
     positive_imp_inverse_positive[OF kraft_sum_nonnull],
     of "kraft_sum / (1 / b powr (l i))"] divide_pos_pos[OF kraft_sum_nonnull] powr_gt_zero[of b]
     Orderings.order_class.order.strict_implies_not_eq[
