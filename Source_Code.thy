@@ -295,9 +295,9 @@ shows "real ((n::nat) + 1) * r = (n * r + r)"
 
 lemma sum_vimage_proof:
   fixes g::"nat \<Rightarrow> real"
-  assumes bounded: "\<And>w. f w < bd"
-shows "finite S \<Longrightarrow> (\<Sum>w\<in>S. g (f w)) = (\<Sum> m=0..<bd. (card ((f-`{m}) \<inter> S) )* g
-  m)" (is "?fin \<Longrightarrow> ?s1 = (\<Sum> m=0..<bd. ?ff m S)")
+  assumes "\<And>w. f w < bd"
+shows "finite S \<Longrightarrow> (\<Sum>w\<in>S. g (f w)) = (\<Sum> m=0..<bd. (card ((f-`{m}) \<inter> S) )* g m)"
+  (is "_ \<Longrightarrow> _ = (\<Sum> m=0..<bd. ?ff m S)")
 proof (induct S rule: finite_induct)
     case empty
     show ?case by simp
@@ -306,15 +306,14 @@ next
     let ?rr = "(\<Sum>m = 0..<bd. ?ff m (insert x F))"
   (* focusing of the right hand term *)
     have "(f x) \<in> {0..<bd}" using assms by simp
-    hence sum_reord: "\<And> h::(nat \<Rightarrow> real). (\<Sum>m=0..<bd. h m) =
-  (setsum h ({0..<bd} - {f x}) + h (f x))"
+    hence "\<And>h::(nat \<Rightarrow> real). (\<Sum>m=0..<bd. h m) = (\<Sum>y\<in>({0..<bd} - {f x}).h y) + h (f x)"
       by (metis diff_add_cancel finite_atLeastLessThan setsum_diff1_ring)
-    hence
+    moreover hence
     "(\<Sum>m = 0..<bd. ?ff m (insert x F))
     = (\<Sum>m\<in>{0..<bd} - {f x}. ?ff m (insert x F)) + card (f -` {f x} \<inter> F) * g (f x) + g (f x)"
       using insert real_plus_one by fastforce
-    hence "(\<Sum>m = 0..<bd. ?ff m (insert x F)) = (\<Sum>m\<in>{0..<bd}. ?ff m F) + g (f x)"
-      using sum_reord by fastforce
+    ultimately have "(\<Sum>m = 0..<bd. ?ff m (insert x F)) = (\<Sum>m\<in>{0..<bd}. ?ff m F) + g (f x)"
+       by fastforce
     thus ?case using insert.hyps by simp
 qed
 
