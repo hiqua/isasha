@@ -638,33 +638,15 @@ proof -
           using f5 f4 f3 a1 by (metis (no_types) UnCI `S = S \<inter> {i. 0 < a i} \<union> S \<inter> {i. 0 = a i}` divide_pos_pos empty_iff)
     qed
     (* sum a equals to 1 *)
-      have 3: "setsum a (S \<inter> {i. 0 < a i}) = 1" using
-      setsum.cong[of S, of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then a x else 0)", of a] setsum.inter_restrict[OF fin, of a, of " {i. 0 < a i}"]
-    (* try proof *)
-    proof -
-        have "(\<exists>b. b \<in> S \<and> (if b \<in> {b. 0 < a b} then a b else 0) \<noteq> a b) \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then a b else 0) = setsum a S"
-          using `\<lbrakk>S = S; \<And>x. x \<in> S \<Longrightarrow> (if x \<in> {i. 0 < a i} then a x else 0) = a x\<rbrakk> \<Longrightarrow> (\<Sum>x\<in>S. if x \<in> {i. 0 < a i} then a x else 0) = setsum a S` by blast
-        then obtain bb :: 'b where
-        "bb \<in> S \<and> (if bb \<in> {b. 0 < a b} then a bb else 0) \<noteq> a bb \<or> (\<Sum>b\<in>S. if b \<in> {b. 0 < a b} then a b else 0) = 1"
-          using sum_a_one by presburger
-        moreover
-        { assume "a bb \<noteq> (if bb \<in> {b. 0 < a b} then a bb else 0)"
-        moreover
-        { assume "a bb \<noteq> 0"
-        hence "\<not> 0 \<le> a bb \<or> \<not> a bb \<le> 0"
-          by linarith
-        hence "setsum a (S \<inter> {b. 0 < a b}) = 1 \<or> bb \<notin> S \<or> (if bb \<in> {b. 0 < a b} then a bb else 0) = a bb"
-          using non_null(1) by force }
-        ultimately have "setsum a (S \<inter> {b. 0 < a b}) = 1 \<or> bb \<notin> S \<or> (if bb \<in> {b. 0 < a b} then a bb else 0) = a bb"
-          by meson }
-        ultimately show ?thesis
-          by (metis (no_types) `setsum a (S \<inter> {i. 0 < a i}) = (\<Sum>x\<in>S. if x \<in> {i. 0 < a i} then a x else 0)`)
-    qed
+      have 3: "setsum a (S \<inter> {i. 0 < a i}) = 1"
+        using setsum.cong[of S, of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then a x else 0)", of a]
+        setsum.inter_restrict[OF fin, of a] non_null(1) sum_a_one
+        by fastforce
       have "(\<Sum>i\<in>S \<inter> {j. 0 < a j}. ?c i) = (\<Sum>i\<in>S \<inter> {j. 0 < a j}. d i) / (\<Sum>i\<in>S \<inter> {j. 0 < a j}. d i)"
         by (metis setsum_divide_distrib)
     (* sum ?c equals to 1 *)
       hence 5: "(\<Sum>i\<in>S \<inter> {j. 0 < a j}. ?c i) = 1"
-        using "2" False by force
+        using 2 False by force
       hence "0 \<le> KL_cus (S \<inter> {j. 0 < a j}) a ?c" using
       KL_cus_pos_gen[
       OF finite_Int[OF disjI1, of S, of "{j. 0 < a j}"], of a, of ?c
