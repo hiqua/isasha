@@ -618,25 +618,7 @@ proof -
       have 1: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < a i)" by simp
     (* ?c pos *)
       have 2: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < ?c i)"
-    (* try proof *)
-    proof -
-        fix i :: 'b
-        assume a1: "i \<in> S \<inter> {i. 0 < a i}"
-        have f2: "\<forall>x0 x1. ((0\<Colon>real) < setsum x0 (x1\<Colon>'b set)) = (\<not> setsum x0 x1 \<le> 0)"
-          by linarith
-        have "\<forall>x0 x1. ((0\<Colon>real) < x1 (x0\<Colon>'b)) = (\<not> x1 x0 \<le> 0)"
-          by auto
-        hence f3: "\<forall>B f. (infinite B \<or> B = {} \<or> (\<exists>b. (b\<Colon>'b) \<in> B \<and> f b \<le> (0\<Colon>real))) \<or> \<not> setsum f B \<le> 0"
-          using f2 by (metis (full_types) setsum_pos)
-        have f4: "finite (S \<inter> {b. 0 < a b})"
-          using fin by blast
-        have f5: "\<forall>x1. ((0\<Colon>real) < x1) = (\<not> x1 \<le> 0)"
-          by linarith
-        have "\<forall>b. b \<notin> S \<or> \<not> d b \<le> 0"
-          using non_null(2) by fastforce
-        thus "0 < d i / setsum d (S \<inter> {b. 0 < a b})"
-          using f5 f4 f3 a1 by (metis (no_types) UnCI `S = S \<inter> {i. 0 < a i} \<union> S \<inter> {i. 0 = a i}` divide_pos_pos empty_iff)
-    qed
+        by (metis False IntD1 divide_pos_pos fin finite_Int non_null(2) setsum_pos)
     (* sum a equals to 1 *)
       have 3: "setsum a (S \<inter> {i. 0 < a i}) = 1"
         using setsum.cong[of S, of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then a x else 0)", of a]
