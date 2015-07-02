@@ -30,8 +30,6 @@ letter and concatenate the result (and fortunately decode it if it has some good
 properties).
 _its block code, with a natural parameter, that takes mentioned number of
 letters, consider it as a single character (of a new alphabet), and encode it.
-TODO: explain a lil more
-TODO: link between bword and the variable b
 *)
 
 (* locale generic to both theorems *)
@@ -42,8 +40,8 @@ locale source_code = information_space +
   assumes distr_i: "simple_distributed M X fi"
 (*
 According to RAHM, this should be a rat: my impression is that they aim for a code that can achieve
-precisely this rate, however the gist is that we can achieve a rate equal OR better than
-H + \<epsilon>, so in my mind it is not that important. In the Shannon's original paper it is not clear either.
+precisely this rate, however the gist is that we can achieve a rate equal OR better than H + \<epsilon>, so
+in my mind it is not that important. In the Shannon's original paper it is not clear to me either.
 *)
   fixes H::real
 
@@ -64,6 +62,12 @@ Isabelle vs Coq/SSreflect, where dependent parameter types are available.
   assumes fin_L: "finite L"
   assumes emp_L: "L \<noteq> {}"
 
+(*
+TLDR: technicality
+The assumption boils down to say that for all letter l in L, there is a "omega" such that X(omega) =
+l. Even with that, we can still have P(X=l) = 0, if only by modifying X for one value in the
+(continuous) probability space but keeping the same distribution.
+*)
   assumes bounded_input: "X ` space M = L"
 
   fixes c::"'b code"
@@ -723,7 +727,6 @@ shows "(\<Sum>i\<in>A. f i / S) = 1"
 (*
 _Kraft inequality for real codes using the McMillan theorem
 *)
-(* TODO using bounded_input, is that ok? *)
 theorem rate_lower_bound :
   defines "l \<equiv> (\<lambda>i. cw_len i)"
   defines "LL \<equiv> L - {i. fi i = 0}"
@@ -735,7 +738,6 @@ proof -
     {
     fix i
     assume "i \<in> L"
-  (* TODO using bounded_input *)
     hence "0 \<le> fi i" using simple_distributed_nonneg[OF distr_i] bounded_input by blast
     } hence pos_pi: "\<And>i. i \<in> L \<Longrightarrow> 0 \<le> fi i" by simp
     {
@@ -758,7 +760,6 @@ proof -
       by simp
     have sum_one: "(\<Sum> i \<in> F. fi i) = 1"
       using simple_distributed_setsum_space[OF distr_i] F_def by simp
-  (* TODO using bounded_input *)
     hence sum_one_L: "(\<Sum> i \<in> L. fi i) = 1" using bounded_input F_def by simp
     {
     fix i
