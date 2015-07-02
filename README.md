@@ -8,7 +8,7 @@ Attempt to formalize and proofs of Shannon's theorems in Isabelle, to replicate 
 
 ### Parse and explore the file
 
-Use [**Isabelle2015**](https://www.cl.cam.ac.uk/research/hvg/Isabelle) to open this file.
+Use [**Isabelle2015**](https://www.cl.cam.ac.uk/research/hvg/Isabelle) to open the theory files.
 
 ### Indention
 
