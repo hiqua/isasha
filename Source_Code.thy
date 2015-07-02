@@ -710,16 +710,13 @@ proof -
     hence
     "fi i * (log b (1 / (1 / b powr (l i))) + log b (fi i))
     = fi i * log b (fi i / (1 / b powr (l i)))"
-      using log_mult_ext2[OF pos_pi] powr_gt_zero
-  proof -
-      from b_gt_1 show ?thesis
-        by (simp add:
+      using log_mult_ext2[OF pos_pi] powr_gt_zero b_gt_1
+      by (simp add:
       `\<And>y i. \<lbrakk>i \<in> L; 0 < y\<rbrakk> \<Longrightarrow> fi i * log b (fi i * y) = fi i * log b (fi i) + fi i * log b y`
       iL linordered_field_class.sign_simps(36))
-  qed
     }
-    hence
-    eqpi: "\<And>i. i\<in> L \<Longrightarrow> fi i * (log b (1 / (1 / b powr (l i))) + log b (fi i))
+    hence eqpi:
+    "\<And>i. i\<in> L \<Longrightarrow> fi i * (log b (1 / (1 / b powr (l i))) + log b (fi i))
     = fi i * log b (fi i / (1 / b powr (l i)))"
       by simp
     have sum_one: "(\<Sum> i \<in> F. fi i) = 1"
