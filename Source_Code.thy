@@ -767,8 +767,7 @@ proof -
       using b_gt_1 kraft_sum_nonnull by (simp add: log_inverse KL_cus_def)
     finally have code_ent_kl_log: "cr - H = KL_cus L fi ?r + log b (inverse ?c)" by simp
     have "setsum ?r L = 1"
-      using sum_div_1[of "\<lambda>i. 1 / (b powr (l i))"]
-    kraft_sum_nonnull l_def kraft_sum_powr
+      using sum_div_1[of "\<lambda>i. 1 / (b powr (l i))"] kraft_sum_nonnull l_def kraft_sum_powr
       by simp
     moreover have "\<And>i. 0 < ?r i" using b_gt_1 kraft_sum_nonnull by simp
     moreover have "(\<Sum>i\<in>L. fi i) = 1" using sum_one_L by simp
