@@ -176,12 +176,13 @@ definition kraft_sum :: "real" where
 
 lemma pos_cw_len: "0 < 1 / b ^ cw_len i" using b_gt_1 by simp
 
-lemma kraft_sum_nonnull: "0 < kraft_sum" using kraft_sum_def b_gt_1
-  Groups_Big.ordered_comm_monoid_add_class.setsum_pos[OF fin_L emp_L pos_cw_len]
-    by (metis emp_L fin_L pos_cw_len setsum_pos)
+lemma kraft_sum_nonnull: "0 < kraft_sum"
+    using emp_L fin_L pos_cw_len setsum_pos kraft_sum_def
+    by metis
 
 lemma kraft_sum_powr: "kraft_sum = (\<Sum>i\<in>L. 1 / b powr (cw_len i))"
-    using powr_realpow b_gt_1 by (simp add: kraft_sum_def)
+    using powr_realpow b_gt_1
+    by (simp add: kraft_sum_def)
 
 definition kraft_inequality :: "bool" where
   "kraft_inequality = (kraft_sum \<le> 1)"
@@ -200,7 +201,7 @@ proof
       moreover have len: "length w = Suc k" using w_kw by simp
       moreover hence "w \<noteq> []" by auto
       moreover have "length (tl w) = k" using len by simp
-      moreover have "real_word (tl w)" using w_kw
+      moreover have "real_word (tl w)"
         by (metis `real_word w` calculation(2) list.size(3) nat.distinct(1) rw_tail)
       ultimately show "w \<in> ?r" using w_kw by simp
   qed
@@ -272,12 +273,11 @@ next
     also have
     "\<dots> =
   (\<Sum>wi \<in> L \<times> k_words n. 1/b^cw_len (fst wi) * (1 / b^cw_len_concat (snd wi)))"
-      using fin_L finite_k_words[where k="n"] cartesian_product[where A="L"]
+      using fin_L finite_k_words[where k="n"] cartesian_product
       by fastforce
     also have "\<dots> =
   (\<Sum>wi \<in> L \<times> k_words n. 1 / b^(cw_len_concat (snd wi) + cw_len (fst wi)))"
-      using b_gt_1 power_add
-      by (metis (no_types, lifting) add.commute power_one_over)
+      by (metis (no_types, lifting) power_add add.commute power_one_over)
     also have "\<dots> =
   (\<Sum>wi \<in> L \<times> k_words n. 1 / b^cw_len_concat (fst wi # snd wi))"
       by (metis (erased, lifting) add.commute comp_apply foldr.simps(2))
@@ -415,7 +415,6 @@ proof -
   proof -
       fix m
       show "card ((fst c)` (cw_len_concat)-`{m}) \<le> card {b::(bool list). length b = m}"
-        using assms
         by (metis (mono_tags) bool_list_fin img_inc card_mono)
   qed
     thus ?thesis by (metis real_of_nat_le_iff bool_lists_card)
@@ -467,7 +466,7 @@ proof -
     have
     "(\<Sum>m=1..<Suc (k*max_len). (card (set_of_k_words_length_m k m) / b^m))
     \<le> (\<Sum>m=1..<Suc(k * max_len). b^m / b^m)"
-      using real_code am_maj b_val
+      using am_maj b_val
     Groups_Big.setsum_mono[of "{1..<Suc(k*max_len)}"
     "(\<lambda>m. (card (set_of_k_words_length_m k m))/b^m)" "\<lambda>m. b^m /b^m"]
       by (metis divide_le_eq_1_pos divide_self_if linorder_not_le order_refl zero_less_numeral zero_less_power)
@@ -538,7 +537,7 @@ proof -
     assume iS: "i\<in>S"
     hence "(a i / ((e i) / d)) \<le> (a i / e i)" using pos assms
       by (metis (no_types) divide_1 frac_le less_imp_triv not_less)
-    hence "log b (a i / (e i / d)) \<le> log b (a i / e i)" using log_less assms iS
+    hence "log b (a i / (e i / d)) \<le> log b (a i / e i)" using assms(1)
       by (metis (full_types) b_gt_1 divide_divide_eq_left inverse_divide le_less_linear log_le
     log_neg_const order_refl times_divide_eq_right zero_less_mult_iff)
     }
