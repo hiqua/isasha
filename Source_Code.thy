@@ -300,7 +300,7 @@ lemma sum_vimage_proof:
   fixes g::"nat \<Rightarrow> real"
   assumes "\<And>w. f w < bd"
 shows "finite S \<Longrightarrow> (\<Sum>w\<in>S. g (f w)) = (\<Sum> m=0..<bd. (card ((f-`{m}) \<inter> S) )* g m)"
-  (is "_ \<Longrightarrow> _ = (\<Sum> m=0..<bd. ?ff m S)")
+(is "_ \<Longrightarrow> _ = (\<Sum> m=0..<bd. ?ff m S)")
 proof (induct S rule: finite_induct)
     case empty
     show ?case by simp
@@ -316,7 +316,7 @@ next
     = (\<Sum>m\<in>{0..<bd} - {f x}. ?ff m (insert x F)) + card (f -` {f x} \<inter> F) * g (f x) + g (f x)"
       using insert real_plus_one by fastforce
     ultimately have "(\<Sum>m = 0..<bd. ?ff m (insert x F)) = (\<Sum>m\<in>{0..<bd}. ?ff m F) + g (f x)"
-       by fastforce
+      by fastforce
     thus ?case using insert by simp
 qed
 
@@ -492,7 +492,7 @@ proof -
     have ineq: "\<And>k. 0 < k \<Longrightarrow> (kraft_sum) \<le> root k k * root k (max_len)"
       using kraft_sum_nonnull kraft_sum_power_bound
       by (metis order_le_less real_of_nat_mult real_root_le_iff real_root_mult real_root_pow_pos2
-      real_root_power)
+    real_root_power)
     hence "0 < max_len \<Longrightarrow> (\<lambda>k. root k k * root k (max_len)) ----> 1"
       using LIMSEQ_root LIMSEQ_root_const tendsto_mult
       by fastforce
@@ -508,11 +508,11 @@ lemma entropy_rewrite: "H = -(\<Sum>i \<in> L. fi i * log b (fi i))"
     by (simp add: entropy_defi)
 
 lemma log_mult_ext_not_0:
-    "0 < x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
+  "0 < x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
     using b_gt_1 distrib_left log_mult by simp
 
 lemma log_mult_ext_3:
-    " 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
+  " 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
     using log_mult_ext_not_0[of x] mult_zero_left[of "log b (0 * z * y)"] by fastforce
 
 lemma log_mult_ext2: "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * log b (x*y) = x * log b (x) + x * log b y"
@@ -553,24 +553,39 @@ lemma KL_cus_pos:
   assumes non_null: "\<And>i. i\<in>S \<Longrightarrow> 0 < a i" "\<And>i. i\<in> S \<Longrightarrow> 0 < e i"
   assumes sum_a_one: "(\<Sum> i \<in> S. a i) = 1"
   assumes sum_c_one: "(\<Sum> i \<in> S. e i) = 1"
-shows "0 \<le> KL_cus S a e" unfolding KL_cus_def
+shows "0 \<le> KL_cus S a e"
+    unfolding KL_cus_def
 proof -
     let ?f = "\<lambda>i. e i / a i"
-    have f_pos: "\<And>i. i\<in>S \<Longrightarrow> 0 < ?f i" using non_null by simp
-    have a_pos: "\<And>i. i\<in> S \<Longrightarrow> 0 \<le> a i" using non_null by (simp add: order.strict_implies_order)
+    have f_pos: "\<And>i. i\<in>S \<Longrightarrow> 0 < ?f i"
+      using non_null
+      by simp
+    have a_pos: "\<And>i. i\<in> S \<Longrightarrow> 0 \<le> a i"
+      using non_null
+      by (simp add: order.strict_implies_order)
     have "- log b (\<Sum>i\<in>S. a i * e i / a i) \<le> (\<Sum>i\<in>S. a i * - log b (e i / a i))"
       using convex_on_setsum[
-    OF fin,OF nemp,OF minus_log_convex[OF b_gt_1],OF convex_real_interval(3)[of 0],
-    OF sum_a_one, OF a_pos
+    OF fin,
+    OF nemp,OF minus_log_convex[OF b_gt_1],
+    OF convex_real_interval(3)[of 0],
+    OF sum_a_one,
+    OF a_pos
     ]
-    f_pos by fastforce
+    f_pos
+      by fastforce
     also have "- log b (\<Sum>i\<in>S. a i * e i / a i) = -log b (\<Sum>i\<in>S. e i)"
   proof -
-      from non_null(1) have "\<And>i. i \<in> S \<Longrightarrow> a i * e i / a i = e i" by force thus ?thesis by simp
+      from non_null(1) have "\<And>i. i \<in> S \<Longrightarrow> a i * e i / a i = e i"
+        by force
+      thus ?thesis
+        by simp
   qed
-    finally have "0 \<le> (\<Sum>i\<in>S. a i * - log b (e i / a i))" using sum_c_one by simp
+    finally have "0 \<le> (\<Sum>i\<in>S. a i * - log b (e i / a i))"
+      using sum_c_one
+      by simp
     thus "0 \<le> (\<Sum>i\<in>S. a i * log b (a i / e i))"
-      using b_gt_1 log_divide non_null by simp
+      using b_gt_1 log_divide non_null
+      by simp
 qed
 
 lemma KL_cus_pos_emp:
@@ -617,7 +632,7 @@ proof -
     (* sum a equals to 1 *)
       have 3: "setsum a (S \<inter> {i. 0 < a i}) = 1"
         using setsum.cong[of S, of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then a x else 0)", of a]
-        setsum.inter_restrict[OF fin, of a] non_null(1) sum_a_one
+      setsum.inter_restrict[OF fin, of a] non_null(1) sum_a_one
         by fastforce
       have "(\<Sum>i\<in>S \<inter> {j. 0 < a j}. ?c i) = (\<Sum>i\<in>S \<inter> {j. 0 < a j}. d i) / (\<Sum>i\<in>S \<inter> {j. 0 < a j}. d i)"
         by (metis setsum_divide_distrib)
@@ -664,7 +679,7 @@ proof -
     (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))
       \<le> KL_cus (S \<inter> {j. 0 < a j}) a d" using setsum.inter_restrict[OF fin, of d, of "{i. 0 < a i}"]
       setsum_mono[of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then d x else 0)", of d] non_null(2) sum_c_one
-      by force
+        by force
       hence
       "KL_cus (S \<inter> {j. 0 < a j}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i})) \<le> KL_cus (S \<inter> {j. 0 < a j}) a d"
         using non_null by simp
@@ -707,8 +722,8 @@ proof -
     = fi i * log b (fi i / (1 / b powr (l i)))"
       using log_mult_ext2[OF pos_pi] powr_gt_zero b_gt_1
       by (simp add:
-      `\<And>y i. \<lbrakk>i \<in> L; 0 < y\<rbrakk> \<Longrightarrow> fi i * log b (fi i * y) = fi i * log b (fi i) + fi i * log b y`
-      iL linordered_field_class.sign_simps(36))
+    `\<And>y i. \<lbrakk>i \<in> L; 0 < y\<rbrakk> \<Longrightarrow> fi i * log b (fi i * y) = fi i * log b (fi i) + fi i * log b y`
+    iL linordered_field_class.sign_simps(36))
     }
     hence eqpi:
     "\<And>i. i\<in> L \<Longrightarrow> fi i * (log b (1 / (1 / b powr (l i))) + log b (fi i))
