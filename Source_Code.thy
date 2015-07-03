@@ -142,9 +142,9 @@ proof (induction w)
     case Nil
     show ?case using real_code by simp
     case (Cons a w)
-    have "cw_len_concat (a # w) = cw_len a + cw_len_concat w" using foldr_Cons by simp
-    thus ?case
-      by (metis code_word_length_def length_append list.distinct(1) list.sel(1) list.sel(3) real_code Cons)
+    have "cw_len_concat (a # w) = cw_len a + cw_len_concat w" by simp
+    thus ?case using code_word_length_def real_code Cons
+      by (metis length_append list.distinct(1) list.sel(1) list.sel(3))
 qed
 
 lemma maj_fold:
@@ -254,8 +254,7 @@ lemma cartesian_product:
   fixes g::"('d \<Rightarrow> real)"
 shows "finite A \<Longrightarrow> finite B \<Longrightarrow>
 (\<Sum>b\<in>B. g b)* (\<Sum>a\<in>A. f a) = (\<Sum>ab\<in>A\<times>B. f (fst ab) * g (snd ab))"
-    using bilinear_times bilinear_setsum[where h="(\<lambda>x y. x * y)" and f="f"
-  and g="g"]
+    using bilinear_times bilinear_setsum[where h="(\<lambda>x y. x * y)" and f="f" and g="g"]
     by (metis (erased, lifting) setsum.cong split_beta' Groups.ab_semigroup_mult_class.mult.commute)
 
 lemma kraft_sum_power :
@@ -273,8 +272,8 @@ next
     also have
     "\<dots> =
   (\<Sum>wi \<in> L \<times> k_words n. 1/b^cw_len (fst wi) * (1 / b^cw_len_concat (snd wi)))"
-      using fin_L finite_k_words[where k="n"] cartesian_product
-      by fastforce
+      using fin_L finite_k_words cartesian_product
+      by blast
     also have "\<dots> =
   (\<Sum>wi \<in> L \<times> k_words n. 1 / b^(cw_len_concat (snd wi) + cw_len (fst wi)))"
       by (metis (no_types, lifting) power_add add.commute power_one_over)
@@ -318,7 +317,7 @@ next
       using insert real_plus_one by fastforce
     ultimately have "(\<Sum>m = 0..<bd. ?ff m (insert x F)) = (\<Sum>m\<in>{0..<bd}. ?ff m F) + g (f x)"
        by fastforce
-    thus ?case using insert.hyps by simp
+    thus ?case using insert by simp
 qed
 
 
@@ -330,14 +329,14 @@ shows "finite S \<Longrightarrow> (\<Sum>w\<in>S. g (f w)) = (\<Sum> m=0..<bd. (
 proof -
     let ?ff = "(\<lambda>x. if x\<in>S then f x else 0)"
     let ?ss1 = "(\<Sum>w\<in>S. g (?ff w))"
-    have eq1: "?s1 =?ss1" by simp
     let ?ss2 = "(\<Sum> m=0..<bd. (card ((?ff-`{m}) \<inter> S) ) * g m)"
-    have"\<And>m. ?ff -`{m} \<inter> S = f-`{m} \<inter> S" by auto
-    hence eq2: "?s2 = ?ss2" by simp
-    have boundedff: "\<And>w . ?ff w < bd" using assms by simp
-    hence "?fin \<Longrightarrow> ?ss1 = ?ss2"
-      using boundedff sum_vimage_proof[of "?ff"] by blast
-    thus "?fin \<Longrightarrow> ?s1 = ?s2" using eq1 eq2 by metis
+    have "?s1 =?ss1" by simp
+    moreover have"\<And>m. ?ff -`{m} \<inter> S = f-`{m} \<inter> S" by auto
+    moreover hence "?s2 = ?ss2" by simp
+    moreover have "\<And>w . ?ff w < bd" using assms by simp
+    moreover hence "?fin \<Longrightarrow> ?ss1 = ?ss2"
+      using sum_vimage_proof[of "?ff"] by blast
+    ultimately show "?fin \<Longrightarrow> ?s1 = ?s2" by metis
 qed
 
 
@@ -492,9 +491,9 @@ shows "kraft_inequality"
 proof -
     have ineq: "\<And>k. 0 < k \<Longrightarrow> (kraft_sum) \<le> root k k * root k (max_len)"
       using kraft_sum_nonnull kraft_sum_power_bound
-      by (metis order_le_less real_of_nat_mult real_root_le_iff real_root_mult real_root_pow_pos2 real_root_power)
-    moreover hence
-    "0 < max_len \<Longrightarrow> (\<lambda>k. root k k * root k (max_len)) ----> 1"
+      by (metis order_le_less real_of_nat_mult real_root_le_iff real_root_mult real_root_pow_pos2
+      real_root_power)
+    hence "0 < max_len \<Longrightarrow> (\<lambda>k. root k k * root k (max_len)) ----> 1"
       using LIMSEQ_root LIMSEQ_root_const tendsto_mult
       by fastforce
     moreover have "\<forall>n\<ge>1. kraft_sum \<le> root n n * root n (max_len)"
@@ -510,7 +509,7 @@ lemma entropy_rewrite: "H = -(\<Sum>i \<in> L. fi i * log b (fi i))"
 
 lemma log_mult_ext_not_0:
     "0 < x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
-    using b_gt_1 distrib_left log_mult by auto
+    using b_gt_1 distrib_left log_mult by simp
 
 lemma log_mult_ext_3:
     " 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
@@ -529,13 +528,14 @@ definition KL_cus ::"'b set \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> 
 
 lemma KL_cus_mul:
   assumes "0 < d" "d \<le> 1"
-  assumes pos: "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i" "\<And>i. i\<in>S \<Longrightarrow> 0 < e i"
+  assumes "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i" "\<And>i. i\<in>S \<Longrightarrow> 0 < e i"
 shows "KL_cus S a e \<ge> KL_cus S a (\<lambda>i. e i / d)"
     unfolding KL_cus_def
 proof -
-    {fix i
-    assume iS: "i\<in>S"
-    hence "(a i / ((e i) / d)) \<le> (a i / e i)" using pos assms
+    {
+    fix i
+    assume "i\<in>S"
+    hence "(a i / ((e i) / d)) \<le> (a i / e i)" using assms
       by (metis (no_types) divide_1 frac_le less_imp_triv not_less)
     hence "log b (a i / (e i / d)) \<le> log b (a i / e i)" using assms(1)
       by (metis (full_types) b_gt_1 divide_divide_eq_left inverse_divide le_less_linear log_le
@@ -543,7 +543,7 @@ proof -
     }
     hence "\<And>i. i\<in>S \<Longrightarrow> log b (a i / (e i / d)) \<le> log b (a i / e i)" by simp
     thus "(\<Sum>i\<in>S. a i * log b (a i / (e i / d))) \<le> (\<Sum>i\<in>S. a i * log b (a i / e i))"
-      by (meson mult_left_mono pos(1) setsum_mono)
+      by (meson mult_left_mono assms setsum_mono)
 qed
 
 lemma KL_cus_pos:
@@ -555,10 +555,6 @@ lemma KL_cus_pos:
   assumes sum_c_one: "(\<Sum> i \<in> S. e i) = 1"
 shows "0 \<le> KL_cus S a e" unfolding KL_cus_def
 proof -
-  (*
-  TODO: what is the elegant way to do this already? (fix variables and obtain assumptions
-  automatically)
-  *)
     let ?f = "\<lambda>i. e i / a i"
     have f_pos: "\<And>i. i\<in>S \<Longrightarrow> 0 < ?f i" using non_null by simp
     have a_pos: "\<And>i. i\<in> S \<Longrightarrow> 0 \<le> a i" using non_null by (simp add: order.strict_implies_order)
@@ -572,9 +568,9 @@ proof -
   proof -
       from non_null(1) have "\<And>i. i \<in> S \<Longrightarrow> a i * e i / a i = e i" by force thus ?thesis by simp
   qed
-    finally have "0 \<le> (\<Sum>i\<in>S. a i * - log b (e i / a i))"using sum_c_one by simp
+    finally have "0 \<le> (\<Sum>i\<in>S. a i * - log b (e i / a i))" using sum_c_one by simp
     thus "0 \<le> (\<Sum>i\<in>S. a i * log b (a i / e i))"
-      using b_gt_1 log_divide non_null(1) non_null(2) by auto
+      using b_gt_1 log_divide non_null by simp
 qed
 
 lemma KL_cus_pos_emp:
