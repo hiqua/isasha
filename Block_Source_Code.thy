@@ -274,7 +274,7 @@ lemma len_not_is_pref: "length l2 < length l1 \<Longrightarrow> \<not>is_prefix 
 lemma "is_prefix l1 l2 \<Longrightarrow> length l1 = length l2 \<Longrightarrow> l1 = l2" using is_prefix_def
     by (metis append_Nil append_eq_append_conv)
 
-lemma
+lemma is_pref_trans:
   assumes pref: "is_prefix l1 l2" "is_prefix l3 l2"
   assumes len:"length l1 \<le> length l3"
 shows "is_prefix l1 l3"
@@ -285,6 +285,15 @@ proof -
     thus ?thesis using len is_prefix_def
       by (metis append_eq_append_conv append_eq_append_conv2 le_neq_implies_less len_not_is_pref)
 qed
+
+lemma is_pref_conc:
+  assumes "x = xh @ xt"
+  assumes "x = yh @ yt"
+shows "is_prefix xh yh \<or> is_prefix yh xh" sorry
+(*
+proof(cases "length xh \<le> length yh")
+case True
+*)
 
 subsection{* Ordering lists used in Huffman *}
 subsubsection{* Order definition *}
@@ -420,12 +429,12 @@ also have "\<dots> = huffman_encoding (tl x) @ huffman_encoding_u (hd x)" using 
 
 lemma rw_hd: "real_word (x#xs) \<Longrightarrow> x \<in> L" by simp
 
-theorem "real_word [x] \<Longrightarrow> real_word [y] \<Longrightarrow>
+lemma rw_hd_rw: "real_word (x#xs) \<Longrightarrow> real_word [x]" by simp
+
+theorem rw_pref_u: "real_word [x] \<Longrightarrow> real_word [y] \<Longrightarrow>
   is_prefix (huffman_encoding_u x) (huffman_encoding_u y) \<Longrightarrow> x = y"
   sorry
 
-(* using prefix properties *)
-(* theorem "inj_on huffman_encoding valid_input_set" *)
 theorem huffman_encoding_inj:
   "real_word x \<Longrightarrow> real_word y \<Longrightarrow> huffman_encoding x = huffman_encoding y \<Longrightarrow> x = y"
 proof (induction x arbitrary: y)
@@ -436,14 +445,37 @@ proof (induction x arbitrary: y)
 next
     case (Cons xh xt)
     hence "y \<noteq> []" using huff_nemp huff_emp rw_hd by (metis (no_types))
-    hence "y = hd y # tl y" by simp
+    hence y_def: "y = hd y # tl y" by simp
     hence "huffman_encoding y = huffman_encoding_u (hd y) @ huffman_encoding (tl y)"
       using huffman_encoding_def by (metis (no_types) List.bind_def bind_simps(2))
-  (* use prefix *)
-    have "xh # xt = y" sorry
-    thus ?case by simp
+    moreover have "huffman_encoding (xh#xt) = huffman_encoding_u (xh) @ huffman_encoding (xt)"
+      using huffman_encoding_def by (metis (no_types) List.bind_def bind_simps(2))
+    ultimately have "huffman_encoding_u (hd y) @ huffman_encoding (tl y)
+    = huffman_encoding_u (xh) @ huffman_encoding (xt)"
+      using Cons by simp
+    hence "is_prefix (huffman_encoding_u (hd y)) (huffman_encoding_u (xh)) \<or> is_prefix (huffman_encoding_u
+  (xh)) (huffman_encoding_u (hd y))" using is_pref_conc by blast
+    hence hd_eq: "hd y = xh"
+  proof(elim disjE)
+    (* TODO: repetition of the same proof, how to use symmetry? *)
+      assume "is_prefix (huffman_encoding_u (hd y)) (huffman_encoding_u (xh))"
+      thus "hd y = xh" using rw_pref_u rw_hd_rw
+        by (metis Cons.prems(1) Cons.prems(2) y_def)
+  next
+      assume "is_prefix (huffman_encoding_u (xh)) (huffman_encoding_u (hd y))"
+      thus "hd y = xh" using rw_pref_u rw_hd_rw
+        by (metis Cons.prems(1) Cons.prems(2) y_def)
+  qed
+    hence "huffman_encoding (xt) = huffman_encoding (tl y)" using huffman_encoding_def Cons
+  (* try proof *)
+      using `huffman_encoding_u (hd y) @ huffman_encoding (tl y) = huffman_encoding_u xh @ huffman_encoding xt`
+      by force
+    hence "xt = tl y" using Cons
+  (* try proof remote_vampire *)
+      by (meson `y \<noteq> []` order_trans rw_tail set_subset_Cons)
+    thus "xh # xt = y" using hd_eq y_def by simp
+qed
 
-oops
 (*
 using encoding_inj huffman_encoding_def sorry
 
