@@ -96,8 +96,23 @@ proof (rule ccontr)
 qed
 
 (* tedious, use the fact that 2 \<le> card L *)
-lemma fi_11: "\<And>x. x \<in> L \<Longrightarrow> fi x < 1"
-  sorry
+lemma fi_11: "x \<notin> L \<or> fi x < 1"
+proof(rule ccontr)
+    assume "\<not> (x \<notin> L \<or> fi x < 1)"
+    hence x_def: "x\<in>L \<and> 1 \<le> fi x" by simp
+    hence "L -{x} \<noteq> {}" using card_L using subset_singletonD by fastforce
+    then obtain y where y_def: "y \<in> L - {x}" by auto
+    hence "1 < fi x + fi y" using fi_pos x_def by fastforce
+    also have "setsum fi (L - {x,y}) + fi x + fi y = setsum fi L" using x_def y_def fin_L
+      by (smt Diff_idemp Diff_insert Diff_insert0 Diff_insert_absorb finite_Diff insert_Diff1
+    mk_disjoint_insert setsum.insert_remove)
+    moreover have "0 \<le> setsum fi (L - {x,y})" using setsum_nonneg fi_pos by (smt DiffD1)
+    ultimately have "fi x + fi y \<le> setsum fi L" by simp
+    hence "1 < setsum fi L" using x_def y_def fi_pos[of y] by simp
+    thus False using simple_distributed_setsum_space[OF distr_i] y_def x_def bounded_input by simp
+qed
+
+
 
 subsection{* simple lemmas about entropy *}
 
