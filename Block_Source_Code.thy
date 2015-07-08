@@ -95,7 +95,6 @@ proof (rule ccontr)
     ultimately show "False" by simp
 qed
 
-(* tedious, use the fact that 2 \<le> card L *)
 lemma fi_11: "x \<notin> L \<or> fi x < 1"
 proof(rule ccontr)
     assume "\<not> (x \<notin> L \<or> fi x < 1)"
@@ -113,8 +112,7 @@ proof(rule ccontr)
 qed
 
 
-
-subsection{* simple lemmas about entropy *}
+subsection{* Lemmas about entropy *}
 
 (* INTERESTING: not the same to have this def, and X_i i a = X a $ i *)
 definition X_i::"'n \<Rightarrow> 'a \<Rightarrow> 'b" where
@@ -147,7 +145,7 @@ proof -
       by simp
 qed
 
-lemma "\<And>i. H_i = \<H>(X_i i)"
+lemma ent_eq: "\<And>i. H_i = \<H>(X_i i)"
 proof -
     fix i
     from H_i_def obtain j where "H_i = \<H>(\<lambda>a. X a $ j)" by blast
@@ -157,16 +155,7 @@ proof -
 qed
 
 
-(* might be tedious *)
-lemma "\<H>(X) = CARD('n) * H_i"
-  sorry
-(*
-proof -
-have "\<H>(X) = - (\<Sum>x\<in>L. fi x * log b (fi x))"
-using entropy_simple_distributed[OF distr_i] bounded_input by simp
-*)
-
-subsection{* Definition of li: the lengths of the future code *}
+subsection{* Definition of li: the lengths of the code *}
 
 definition li::"'b^'n \<Rightarrow> nat" where
   "li x = nat \<lceil>(log b (1/ fi x))\<rceil>"
@@ -315,8 +304,6 @@ just use lemmas from orderings.thy
 lemma "less_eq l1 l2 \<longleftrightarrow> less l1 l2 \<or> l1 = l2"
     by (simp add: order_iff_strict)
 
-subsubsection{* Custom lemmas *}
-(* ? *)
 
 section{* Huffman Encoding *}
 definition huffman_encoding_u :: "('b^'n) \<Rightarrow> bit list" where
@@ -411,7 +398,7 @@ qed
 lemma huff_emp_2: "huffman_encoding [] = []" using huffman_encoding_def by simp
 
 lemma huff_emp: "real_word x \<Longrightarrow> huffman_encoding x = [] \<longleftrightarrow> x = []" using huff_emp_1 huff_emp_2
-by auto
+    by auto
 
 (*
 lemma "x \<noteq> [] \<Longrightarrow> huffman_encoding_alt x = huffman_encoding_alt (tl x) @ huffman_encoding_u (hd x)"
@@ -434,8 +421,8 @@ also have "\<dots> = huffman_encoding (tl x) @ huffman_encoding_u (hd x)" using 
 lemma rw_hd: "real_word (x#xs) \<Longrightarrow> x \<in> L" by simp
 
 theorem "real_word [x] \<Longrightarrow> real_word [y] \<Longrightarrow>
-is_prefix (huffman_encoding_u x) (huffman_encoding_u y) \<Longrightarrow> x = y"
-sorry
+  is_prefix (huffman_encoding_u x) (huffman_encoding_u y) \<Longrightarrow> x = y"
+  sorry
 
 (* using prefix properties *)
 (* theorem "inj_on huffman_encoding valid_input_set" *)
@@ -448,11 +435,11 @@ proof (induction x arbitrary: y)
     thus ?case by simp
 next
     case (Cons xh xt)
-    have "y \<noteq> []" using huff_nemp Cons huff_emp rw_hd by (metis (no_types))
+    hence "y \<noteq> []" using huff_nemp huff_emp rw_hd by (metis (no_types))
     hence "y = hd y # tl y" by simp
     hence "huffman_encoding y = huffman_encoding_u (hd y) @ huffman_encoding (tl y)"
-      using huffman_encoding_def by (metis (no_types) List.bind_def bind_simps(2)) 
-(* use prefix *)
+      using huffman_encoding_def by (metis (no_types) List.bind_def bind_simps(2))
+  (* use prefix *)
     have "xh # xt = y" sorry
     thus ?case by simp
 
@@ -507,7 +494,7 @@ lemma "set x \<subseteq> L \<Longrightarrow> huffman_encoding x = [] \<longleftr
     using huff_emp by simp
 
 lemma "x \<noteq> [] \<Longrightarrow> huffman_encoding x = huffman_encoding_u (hd x) @ (huffman_encoding (tl x))"
-unfolding huffman_encoding_def by (metis (no_types) concat.simps(2) hd_Cons_tl list.simps(9))
+    unfolding huffman_encoding_def by (metis (no_types) concat.simps(2) hd_Cons_tl list.simps(9))
 
 (* theorem huff_real_code = three previous lemmas *)
 (* [/KEEP THESE THREE] *)
@@ -516,5 +503,14 @@ unfolding huffman_encoding_def by (metis (no_types) concat.simps(2) hd_Cons_tl l
 theorem "code_rate huffman_code X \<le> \<H>(X) + 1"
   sorry
 
+(* might be tedious *)
+lemma "\<H>(X) = CARD('n) * H_i"
+  sorry
+
+(*
+proof -
+have "\<H>(X) = - (\<Sum>x\<in>L. fi x * log b (fi x))"
+using entropy_simple_distributed[OF distr_i] bounded_input by simp
+*)
 end
 end
