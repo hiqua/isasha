@@ -286,7 +286,7 @@ proof -
       by (metis append_eq_append_conv append_eq_append_conv2 le_neq_implies_less len_not_is_pref)
 qed
 
-lemma is_pref_conc_true:
+lemma is_pref_conc:
   " yh @ yt = xh @ xt \<Longrightarrow> length xt \<le> length yt \<Longrightarrow> is_prefix xt yt"
     using is_prefix_def
     by (metis antisym append_eq_append_conv append_eq_append_conv_if le_add2 length_append)
@@ -439,7 +439,6 @@ lemma "x \<noteq> [] \<Longrightarrow> x = (butlast x) @ [(last x)]" by simp
 theorem huffman_encoding_inj:
   "real_word x \<Longrightarrow> real_word y \<Longrightarrow> huffman_encoding x = huffman_encoding y \<Longrightarrow> x = y"
 proof (induction y arbitrary: x rule:length_induct)
-    print_cases
     case (1 w y)
     note assms = this
     show "y = w"
@@ -468,12 +467,12 @@ proof (induction y arbitrary: x rule:length_induct)
       have last_eq: "last y = last w"
     proof(cases "length ?hly \<le> length ?hlw")
         case True
-        hence "is_prefix ?hly ?hlw" using is_pref_conc_true 1 Cons hw_def hy_def by metis
+        hence "is_prefix ?hly ?hlw" using is_pref_conc 1 Cons hw_def hy_def by metis
         thus "last y = last w" using rw_pref_u 1 rw_last Cons y_emp by (smt huff_emp)
     next
         case False (* prove False*)
         hence "length (huffman_encoding_u (last y)) > length (huffman_encoding_u (last w))" by simp
-        hence "is_prefix ?hlw ?hly" using is_pref_conc_true 1 Cons hw_def hy_def
+        hence "is_prefix ?hlw ?hly" using is_pref_conc 1 Cons hw_def hy_def
           by (metis False nat_le_linear)
       (* strange, whatever...*)
         thus "last y = last w" using rw_pref_u 1 rw_last Cons y_emp by (smt huff_emp)
