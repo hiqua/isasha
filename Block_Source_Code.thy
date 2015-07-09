@@ -255,9 +255,9 @@ prefix in the sense of the code, suffix for the real list
 definition is_prefix::"'z list \<Rightarrow> 'z list \<Rightarrow> bool" where
   "is_prefix l1 l2 \<longleftrightarrow> (\<exists>a. l2 = a@l1)"
 
-lemma "\<not> is_prefix l1 l2 \<Longrightarrow> l1 \<noteq> l2" using is_prefix_def by auto
+lemma n_pref_n_eq: "\<not> is_prefix l1 l2 \<Longrightarrow> l1 \<noteq> l2" using is_prefix_def by auto
 
-lemma "is_prefix l [] \<Longrightarrow> l = []" using is_prefix_def by auto
+lemma pref_emp: "is_prefix l [] \<Longrightarrow> l = []" using is_prefix_def by auto
 
 lemma is_pref_eq_or_tl: "is_prefix l1 l2 \<Longrightarrow> l1 = l2 \<or> is_prefix l1 (tl l2)" using is_prefix_def
     by (metis (no_types) append_Nil tl_append2)
@@ -286,14 +286,44 @@ proof -
       by (metis append_eq_append_conv append_eq_append_conv2 le_neq_implies_less len_not_is_pref)
 qed
 
+lemma is_pref_conc_true:
+  " yh @ yt = xh @ xt \<Longrightarrow> length xt \<le> length yt \<Longrightarrow> is_prefix xt yt"
+using is_prefix_def
+by (metis antisym append_eq_append_conv append_eq_append_conv_if le_add2 length_append)
+
+(* FALSE *)
 lemma is_pref_conc:
-  assumes "x = xh @ xt"
-  assumes "x = yh @ yt"
-shows "is_prefix xh yh \<or> is_prefix yh xh" sorry
-(*
-proof(cases "length xh \<le> length yh")
-case True
-*)
+  "x = xh @ xt \<Longrightarrow>
+  x = yh @ yt \<Longrightarrow>
+  length xh \<le> length yh \<Longrightarrow>
+is_prefix xh yh"
+proof(induct x arbitrary: xh yh xt yt)
+case Nil
+thus ?case using is_prefix_def by auto
+next
+case (Cons a b)
+note uCons = this
+show "is_prefix xh yh"
+proof (cases xh)
+case Nil
+assume "xh = []"
+show " is_prefix xh yh" using Nil is_prefix_def by blast
+next
+case (Cons xxh xxt)
+have x_a: "xxh = a" using Cons uCons by simp
+have yh_def: "hd yh # tl yh = yh" using Cons uCons hd_Cons_tl
+by (metis le_0_eq length_0_conv list.distinct(2))
+hence y_a: "hd yh = a" using Cons uCons
+by (metis hd_append2 list.distinct(2) list.sel(1))
+have x_b: "b = tl xh  @ xt" using Cons uCons by simp
+have y_b: "b = tl yh  @ yt" using Cons uCons yh_def
+by (metis list.discI list.sel(3) tl_append2)
+ have "length (tl xh) \<le> length (tl yh)" using Cons uCons by simp
+ hence "is_prefix (tl xh) (tl yh)" using Cons uCons x_b y_b by blast
+hence "is_prefix xh yh" using is_prefix_def x_a y_a yh_def Cons sorry
+show "is_prefix xh yh" sorry
+qed
+qed
 
 subsection{* Ordering lists used in Huffman *}
 subsubsection{* Order definition *}
@@ -454,7 +484,7 @@ next
     = huffman_encoding_u (xh) @ huffman_encoding (xt)"
       using Cons by simp
     hence "is_prefix (huffman_encoding_u (hd y)) (huffman_encoding_u (xh)) \<or> is_prefix (huffman_encoding_u
-  (xh)) (huffman_encoding_u (hd y))" using is_pref_conc by blast
+  (xh)) (huffman_encoding_u (hd y))" using is_pref_conc by (metis nat_le_linear)
     hence hd_eq: "hd y = xh"
   proof(elim disjE)
     (* TODO: repetition of the same proof, how to use symmetry? *)
