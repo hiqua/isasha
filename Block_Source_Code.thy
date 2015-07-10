@@ -234,6 +234,9 @@ fun pad :: "bit list \<Rightarrow> nat \<Rightarrow> bit list" where
 
 theorems pad_simp = pad_0 pad_Suc
 
+lemma pad_len: "length (pad l n) = (length l) + n" using pad_0 pad_Suc
+    by(induct n) auto
+
 subsubsection{* encode *}
 (* gives the nth encoding according to the lengths function *)
 fun encode :: "nat \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> bit list" where
@@ -246,7 +249,19 @@ lemma enc_nemp: "len 0 \<noteq> 0 \<Longrightarrow> encode n len \<noteq> []"
     by (metis encode.elims list.distinct(1) nxt_list.elims pad.elims)
 
 lemma enc_len: "False \<in> set (encode n len) \<Longrightarrow> length (encode n len) = (len n)
-  \<Longrightarrow> length (encode (Suc n) len) = len (Suc n)" using enc_simp pad_simp sorry
+  \<Longrightarrow> \<forall>k. len k \<le> len (Suc k) \<Longrightarrow> length (encode (Suc n) len) = len (Suc n)"
+proof -
+    assume assms:
+    "False \<in> set (encode n len)"
+    "length (encode n len) = (len n)"
+    "\<forall>k. len k \<le> len (Suc k)"
+    have "length (encode (Suc n) len) = length (nxt_list (encode n len)) + (len (Suc n) - len n)"
+      by (simp add: pad_len)
+    also have "\<dots> = length ( (encode n len)) + (len (Suc n) - len n)" using nxt_list_false assms
+      by metis
+    also have "\<dots> = len (Suc n)" using assms by simp
+    finally show ?thesis by simp
+qed
 
 subsubsection{* is_prefix *}
 (* is l1 a prefix of l2
