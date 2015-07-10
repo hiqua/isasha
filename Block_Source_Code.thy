@@ -165,7 +165,8 @@ lemma li_1: "x\<in>L \<Longrightarrow> 0 < log b (1/ fi x)" using fi_pos fi_11 b
 
 lemma li_nat: "x\<in>L \<Longrightarrow> li x = \<lceil>(log b (1/ fi x))\<rceil>" using li_1 li_def by force
 
-
+lemma li_bd: "x\<in>L \<Longrightarrow> log b (1/ fi x) \<le> li x" using li_nat
+    by (simp add: li_def real_nat_ceiling_ge)
 
 lemma li_11: "\<And>x. x\<in>L \<Longrightarrow> 1 \<le> li x" using li_1 li_nat
     by (metis le_less_linear less_numeral_extra(3) less_one of_nat_0 zero_less_ceiling)
@@ -177,7 +178,16 @@ proof -
     thus ?thesis by simp
 qed
 
-lemma "(\<Sum>x\<in>L. b powr (-li x)) \<le> 1" sorry
+lemma li_kraft: "(\<Sum>x\<in>L. b powr (-li x)) \<le> 1"
+proof -
+    have "\<And>y. y\<in>L \<Longrightarrow> b powr (-li y) \<le> fi y" using li_bd
+      by (metis b_gt_1 fi_pos powr_minus_divide real_of_int_minus real_of_int_of_nat_eq
+  Transcendental.log_def inverse_eq_divide li_def ln_inverse minus_divide_left minus_le_iff powr_less_iff real_nat_ceiling_ge)
+    hence "(\<Sum>x\<in>L. b powr (-li x)) \<le> (\<Sum>x\<in>L. fi x)" by (simp add: setsum_mono)
+    also have "(\<Sum>x\<in>L. fi x) = 1"
+      using distr_i simple_distributed_setsum_space bounded_input by auto
+    finally show ?thesis by simp
+qed
 
 definition kraft_sum_li ::"real" where
   "kraft_sum_li = (\<Sum>l\<in>L. 1 / b ^ li l)"
