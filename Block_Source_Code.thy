@@ -145,7 +145,7 @@ proof -
       by simp
 qed
 
-lemma ent_eq: "\<And>i. H_i = \<H>(X_i i)"
+lemma ent_eq: "H_i = \<H>(X_i i)"
 proof -
     fix i
     from H_i_def obtain j where "H_i = \<H>(\<lambda>a. X a $ j)" by blast
@@ -160,10 +160,12 @@ subsection{* Definition of li: the lengths of the code *}
 definition li::"'b^'n \<Rightarrow> nat" where
   "li x = nat \<lceil>(log b (1/ fi x))\<rceil>"
 
-lemma li_1: "\<And>x. x\<in>L \<Longrightarrow> 0 < log b (1/ fi x)" using fi_pos fi_11 b_val
+lemma li_1: "x\<in>L \<Longrightarrow> 0 < log b (1/ fi x)" using fi_pos fi_11 b_val
     by fastforce
 
-lemma li_nat: "\<And>x. x\<in>L \<Longrightarrow> li x = \<lceil>(log b (1/ fi x))\<rceil>" using li_1 li_def by force
+lemma li_nat: "x\<in>L \<Longrightarrow> li x = \<lceil>(log b (1/ fi x))\<rceil>" using li_1 li_def by force
+
+
 
 lemma li_11: "\<And>x. x\<in>L \<Longrightarrow> 1 \<le> li x" using li_1 li_nat
     by (metis le_less_linear less_numeral_extra(3) less_one of_nat_0 zero_less_ceiling)
@@ -175,8 +177,7 @@ proof -
     thus ?thesis by simp
 qed
 
-lemma "(\<Sum>x\<in>L. b powr (-li x)) \<le> 1"
-  sorry
+lemma "(\<Sum>x\<in>L. b powr (-li x)) \<le> 1" sorry
 
 definition kraft_sum_li ::"real" where
   "kraft_sum_li = (\<Sum>l\<in>L. 1 / b ^ li l)"
