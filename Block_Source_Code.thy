@@ -87,7 +87,39 @@ proof (rule ccontr)
     fix x
     assume asm: "x \<in> L" "\<not> fi x \<le> 1"
     have "fi x \<le> (\<Sum>i\<in>L. fi i)" using fi_pos
-      by (smt `x \<in> L` fin_L setsum.delta' setsum_mono)
+    `x \<in> L` fin_L setsum.delta' setsum_mono
+  (* try proof *)
+  proof -
+      have f1: "((\<Sum>v\<in>L. if x = v then fi v else 0) + - 1 * setsum fi L \<le> 0) = (0 \<le> setsum fi L + - 1 * (\<Sum>v\<in>L. if x = v then fi v else 0))"
+        by linarith
+      have f2: "\<forall>x0 x1 x2. (setsum x1 (x2\<Colon>('b, 'n) vec set) \<le> setsum x0 x2) = (setsum x1 x2 + - (1\<Colon>real) * setsum x0 x2 \<le> 0)"
+        by auto
+      have f3: "\<forall>x0 x1 x2. (x2 (x0\<Colon>('b, 'n) vec) \<le> x1 x0) = ((0\<Colon>real) \<le> x1 x0 + - 1 * x2 x0)"
+        by linarith
+      obtain vv :: "(('b, 'n) vec \<Rightarrow> real) \<Rightarrow> (('b, 'n) vec \<Rightarrow> real) \<Rightarrow> ('b, 'n) vec set \<Rightarrow> ('b, 'n) vec" where
+      "\<forall>x0 x1 x2. (\<exists>v3. v3 \<in> x2 \<and> \<not> 0 \<le> x0 v3 + - 1 * x1 v3) = (vv x0 x1 x2 \<in> x2 \<and> \<not> 0 \<le> x0 (vv x0 x1 x2) + - 1 * x1 (vv x0 x1 x2))"
+        by moura
+      hence f4: "\<forall>V f fa. vv fa f V \<in> V \<and> \<not> 0 \<le> fa (vv fa f V) + - 1 * f (vv fa f V) \<or> setsum f V + - 1 * setsum fa V \<le> 0"
+        using f3 f2 by (metis setsum_mono)
+      hence f5: "vv fi (\<lambda>v. if x = v then fi v else 0) L \<in> L \<and> \<not> 0 \<le> fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) + - 1 * (if x = vv fi (\<lambda>v. if x = v then fi v else 0) L then fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) else 0) \<or> 0 \<le> setsum fi L + - 1 * (\<Sum>v\<in>L. if x = v then fi v else 0)"
+        using f1 by blast
+      have f6: "\<forall>x0. (0 < fi x0) = (\<not> fi x0 \<le> 0)"
+        by fastforce
+      have "x = vv fi (\<lambda>v. if x = v then fi v else 0) L \<or> (if x = vv fi (\<lambda>v. if x = v then fi v else 0) L then fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) else 0) = 0"
+        by meson
+      moreover
+      { assume "(if x = vv fi (\<lambda>v. if x = v then fi v else 0) L then fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) else 0) = 0"
+      moreover
+      { assume "fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) \<le> 0"
+      hence "0 \<le> setsum fi L + - 1 * (\<Sum>v\<in>L. if x = v then fi v else 0)"
+        using f6 f4 f1 by (meson fi_pos) }
+      ultimately have "(vv fi (\<lambda>v. if x = v then fi v else 0) L \<notin> L \<or> 0 \<le> fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) + - 1 * (if x = vv fi (\<lambda>v. if x = v then fi v else 0) L then fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) else 0)) \<or> 0 \<le> setsum fi L + - 1 * (\<Sum>v\<in>L. if x = v then fi v else 0)"
+        by linarith }
+      ultimately have "0 \<le> setsum fi L + - 1 * (\<Sum>v\<in>L. if x = v then fi v else 0)"
+        using f5 by fastforce
+      thus ?thesis
+        by (simp add: asm(1) fin_L setsum.delta')
+  qed
     hence "1 < (\<Sum>i\<in>L. fi i)" using asm by simp
     moreover have "(\<Sum>i\<in>L. fi i) = 1"
       using Probability_Measure.prob_space.simple_distributed_setsum_space[OF prb_space, OF distr_i]
@@ -105,7 +137,22 @@ proof(rule ccontr)
     also have "setsum fi (L - {x,y}) + fi x + fi y = setsum fi L" using x_def y_def fin_L
       by (smt Diff_idemp Diff_insert Diff_insert0 Diff_insert_absorb finite_Diff insert_Diff1
     mk_disjoint_insert setsum.insert_remove)
-    moreover have "0 \<le> setsum fi (L - {x,y})" using setsum_nonneg fi_pos by (smt DiffD1)
+    moreover have "0 \<le> setsum fi (L - {x,y})"
+  (* try proof *)
+  proof -
+      obtain vv :: "(('b, 'n) vec \<Rightarrow> real) \<Rightarrow> ('b, 'n) vec set \<Rightarrow> ('b, 'n) vec" where
+      f1: "\<forall>x0 x1. (\<exists>v2. v2 \<in> x1 \<and> \<not> 0 \<le> x0 v2) = (vv x0 x1 \<in> x1 \<and> \<not> 0 \<le> x0 (vv x0 x1))"
+        by moura
+      have f2: "\<forall>x0. (0 < fi x0) = (\<not> fi x0 \<le> 0)"
+        by fastforce
+      { assume aa1: "vv fi (L - {x, y}) \<in> L"
+      have "fi (vv fi (L - {x, y})) \<le> 0 \<or> 0 \<le> fi (vv fi (L - {x, y}))"
+        by linarith
+      hence ?thesis
+        using aa1 f2 f1 by (meson fi_pos setsum_nonneg) }
+      thus ?thesis
+        using f1 by (meson DiffD1 setsum_nonneg)
+  qed
     ultimately have "fi x + fi y \<le> setsum fi L" by simp
     hence "1 < setsum fi L" using x_def y_def fi_pos[of y] by simp
     thus False using simple_distributed_setsum_space[OF distr_i] y_def x_def bounded_input by simp
@@ -494,14 +541,14 @@ proof (induction y arbitrary: x rule:length_induct)
     proof(cases "length ?hly \<le> length ?hlw")
         case True
         hence "is_prefix ?hly ?hlw" using is_pref_conc 1 Cons hw_def hy_def by metis
-        thus "last y = last w" using rw_pref_u 1 rw_last Cons y_emp by (smt huff_emp)
+        thus "last y = last w" using rw_pref_u 1 rw_last y_emp by (metis huff_emp)
     next
         case False (* prove False*)
         hence "length (huffman_encoding_u (last y)) > length (huffman_encoding_u (last w))" by simp
         hence "is_prefix ?hlw ?hly" using is_pref_conc 1 Cons hw_def hy_def
           by (metis False nat_le_linear)
       (* strange, whatever...*)
-        thus "last y = last w" using rw_pref_u 1 rw_last Cons y_emp by (smt huff_emp)
+        thus "last y = last w" using rw_pref_u 1 rw_last y_emp by (metis huff_emp )
     qed
       hence hf_l_eq: "huffman_encoding (butlast w) = huffman_encoding (butlast y)"
         using huffman_encoding_def
