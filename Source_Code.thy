@@ -268,7 +268,7 @@ next
     have "kraft_sum ^Suc n = kraft_sum ^n * kraft_sum " by simp
     also have "\<dots> =
   (\<Sum>w \<in> k_words n. 1 / b^cw_len_concat w) * (\<Sum>i\<in>L. 1 / b^cw_len i)"
-      by (metis Suc kraft_sum_def)
+      using Suc.hyps kraft_sum_def by auto
     also have
     "\<dots> =
   (\<Sum>wi \<in> L \<times> k_words n. 1/b^cw_len (fst wi) * (1 / b^cw_len_concat (snd wi)))"
