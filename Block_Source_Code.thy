@@ -86,40 +86,8 @@ lemma fi_1: "\<And>x. x \<in> L \<Longrightarrow> fi x \<le> 1"
 proof (rule ccontr)
     fix x
     assume asm: "x \<in> L" "\<not> fi x \<le> 1"
-    have "fi x \<le> (\<Sum>i\<in>L. fi i)" using fi_pos
-    `x \<in> L` fin_L setsum.delta' setsum_mono
-  (* try proof *)
-  proof -
-      have f1: "((\<Sum>v\<in>L. if x = v then fi v else 0) + - 1 * setsum fi L \<le> 0) = (0 \<le> setsum fi L + - 1 * (\<Sum>v\<in>L. if x = v then fi v else 0))"
-        by linarith
-      have f2: "\<forall>x0 x1 x2. (setsum x1 (x2\<Colon>('b, 'n) vec set) \<le> setsum x0 x2) = (setsum x1 x2 + - (1\<Colon>real) * setsum x0 x2 \<le> 0)"
-        by auto
-      have f3: "\<forall>x0 x1 x2. (x2 (x0\<Colon>('b, 'n) vec) \<le> x1 x0) = ((0\<Colon>real) \<le> x1 x0 + - 1 * x2 x0)"
-        by linarith
-      obtain vv :: "(('b, 'n) vec \<Rightarrow> real) \<Rightarrow> (('b, 'n) vec \<Rightarrow> real) \<Rightarrow> ('b, 'n) vec set \<Rightarrow> ('b, 'n) vec" where
-      "\<forall>x0 x1 x2. (\<exists>v3. v3 \<in> x2 \<and> \<not> 0 \<le> x0 v3 + - 1 * x1 v3) = (vv x0 x1 x2 \<in> x2 \<and> \<not> 0 \<le> x0 (vv x0 x1 x2) + - 1 * x1 (vv x0 x1 x2))"
-        by moura
-      hence f4: "\<forall>V f fa. vv fa f V \<in> V \<and> \<not> 0 \<le> fa (vv fa f V) + - 1 * f (vv fa f V) \<or> setsum f V + - 1 * setsum fa V \<le> 0"
-        using f3 f2 by (metis setsum_mono)
-      hence f5: "vv fi (\<lambda>v. if x = v then fi v else 0) L \<in> L \<and> \<not> 0 \<le> fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) + - 1 * (if x = vv fi (\<lambda>v. if x = v then fi v else 0) L then fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) else 0) \<or> 0 \<le> setsum fi L + - 1 * (\<Sum>v\<in>L. if x = v then fi v else 0)"
-        using f1 by blast
-      have f6: "\<forall>x0. (0 < fi x0) = (\<not> fi x0 \<le> 0)"
-        by fastforce
-      have "x = vv fi (\<lambda>v. if x = v then fi v else 0) L \<or> (if x = vv fi (\<lambda>v. if x = v then fi v else 0) L then fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) else 0) = 0"
-        by meson
-      moreover
-      { assume "(if x = vv fi (\<lambda>v. if x = v then fi v else 0) L then fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) else 0) = 0"
-      moreover
-      { assume "fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) \<le> 0"
-      hence "0 \<le> setsum fi L + - 1 * (\<Sum>v\<in>L. if x = v then fi v else 0)"
-        using f6 f4 f1 by (meson fi_pos) }
-      ultimately have "(vv fi (\<lambda>v. if x = v then fi v else 0) L \<notin> L \<or> 0 \<le> fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) + - 1 * (if x = vv fi (\<lambda>v. if x = v then fi v else 0) L then fi (vv fi (\<lambda>v. if x = v then fi v else 0) L) else 0)) \<or> 0 \<le> setsum fi L + - 1 * (\<Sum>v\<in>L. if x = v then fi v else 0)"
-        by linarith }
-      ultimately have "0 \<le> setsum fi L + - 1 * (\<Sum>v\<in>L. if x = v then fi v else 0)"
-        using f5 by fastforce
-      thus ?thesis
-        by (simp add: asm(1) fin_L setsum.delta')
-  qed
+    hence "fi x \<le> (\<Sum>i\<in>L. fi i)" using fi_pos fin_L setsum_nonneg_leq_bound
+      by (metis less_imp_le)
     hence "1 < (\<Sum>i\<in>L. fi i)" using asm by simp
     moreover have "(\<Sum>i\<in>L. fi i) = 1"
       using Probability_Measure.prob_space.simple_distributed_setsum_space[OF prb_space, OF distr_i]
@@ -168,7 +136,7 @@ definition X_i::"'n \<Rightarrow> 'a \<Rightarrow> 'b" where
 lemma space_img_2: "\<And>i. X_i i ` space M = S"
     by (simp add: space_img_1 X_i_def image_cong)
 
-theorems space_img = space_img_1 space_img_2
+lemmas space_img = space_img_1 space_img_2
 
 lemma entropy_sum: "\<And>i. \<H>(X_i i) = - (\<Sum>x\<in>(X_i i)`space M. f x * log b (f x))"
 proof -
@@ -228,8 +196,9 @@ qed
 lemma li_kraft: "(\<Sum>x\<in>L. b powr (-li x)) \<le> 1"
 proof -
     have "\<And>y. y\<in>L \<Longrightarrow> b powr (-li y) \<le> fi y" using li_bd
-      by (metis b_gt_1 fi_pos powr_minus_divide real_of_int_minus real_of_int_of_nat_eq
-  Transcendental.log_def inverse_eq_divide li_def ln_inverse minus_divide_left minus_le_iff powr_less_iff real_nat_ceiling_ge)
+      by (metis of_int_minus of_int_of_nat_eq b_gt_1 fi_pos powr_minus_divide
+  Transcendental.log_def inverse_eq_divide li_def ln_inverse minus_divide_left minus_le_iff
+    powr_less_iff real_nat_ceiling_ge)
     hence "(\<Sum>x\<in>L. b powr (-li x)) \<le> (\<Sum>x\<in>L. fi x)" by (simp add: setsum_mono)
     also have "(\<Sum>x\<in>L. fi x) = 1"
       using distr_i simple_distributed_setsum_space bounded_input by auto
@@ -255,7 +224,7 @@ fun nxt_list :: "bit list \<Rightarrow> bit list" where
   nxt_list_Cons_True: "nxt_list (True#xs) = False#(nxt_list xs)"|
   nxt_list_Cons_False: "nxt_list (False#xs) = True#xs"
 
-theorems nxt_list_simp = nxt_list_Cons_False nxt_list_Cons_True nxt_list_Nil
+lemmas nxt_list_simp = nxt_list_Cons_False nxt_list_Cons_True nxt_list_Nil
 
 lemma "length (nxt_list (False#l)) = (length (False#l))" by simp
 
@@ -290,7 +259,7 @@ fun pad :: "bit list \<Rightarrow> nat \<Rightarrow> bit list" where
   pad_0: "pad l 0 = l"|
   pad_Suc: "pad l (Suc n) = False#(pad l n)"
 
-theorems pad_simp = pad_0 pad_Suc
+lemmas pad_simp = pad_0 pad_Suc
 
 lemma pad_len: "length (pad l n) = (length l) + n" using pad_0 pad_Suc
     by(induct n) auto
@@ -301,7 +270,7 @@ fun encode :: "nat \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> bit list"
   enc_0: "encode 0 len = pad [] (len 0)"|
   enc_Suc: "encode (Suc n) len = pad (nxt_list (encode n len)) (len (Suc n) - len n)"
 
-theorems enc_simp = enc_0 enc_Suc
+lemmas enc_simp = enc_0 enc_Suc
 
 lemma enc_nemp: "len 0 \<noteq> 0 \<Longrightarrow> encode n len \<noteq> []"
     by (metis encode.elims list.distinct(1) nxt_list.elims pad.elims)

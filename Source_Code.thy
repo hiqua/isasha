@@ -1,5 +1,5 @@
 theory Source_Code
-imports "~~/src/HOL/Probability/Information" "~~/src/HOL/Library/NthRoot_Limits"
+imports "~~/src/HOL/Probability/Information"
 begin
 (*
 AIM: Formalize Shannon's theorems
@@ -294,7 +294,7 @@ subsubsection{* Sum manipulation lemmas and McMillan theorem *}
 
 lemma real_plus_one:
 shows "real ((n::nat) + 1) * r = (n * r + r)"
-    by (metis Suc_eq_plus1 distrib_left mult.commute mult.right_neutral real_of_nat_Suc)
+    by (simp add: semiring_normalization_rules(2))
 
 lemma sum_vimage_proof:
   fixes g::"nat \<Rightarrow> real"
@@ -416,20 +416,13 @@ proof -
       show "card ((fst c)` (cw_len_concat)-`{m}) \<le> card {b::(bool list). length b = m}"
         by (metis (mono_tags) bool_list_fin img_inc card_mono)
   qed
-    thus ?thesis by (metis real_of_nat_le_iff bool_lists_card)
+    thus ?thesis by (metis bool_lists_card of_nat_le_iff)
 qed
 
 lemma am_maj_aux2:
 shows "finite ((cw_len_concat)-`{m}) \<and> (card ((cw_len_concat)-`{m})) \<le> b^m"
-(* sledgehammer proof *)
-proof -
-    have "finite (cw_len_concat -` {m})"
-      by (metis (lifting) am_inj_code bool_list_fin card_0_eq card_image card_infinite finite_imageI
-    image_is_empty img_inc rev_finite_subset)
-    thus ?thesis
-      by (metis (lifting) am_inj_code bool_list_fin bool_lists_card card_image card_mono img_inc
-    real_of_nat_le_iff)
-qed
+    by (metis (no_types, lifting) am_inj_code bool_list_fin bool_lists_card card.infinite card_0_eq
+  card_image card_mono empty_iff finite_subset img_inc inf_img_fin_dom of_nat_le_iff)
 
 lemma am_maj:
 shows "card (set_of_k_words_length_m k m)\<le> b^m" (is "?c \<le> ?b")
@@ -491,9 +484,8 @@ shows "kraft_inequality"
 proof -
     have ineq: "\<And>k. 0 < k \<Longrightarrow> (kraft_sum) \<le> root k k * root k (max_len)"
       using kraft_sum_nonnull kraft_sum_power_bound
-      by (metis order_le_less real_of_nat_mult real_root_le_iff real_root_mult real_root_pow_pos2
-    real_root_power)
-    hence "0 < max_len \<Longrightarrow> (\<lambda>k. root k k * root k (max_len)) ----> 1"
+      by (metis (no_types, hide_lams) not_less of_nat_0_le_iff of_nat_mult power_strict_mono real_root_mult real_root_pos_pos_le real_root_pos_unique real_root_power)
+    hence "0 < max_len \<Longrightarrow> (\<lambda>k. root k k * root k (max_len)) \<longlonglongrightarrow> 1"
       using LIMSEQ_root LIMSEQ_root_const tendsto_mult
       by fastforce
     moreover have "\<forall>n\<ge>1. kraft_sum \<le> root n n * root n (max_len)"
