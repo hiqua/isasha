@@ -198,11 +198,9 @@ proof
       hence "real_word w" by simp
       hence "hd w \<in> L"
         by (metis (mono_tags) w_kw hd_in_set list.size(3) mem_Collect_eq nat.distinct(1) subset_code(1))
-      moreover have len: "length w = Suc k" using w_kw by simp
+      moreover have "length w = Suc k" using w_kw by simp
       moreover hence "w \<noteq> []" by auto
-      moreover have "length (tl w) = k" using len by simp
-      moreover have "real_word (tl w)"
-        by (metis `real_word w` calculation(2) list.size(3) nat.distinct(1) rw_tail)
+      moreover have "real_word (tl w)" using \<open>real_word w\<close> calculation(3) rw_tail by auto
       ultimately show "w \<in> ?r" using w_kw by simp
   qed
 next
@@ -461,7 +459,7 @@ proof -
       using am_maj b_val
     Groups_Big.setsum_mono[of "{1..<Suc(k*max_len)}"
     "(\<lambda>m. (card (set_of_k_words_length_m k m))/b^m)" "\<lambda>m. b^m /b^m"]
-      by (metis divide_le_eq_1_pos divide_self_if linorder_not_le order_refl zero_less_numeral zero_less_power)
+      by simp
     moreover have"(\<Sum>m=1..<Suc(k * max_len). b^m / b^m) = (\<Sum>m=1..<Suc(k *max_len). 1)"
       using b_gt_1 by simp
     moreover have "(\<Sum>m=1..<Suc(k*max_len). 1) =(k * max_len)"
