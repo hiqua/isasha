@@ -6,7 +6,7 @@ Attempt to formalize and proofs of Shannon's theorems in Isabelle, to replicate 
 
 ## Progress
 
-So far, one implication out of the four has been made.
+So far, one implication out of the four has been proved.
 
 ## How-to
 
