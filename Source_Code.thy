@@ -531,7 +531,6 @@ proof -
       by (metis (full_types) b_gt_1 divide_divide_eq_left inverse_divide le_less_linear log_le
     log_neg_const order_refl times_divide_eq_right zero_less_mult_iff)
     }
-    hence "\<And>i. i\<in>S \<Longrightarrow> log b (a i / (e i / d)) \<le> log b (a i / e i)" by simp
     thus "(\<Sum>i\<in>S. a i * log b (a i / (e i / d))) \<le> (\<Sum>i\<in>S. a i * log b (a i / e i))"
       by (meson mult_left_mono assms setsum_mono)
 qed
@@ -557,7 +556,7 @@ proof -
       using convex_on_setsum[
     OF fin,
     OF nemp,OF minus_log_convex[OF b_gt_1],
-    OF convex_real_interval(3)[of 0],
+    OF convex_real_interval(3),
     OF sum_a_one,
     OF a_pos
     ]
@@ -710,10 +709,10 @@ proof -
     hence
     "fi i * (log b (1 / (1 / b powr (l i))) + log b (fi i))
     = fi i * log b (fi i / (1 / b powr (l i)))"
-      using log_mult_ext2[OF pos_pi] powr_gt_zero b_gt_1
+      using log_mult_ext2[OF pos_pi] b_gt_1
       by (simp add:
     `\<And>y i. \<lbrakk>i \<in> L; 0 < y\<rbrakk> \<Longrightarrow> fi i * log b (fi i * y) = fi i * log b (fi i) + fi i * log b y`
-    iL linordered_field_class.sign_simps(36))
+    linordered_field_class.sign_simps(36))
     }
     hence eqpi:
     "\<And>i. i\<in> L \<Longrightarrow> fi i * (log b (1 / (1 / b powr (l i))) + log b (fi i))
@@ -772,7 +771,7 @@ proof -
     moreover have "\<And>i. 0 < ?r i" using b_gt_1 kraft_sum_nonnull by simp
     moreover have "(\<Sum>i\<in>L. fi i) = 1" using sum_one_L by simp
     ultimately have "0 \<le> KL_cus L fi ?r"
-      using KL_cus_pos2[OF fin_L fi_pos _ _ _] by simp
+      using KL_cus_pos2[OF fin_L fi_pos] by simp
     hence "log b (inverse ?c) \<le> cr - H" using code_ent_kl_log by simp
     hence "log b (inverse (kraft_sum)) \<le> cr - H" by simp
     moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum))"
