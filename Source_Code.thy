@@ -96,7 +96,7 @@ abbreviation k_words :: "nat \<Rightarrow> ('b word) set" where
   "k_words k \<equiv> {w. length w = k \<and> real_word w}"
 
 lemma rw_tail: "real_word w \<Longrightarrow> w = [] \<or> real_word (tl w)"
-    by (metis dual_order.trans list.collapse set_subset_Cons)
+    by (meson list.set_sel(2) subset_code(1))
 
 (*
 length of the codeword associated with the letter
@@ -150,17 +150,10 @@ qed
 lemma maj_fold:
   fixes f::"'b \<Rightarrow> nat"
   assumes bounded: "\<And>l. l\<in>L \<Longrightarrow> f l \<le> bound"
-shows "real_word w \<Longrightarrow> foldr (\<lambda>x s. f x + s) w 0 \<le> length w * bound"
-proof (induction w)
-    case Nil
-    thus ?case by simp
-next
-    case (Cons x xs)
-    assume "real_word (x#xs)"
-    moreover hence "real_word xs" by simp
-    moreover have "foldr (\<lambda>x s. f x + s) (x#xs) 0 = foldr (\<lambda>x s. f x + s) (xs) 0 + f x" by simp
-    ultimately show ?case using assms Cons.IH by fastforce
-qed
+  assumes "real_word w"
+shows "foldr (\<lambda>x s. f x + s) w 0 \<le> length w * bound"
+    using assms
+    by(induction w) (simp,fastforce)
 
 definition max_len :: "nat" where
   "max_len = Max ((\<lambda>x. cw_len x) ` L)"
@@ -208,9 +201,8 @@ next
     show "k_words (Suc k) \<supseteq> {w. (hd w \<in> L \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
   proof
       fix w
-      assume asm: "w \<in> {w. hd w \<in> L \<and> tl w \<in> {w. length w = k \<and> real_word w} \<and> w \<noteq>
-      []}"
-      hence " hd w \<in> L \<and> length (tl w) = k \<and> real_word (tl w)" by simp
+      assume asm: "w \<in> {w. hd w \<in> L \<and> tl w \<in> {w. length w = k \<and> real_word w} \<and> w \<noteq> []}"
+      hence "hd w \<in> L \<and> length (tl w) = k \<and> real_word (tl w)" by simp
       hence "real_word w"
         by (metis empty_iff insert_subset list.collapse list.set(1) set_simps(2) subsetI)
       moreover hence "length w = Suc k" using asm by auto
@@ -250,8 +242,7 @@ qed
 lemma cartesian_product:
   fixes f::"('c \<Rightarrow> real)"
   fixes g::"('d \<Rightarrow> real)"
-shows "finite A \<Longrightarrow> finite B \<Longrightarrow>
-(\<Sum>b\<in>B. g b)* (\<Sum>a\<in>A. f a) = (\<Sum>ab\<in>A\<times>B. f (fst ab) * g (snd ab))"
+shows "\<lbrakk>finite A; finite B\<rbrakk> \<Longrightarrow> (\<Sum>b\<in>B. g b)* (\<Sum>a\<in>A. f a) = (\<Sum>ab\<in>A\<times>B. f (fst ab) * g (snd ab))"
     using bilinear_times bilinear_setsum[where h="(\<lambda>x y. x * y)" and f="f" and g="g"]
     by (metis (erased, lifting) setsum.cong split_beta' Groups.ab_semigroup_mult_class.mult.commute)
 
@@ -322,8 +313,9 @@ qed
 lemma sum_vimage:
   fixes g::"nat \<Rightarrow> real"
   assumes bounded: "\<And>w. w \<in> S \<Longrightarrow> f w < bd" and "0 < bd"
-shows "finite S \<Longrightarrow> (\<Sum>w\<in>S. g (f w)) = (\<Sum> m=0..<bd. (card ((f-`{m}) \<inter> S) ) * g m)"
-(is "?fin \<Longrightarrow> ?s1 = ?s2")
+  assumes finite: "finite S"
+shows "(\<Sum>w\<in>S. g (f w)) = (\<Sum> m=0..<bd. (card ((f-`{m}) \<inter> S) ) * g m)"
+(is "?s1 = ?s2")
 proof -
     let ?ff = "(\<lambda>x. if x\<in>S then f x else 0)"
     let ?ss1 = "(\<Sum>w\<in>S. g (?ff w))"
@@ -332,12 +324,9 @@ proof -
     moreover have"\<And>m. ?ff -`{m} \<inter> S = f-`{m} \<inter> S" by auto
     moreover hence "?s2 = ?ss2" by simp
     moreover have "\<And>w . ?ff w < bd" using assms by simp
-    moreover hence "?fin \<Longrightarrow> ?ss1 = ?ss2"
-      using sum_vimage_proof[of "?ff"] by blast
-    ultimately show "?fin \<Longrightarrow> ?s1 = ?s2" by metis
+    moreover hence "?ss1 = ?ss2" using sum_vimage_proof[of "?ff"] finite by blast
+    ultimately show "?s1 = ?s2" by metis
 qed
-
-
 
 (*
 5.54
@@ -377,31 +366,27 @@ shows "(fst c)`(cw_len_concat)-`{m} \<subseteq> {bl. length bl = m}"
 proof
     fix y
     assume "y \<in>(fst c)`(cw_len_concat)-`{m}"
-    then obtain x where y_def: "y = fst c x" "x\<in>(cw_len_concat)-`{m}" by auto
-    hence "cw_len_concat x = m" by simp
-    hence "length (fst c x) = m" using cw_len_length by simp
-    thus "y \<in> {bl. length bl = m}" using y_def by simp
+    then obtain x where "y = fst c x" "x\<in>(cw_len_concat)-`{m}" by auto
+    thus "y \<in> {bl. length bl = m}" using cw_len_length by simp
 qed
 
 lemma bool_list_fin:
   "finite {bl::(bool list). length bl = m}"
 proof -
-    fix m
     have "{bl. set bl \<subseteq> {True, False} \<and> length bl = m} = {bl. length bl= m}" by auto
     moreover have "finite {bl. set bl \<subseteq> {True, False} \<and> length bl = m}"
       by (simp add: finite_lists_length_eq)
-    ultimately show "finite {bl::(bool list). length bl = m}" by simp
+    ultimately show ?thesis by simp
 qed
 
 lemma bool_lists_card:
 shows "card {bl::(bool list). length bl = m} = b^m"
 proof -
-    fix m
     have "card {b. set b \<subseteq> {True,False} \<and> length b = m} = card {True,False}^m"
       using card_lists_length_eq[of "{True,False}"] by simp
     moreover have "card {True, False} = b" using b_val by simp
     moreover have "\<And>d. d \<in> {c::(bool list). True} \<longleftrightarrow> set d \<subseteq> {True, False}" by auto
-    ultimately show "card {b::(bool list). length b = m} = b^m" by simp
+    ultimately show ?thesis by simp
 qed
 
 lemma img_card:
@@ -409,11 +394,7 @@ lemma img_card:
 shows "card (fst c`cw_len_concat-`{m}) \<le> b^m"
 proof -
     have "card ((fst c)` (cw_len_concat)-`{m}) \<le> card {b::(bool list). length b = m}"
-  proof -
-      fix m
-      show "card ((fst c)` (cw_len_concat)-`{m}) \<le> card {b::(bool list). length b = m}"
-        by (metis (mono_tags) bool_list_fin img_inc card_mono)
-  qed
+      by (metis (mono_tags) bool_list_fin img_inc card_mono)
     thus ?thesis by (metis bool_lists_card of_nat_le_iff)
 qed
 
@@ -564,10 +545,8 @@ proof -
       by fastforce
     also have "- log b (\<Sum>i\<in>S. a i * e i / a i) = -log b (\<Sum>i\<in>S. e i)"
   proof -
-      from non_null(1) have "\<And>i. i \<in> S \<Longrightarrow> a i * e i / a i = e i"
-        by force
-      thus ?thesis
-        by simp
+      from non_null(1) have "\<And>i. i \<in> S \<Longrightarrow> a i * e i / a i = e i" by force
+      thus ?thesis by simp
   qed
     finally have "0 \<le> (\<Sum>i\<in>S. a i * - log b (e i / a i))"
       using sum_c_one
