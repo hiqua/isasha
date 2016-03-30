@@ -95,8 +95,10 @@ abbreviation real_word :: "'b word \<Rightarrow> bool" where
 abbreviation k_words :: "nat \<Rightarrow> ('b word) set" where
   "k_words k \<equiv> {w. length w = k \<and> real_word w}"
 
-lemma rw_tail: "real_word w \<Longrightarrow> w = [] \<or> real_word (tl w)"
-    by (meson list.set_sel(2) subset_code(1))
+lemma rw_tail:
+  assumes "real_word w"
+shows "w = [] \<or> real_word (tl w)"
+    by (meson assms list.set_sel(2) subset_code(1))
 
 (*
 length of the codeword associated with the letter
@@ -115,7 +117,7 @@ definition code_rate :: "'e code \<Rightarrow> ('a \<Rightarrow> 'e) \<Rightarro
   "code_rate co Xo = expectation (\<lambda>a. (code_word_length co ((Xo) a)))"
 
 definition cr :: "real" where
-  "cr = expectation (\<lambda>a. (cw_len ((X) a)))"
+  "cr = expectation (\<lambda>a. cw_len (X a))"
 
 lemma fi_pos: "i\<in> L \<Longrightarrow> 0 \<le> fi i"
     using simple_distributed_nonneg[OF distr_i] bounded_input by auto
@@ -132,7 +134,7 @@ shows "expectation (\<lambda>a. f (X a)) = (\<Sum>x \<in> X`space M. f x * Px x)
 lemma cr_rw:
   "cr = (\<Sum>i \<in> X ` space M. fi i * cw_len i)" unfolding cr_def
     using simp_exp_composed[OF distr_i, of "cw_len"]
-    by (simp add:mult.commute)
+    by (simp add: mult.commute)
 
 abbreviation cw_len_concat :: "'b word \<Rightarrow> nat" where
   "cw_len_concat w \<equiv> foldr (\<lambda>x s. (cw_len x) + s) w 0"
@@ -148,8 +150,7 @@ proof (induction w)
 qed
 
 lemma maj_fold:
-  fixes f::"'b \<Rightarrow> nat"
-  assumes bounded: "\<And>l. l\<in>L \<Longrightarrow> f l \<le> bound"
+  assumes "\<And>l. l\<in>L \<Longrightarrow> f l \<le> bound"
   assumes "real_word w"
 shows "foldr (\<lambda>x s. f x + s) w 0 \<le> length w * bound"
     using assms
@@ -159,7 +160,7 @@ definition max_len :: "nat" where
   "max_len = Max ((\<lambda>x. cw_len x) ` L)"
 
 lemma max_cw:
-  "\<And>l. l \<in> L \<Longrightarrow> cw_len l \<le> max_len"
+  "l \<in> L \<Longrightarrow> cw_len l \<le> max_len"
     by (simp add: max_len_def fin_L)
 
 
@@ -181,7 +182,7 @@ definition kraft_inequality :: "bool" where
   "kraft_inequality = (kraft_sum \<le> 1)"
 
 lemma k_words_rel:
-  "\<And>k. k_words (Suc k) = {w. (hd w \<in> L \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
+  "k_words (Suc k) = {w. (hd w \<in> L \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
 proof
     fix k
     show "k_words (Suc k) \<subseteq> {w. (hd w \<in> L \<and> tl w \<in> k_words k \<and> w \<noteq> [] )}" (is "?l \<subseteq> ?r")
@@ -211,7 +212,7 @@ next
 qed
 
 lemma bij_k_words:
-shows "\<And>k. bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (L \<times> (k_words k)) (k_words (Suc k))"
+shows "bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (L \<times> (k_words k)) (k_words (Suc k))"
     unfolding bij_betw_def
 proof
     fix k
@@ -242,8 +243,10 @@ qed
 lemma cartesian_product:
   fixes f::"('c \<Rightarrow> real)"
   fixes g::"('d \<Rightarrow> real)"
-shows "\<lbrakk>finite A; finite B\<rbrakk> \<Longrightarrow> (\<Sum>b\<in>B. g b)* (\<Sum>a\<in>A. f a) = (\<Sum>ab\<in>A\<times>B. f (fst ab) * g (snd ab))"
-    using bilinear_times bilinear_setsum[where h="(\<lambda>x y. x * y)" and f="f" and g="g"]
+  assumes "finite A"
+  assumes "finite B"
+shows "(\<Sum>b\<in>B. g b)* (\<Sum>a\<in>A. f a) = (\<Sum>ab\<in>A\<times>B. f (fst ab) * g (snd ab))"
+    using bilinear_times bilinear_setsum[where h="(\<lambda>x y. x * y)" and f="f" and g="g"] assms
     by (metis (erased, lifting) setsum.cong split_beta' Groups.ab_semigroup_mult_class.mult.commute)
 
 lemma kraft_sum_power :
@@ -371,7 +374,7 @@ proof
 qed
 
 lemma bool_list_fin:
-  "finite {bl::(bool list). length bl = m}"
+  "finite {bl::bool list. length bl = m}"
 proof -
     have "{bl. set bl \<subseteq> {True, False} \<and> length bl = m} = {bl. length bl= m}" by auto
     moreover have "finite {bl. set bl \<subseteq> {True, False} \<and> length bl = m}"
@@ -380,7 +383,7 @@ proof -
 qed
 
 lemma bool_lists_card:
-shows "card {bl::(bool list). length bl = m} = b^m"
+shows "card {bl::bool list. length bl = m} = b^m"
 proof -
     have "card {b. set b \<subseteq> {True,False} \<and> length b = m} = card {True,False}^m"
       using card_lists_length_eq[of "{True,False}"] by simp
