@@ -116,8 +116,8 @@ set, the set of letters).
 definition code_rate :: "'e code \<Rightarrow> ('a \<Rightarrow> 'e) \<Rightarrow> real" where
   "code_rate co Xo = expectation (\<lambda>a. (code_word_length co ((Xo) a)))"
 
-definition cr :: "real" where
-  "cr = expectation (\<lambda>a. cw_len (X a))"
+abbreviation cr :: "real" where
+  "cr \<equiv> code_rate c X"
 
 lemma fi_pos: "i\<in> L \<Longrightarrow> 0 \<le> fi i"
     using simple_distributed_nonneg[OF distr_i] bounded_input by auto
@@ -132,7 +132,7 @@ shows "expectation (\<lambda>a. f (X a)) = (\<Sum>x \<in> X`space M. f x * Px x)
     by (simp add: lebesgue_integral_count_space_finite[OF simple_distributed_finite[OF X]] ac_simps)
 
 lemma cr_rw:
-  "cr = (\<Sum>i \<in> X ` space M. fi i * cw_len i)" unfolding cr_def
+  "cr = (\<Sum>i \<in> X ` space M. fi i * cw_len i)" unfolding code_rate_def
     using simp_exp_composed[OF distr_i, of "cw_len"]
     by (simp add: mult.commute)
 
@@ -495,16 +495,16 @@ lemma log_mult_ext2: "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * lo
 subsubsection {* KL divergence and properties *}
 (*
 TODO (eventually): I use a custom definition of the KL_divergence, as it is far simpler for me to
-use. It'd be better if in the end I can use the real def definition KL_cus.
+use. It'd be better if in the end I can use the real def definition KL_div.
 *)
-definition KL_cus ::"'b set \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> real" where
-  "KL_cus S a d = (\<Sum> i \<in> S. a i * log b (a i / d i))"
+definition KL_div ::"'b set \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> real" where
+  "KL_div S a d = (\<Sum> i \<in> S. a i * log b (a i / d i))"
 
-lemma KL_cus_mul:
+lemma KL_div_mul:
   assumes "0 < d" "d \<le> 1"
   assumes "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i" "\<And>i. i\<in>S \<Longrightarrow> 0 < e i"
-shows "KL_cus S a e \<ge> KL_cus S a (\<lambda>i. e i / d)"
-    unfolding KL_cus_def
+shows "KL_div S a e \<ge> KL_div S a (\<lambda>i. e i / d)"
+    unfolding KL_div_def
 proof -
     {
     fix i
@@ -519,15 +519,15 @@ proof -
       by (meson mult_left_mono assms setsum_mono)
 qed
 
-lemma KL_cus_pos:
+lemma KL_div_pos:
   fixes a e::"'b \<Rightarrow> real"
   assumes fin: "finite S"
   assumes nemp: "S \<noteq> {}"
   assumes non_null: "\<And>i. i\<in>S \<Longrightarrow> 0 < a i" "\<And>i. i\<in> S \<Longrightarrow> 0 < e i"
   assumes sum_a_one: "(\<Sum> i \<in> S. a i) = 1"
   assumes sum_c_one: "(\<Sum> i \<in> S. e i) = 1"
-shows "0 \<le> KL_cus S a e"
-    unfolding KL_cus_def
+shows "0 \<le> KL_div S a e"
+    unfolding KL_div_def
 proof -
     let ?f = "\<lambda>i. e i / a i"
     have f_pos: "\<And>i. i\<in>S \<Longrightarrow> 0 < ?f i"
@@ -559,39 +559,39 @@ proof -
       by simp
 qed
 
-lemma KL_cus_pos_emp:
-  "0 \<le> KL_cus {} a e" unfolding KL_cus_def by simp
+lemma KL_div_pos_emp:
+  "0 \<le> KL_div {} a e" unfolding KL_div_def by simp
 
-lemma KL_cus_pos_gen:
+lemma KL_div_pos_gen:
   fixes a d::"'b \<Rightarrow> real"
   assumes fin: "finite S"
   assumes non_null: "\<And>i. i\<in>S \<Longrightarrow> 0 < a i" "\<And>i. i\<in> S \<Longrightarrow> 0 < d i"
   assumes sum_a_one: "(\<Sum> i \<in> S. a i) = 1"
   assumes sum_d_one: "(\<Sum> i \<in> S. d i) = 1"
-shows "0 \<le> KL_cus S a d"
-    using KL_cus_pos KL_cus_pos_emp assms by metis
+shows "0 \<le> KL_div S a d"
+    using KL_div_pos KL_div_pos_emp assms by metis
 
-theorem KL_cus_pos2:
+theorem KL_div_pos2:
   fixes a d::"'b \<Rightarrow> real"
   assumes fin: "finite S"
   assumes non_null: "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i" "\<And>i. i\<in> S \<Longrightarrow> 0 < d i"
   assumes sum_a_one: "(\<Sum> i \<in> S. a i) = 1"
   assumes sum_c_one: "(\<Sum> i \<in> S. d i) = 1"
-shows "0 \<le> KL_cus S a d"
+shows "0 \<le> KL_div S a d"
 proof -
     have "S = (S \<inter> {i. 0 < a i}) \<union> (S \<inter> {i. 0 = a i})" using non_null(1)
       by fastforce
     moreover have "(S \<inter> {i. 0 < a i}) \<inter> (S \<inter> {i. 0 = a i}) = {}" by auto
     ultimately have
-    eq: "KL_cus S a d = KL_cus (S \<inter> {i. 0 < a i}) a d + KL_cus (S \<inter> {i. 0 = a i}) a d"
-      unfolding KL_cus_def
+    eq: "KL_div S a d = KL_div (S \<inter> {i. 0 < a i}) a d + KL_div (S \<inter> {i. 0 = a i}) a d"
+      unfolding KL_div_def
       by (metis (mono_tags, lifting) fin finite_Un setsum.union_disjoint)
-    have "KL_cus (S \<inter> {i. 0 = a i}) a d = 0" unfolding KL_cus_def by simp
-    hence "KL_cus S a d = KL_cus (S \<inter> {i. 0 < a i}) a d" using eq by simp
-    moreover have "0 \<le> KL_cus (S \<inter> {i. 0 < a i}) a d"
+    have "KL_div (S \<inter> {i. 0 = a i}) a d = 0" unfolding KL_div_def by simp
+    hence "KL_div S a d = KL_div (S \<inter> {i. 0 < a i}) a d" using eq by simp
+    moreover have "0 \<le> KL_div (S \<inter> {i. 0 < a i}) a d"
   proof(cases "(S \<inter> {i. 0 < a i}) = {}")
       case True
-      thus ?thesis unfolding KL_cus_def by simp
+      thus ?thesis unfolding KL_div_def by simp
   next
       case False
       let ?c = "\<lambda>i. d i / (\<Sum>j \<in>(S \<inter> {i. 0 < a i}). d j)"
@@ -610,8 +610,8 @@ proof -
     (* sum ?c equals to 1 *)
       hence 5: "(\<Sum>i\<in>S \<inter> {j. 0 < a j}. ?c i) = 1"
         using 2 False by force
-      hence "0 \<le> KL_cus (S \<inter> {j. 0 < a j}) a ?c" using
-      KL_cus_pos_gen[
+      hence "0 \<le> KL_div (S \<inter> {j. 0 < a j}) a ?c" using
+      KL_div_pos_gen[
       OF finite_Int[OF disjI1, of S, of "{j. 0 < a j}"], of a, of ?c
       ] 1 2 3
         by (metis fin)
@@ -621,12 +621,12 @@ proof -
     (\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < d i / setsum d (S \<inter> {i. 0 < a i})) \<Longrightarrow>
       setsum a (S \<inter> {i. 0 < a i}) = 1 \<Longrightarrow>
     (\<Sum>i\<in>S \<inter> {i. 0 < a i}. d i / setsum d (S \<inter> {i. 0 < a i})) = 1 \<Longrightarrow>
-      0 \<le> KL_cus (S \<inter> {i. 0 < a i}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))"
-        using KL_cus_pos_gen[
+      0 \<le> KL_div (S \<inter> {i. 0 < a i}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))"
+        using KL_div_pos_gen[
       OF finite_Int[OF disjI1, OF fin], of "{i. 0 < a i}", of "a", of "?c"
       ] by simp
       hence 6: "
-      0 \<le> KL_cus (S \<inter> {i. 0 < a i}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))"
+      0 \<le> KL_div (S \<inter> {i. 0 < a i}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))"
         using 2 3 5
         by simp
       have
@@ -634,29 +634,29 @@ proof -
       0 < setsum d (S \<inter> {i. 0 < a i}) \<Longrightarrow>
       setsum d (S \<inter> {i. 0 < a i}) \<le> 1 \<Longrightarrow>
     (\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i) \<Longrightarrow>
-      KL_cus (S \<inter> {j. 0 < a j}) a
+      KL_div (S \<inter> {j. 0 < a j}) a
     (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))
-      \<le> KL_cus (S \<inter> {j. 0 < a j}) a d"
-        using KL_cus_mul
+      \<le> KL_div (S \<inter> {j. 0 < a j}) a d"
+        using KL_div_mul
         by fastforce
       hence "setsum d (S \<inter> {i. 0 < a i}) \<le> 1 \<Longrightarrow>
     (\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i) \<Longrightarrow>
-      KL_cus (S \<inter> {j. 0 < a j}) a
+      KL_div (S \<inter> {j. 0 < a j}) a
     (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))
-      \<le> KL_cus (S \<inter> {j. 0 < a j}) a d" using non_null(2) fstdb
+      \<le> KL_div (S \<inter> {j. 0 < a j}) a d" using non_null(2) fstdb
         by simp
       hence
-      "(\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i) \<Longrightarrow> KL_cus (S \<inter> {j. 0 < a j}) a
+      "(\<And>i. i \<in> S \<inter> {j. 0 < a j} \<Longrightarrow> 0 \<le> a i) \<Longrightarrow> KL_div (S \<inter> {j. 0 < a j}) a
     (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))
-      \<le> KL_cus (S \<inter> {j. 0 < a j}) a d" using setsum.inter_restrict[OF fin, of d, of "{i. 0 < a i}"]
+      \<le> KL_div (S \<inter> {j. 0 < a j}) a d" using setsum.inter_restrict[OF fin, of d, of "{i. 0 < a i}"]
       setsum_mono[of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then d x else 0)", of d] non_null(2) sum_c_one
         by force
       hence
-      "KL_cus (S \<inter> {j. 0 < a j}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i})) \<le> KL_cus (S \<inter> {j. 0 < a j}) a d"
+      "KL_div (S \<inter> {j. 0 < a j}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i})) \<le> KL_div (S \<inter> {j. 0 < a j}) a d"
         using non_null by simp
-      moreover have "0 \<le> KL_cus (S \<inter> {j. 0 < a j}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))"
-        using KL_cus_pos_gen[ OF finite_Int[OF disjI1, OF fin]] using 2 3 5 by fastforce
-      ultimately show "0 \<le> KL_cus (S \<inter> {j. 0 < a j}) a d" by simp
+      moreover have "0 \<le> KL_div (S \<inter> {j. 0 < a j}) a (\<lambda>i. d i / setsum d (S \<inter> {i. 0 < a i}))"
+        using KL_div_pos_gen[ OF finite_Int[OF disjI1, OF fin]] using 2 3 5 by fastforce
+      ultimately show "0 \<le> KL_div (S \<inter> {j. 0 < a j}) a d" by simp
   qed
     ultimately show ?thesis by simp
 qed
@@ -744,16 +744,16 @@ proof -
       by (simp add: log_inverse_eq divide_inverse sum_one_L)
     also have "\<dots> = (\<Sum> i \<in> L. fi i * log b (fi i / ?r i)) - log b (?c)"
       by (metis (mono_tags, hide_lams) divide_divide_eq_left divide_divide_eq_right)
-    also have "\<dots> = KL_cus L fi ?r + log b (inverse ?c)"
-      using b_gt_1 kraft_sum_nonnull by (simp add: log_inverse KL_cus_def)
-    finally have code_ent_kl_log: "cr - H = KL_cus L fi ?r + log b (inverse ?c)" by simp
+    also have "\<dots> = KL_div L fi ?r + log b (inverse ?c)"
+      using b_gt_1 kraft_sum_nonnull by (simp add: log_inverse KL_div_def)
+    finally have code_ent_kl_log: "cr - H = KL_div L fi ?r + log b (inverse ?c)" by simp
     have "setsum ?r L = 1"
       using sum_div_1[of "\<lambda>i. 1 / (b powr (l i))"] kraft_sum_nonnull l_def kraft_sum_powr
       by simp
     moreover have "\<And>i. 0 < ?r i" using b_gt_1 kraft_sum_nonnull by simp
     moreover have "(\<Sum>i\<in>L. fi i) = 1" using sum_one_L by simp
-    ultimately have "0 \<le> KL_cus L fi ?r"
-      using KL_cus_pos2[OF fin_L fi_pos] by simp
+    ultimately have "0 \<le> KL_div L fi ?r"
+      using KL_div_pos2[OF fin_L fi_pos] by simp
     hence "log b (inverse ?c) \<le> cr - H" using code_ent_kl_log by simp
     hence "log b (inverse (kraft_sum)) \<le> cr - H" by simp
     moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum))"
