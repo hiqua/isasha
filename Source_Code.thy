@@ -1,10 +1,6 @@
 theory Source_Code
 imports "~~/src/HOL/Probability/Information"
 begin
-(*
-AIM: Formalize Shannon's theorems
-*)
-
 section{* Basic types *}
 
 type_synonym bit = bool
@@ -19,55 +15,17 @@ type_synonym 'b code = "'b encoder * 'b decoder"
 type_synonym 'b prob = "'b \<Rightarrow> real"
 
 section{* First locale, generic to both Shannon's theorems *}
-(*
-X is the input, Y is the output.
-They are not independent (if they are, all of this serves no purpose)
-We fix N, N' the measures (TODO: should I? Can we have two different bit measures?)
-The input is only correlated to the corresponding output.
-From a code, we consider:
-_its extension: the code obtained when we encode each
-letter and concatenate the result (and fortunately decode it if it has some good
-properties).
-_its block code, with a natural parameter, that takes mentioned number of
-letters, consider it as a single character (of a new alphabet), and encode it.
-*)
-
-(* locale generic to both theorems *)
 locale source_code = information_space +
-(* information source *)
   fixes fi :: "'b \<Rightarrow> real"
   fixes X::"'a \<Rightarrow> 'b"
   assumes distr_i: "simple_distributed M X fi"
-(*
-According to RAHM, this should be a rat: my impression is that they aim for a code that can achieve
-precisely this rate, however the gist is that we can achieve a rate equal OR better than H + \<epsilon>, so
-in my mind it is not that important. In the Shannon's original paper it is not clear to me either.
-*)
   fixes H::real
-
-(*
-The entropy depends on the value of b, which is the cardinal of the set of available
-output symbols.
-*)
-(*
-I have tried to use statements that do not use the value of b explicitly, using b_gt_1 whenever
-possible. However it is not possible to avoid using this value altogether, since it is encoded in
-the output type of the code (which is a bword, a word of bits). This is one of the shortcomings of
-Isabelle vs Coq/SSreflect, where dependent parameter types are available.
-*)
   assumes b_val: "b = 2"
   assumes entropy_defi: "H = \<H>(X)"
 
   fixes L :: "'b set"
   assumes fin_L: "finite L"
   assumes emp_L: "L \<noteq> {}"
-
-(*
-TLDR: technicality
-The assumption boils down to say that for all letter l in L, there is a "omega" such that X(omega) =
-l. Even with that, we can still have P(X=l) = 0, if only by modifying X for one value in the
-(continuous) probability space but keeping the same distribution.
-*)
   assumes bounded_input: "X ` space M = L"
 
   fixes c::"'b code"
@@ -75,14 +33,6 @@ l. Even with that, we can still have P(X=l) = 0, if only by modifying X for one 
 (\<forall>w. (fst c) w = [] \<longleftrightarrow> w = []) \<and>
 (\<forall>x. x \<noteq> [] \<longrightarrow> fst c x = (fst c) [(hd x)] @ (fst c) (tl x)))"
 
-(*
-TODO: Have some predicates to allow reasonings about codes. Keep the input_block_size that limits
-the size of the input, and use it.
-*)
-(*
-We will generalize the type "code" to any input by splitting the input in piece of length below a
-constant.
-*)
 section{* Source coding theorem, direct: the entropy is a lower bound *}
 context source_code
 begin
@@ -90,7 +40,6 @@ subsection{* Codes and words *}
 
 abbreviation real_word :: "'b word \<Rightarrow> bool" where
   "real_word w \<equiv> (set w \<subseteq> L)"
-
 
 abbreviation k_words :: "nat \<Rightarrow> ('b word) set" where
   "k_words k \<equiv> {w. length w = k \<and> real_word w}"
@@ -100,19 +49,12 @@ lemma rw_tail:
 shows "w = [] \<or> real_word (tl w)"
     by (meson assms list.set_sel(2) subset_code(1))
 
-(*
-length of the codeword associated with the letter
-*)
 definition code_word_length :: "'e code \<Rightarrow> 'e \<Rightarrow> nat" where
   "code_word_length co l = length ((fst co) [l])"
 
 abbreviation cw_len :: "'b \<Rightarrow> nat" where
   "cw_len l \<equiv> code_word_length c l"
 
-(*
-The code rate is the expectation of the length of the code taken on all inputs (which is a finite
-set, the set of letters).
-*)
 definition code_rate :: "'e code \<Rightarrow> ('a \<Rightarrow> 'e) \<Rightarrow> real" where
   "code_rate co Xo = expectation (\<lambda>a. (code_word_length co ((Xo) a)))"
 
@@ -122,12 +64,10 @@ abbreviation cr :: "real" where
 lemma fi_pos: "i\<in> L \<Longrightarrow> 0 \<le> fi i"
     using simple_distributed_nonneg[OF distr_i] bounded_input by auto
 
-(*
-Proof by Johannes Hölzl
-*)
 lemma (in prob_space) simp_exp_composed:
   assumes X: "simple_distributed M X Px"
 shows "expectation (\<lambda>a. f (X a)) = (\<Sum>x \<in> X`space M. f x * Px x)"
+    (* Proof by Johannes Hölzl *)
     using distributed_integral[OF simple_distributed[OF X], of f]
     by (simp add: lebesgue_integral_count_space_finite[OF simple_distributed_finite[OF X]] ac_simps)
 
@@ -299,7 +239,6 @@ proof (induct S rule: finite_induct)
 next
     case (insert x F)
     let ?rr = "(\<Sum>m = 0..<bd. ?ff m (insert x F))"
-  (* focusing of the right hand term *)
     have "(f x) \<in> {0..<bd}" using assms by simp
     hence "\<And>h::(nat \<Rightarrow> real). (\<Sum>m=0..<bd. h m) = (\<Sum>y\<in>({0..<bd} - {f x}).h y) + h (f x)"
       by (metis diff_add_cancel finite_atLeastLessThan setsum_diff1_ring)
@@ -331,9 +270,6 @@ proof -
     ultimately show "?s1 = ?s2" by metis
 qed
 
-(*
-5.54
-*)
 lemma kraft_sum_rewrite :
   "(\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat w)) = (\<Sum>m=0..<Suc (k*max_len). card (k_words k \<inter>
 ((cw_len_concat) -` {m})) * (1 / b^m))" (is "?L = ?R")
@@ -493,10 +429,6 @@ lemma log_mult_ext2: "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * lo
     by (metis (no_types) log_mult_ext_3 mult.right_neutral zero_less_one)
 
 subsubsection {* KL divergence and properties *}
-(*
-TODO (eventually): I use a custom definition of the KL_divergence, as it is far simpler for me to
-use. It'd be better if in the end I can use the real def definition KL_div.
-*)
 definition KL_div ::"'b set \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> real" where
   "KL_div S a d = (\<Sum> i \<in> S. a i * log b (a i / d i))"
 
@@ -595,19 +527,15 @@ proof -
   next
       case False
       let ?c = "\<lambda>i. d i / (\<Sum>j \<in>(S \<inter> {i. 0 < a i}). d j)"
-    (* a pos *)
       have 1: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < a i)" by simp
-    (* ?c pos *)
       have 2: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < ?c i)"
         by (metis False IntD1 divide_pos_pos fin finite_Int non_null(2) setsum_pos)
-    (* sum a equals to 1 *)
       have 3: "setsum a (S \<inter> {i. 0 < a i}) = 1"
         using setsum.cong[of S, of S, of "(\<lambda>x. if x \<in> {i. 0 < a i} then a x else 0)", of a]
       setsum.inter_restrict[OF fin, of a] non_null(1) sum_a_one
         by fastforce
       have "(\<Sum>i\<in>S \<inter> {j. 0 < a j}. ?c i) = (\<Sum>i\<in>S \<inter> {j. 0 < a j}. d i) / (\<Sum>i\<in>S \<inter> {j. 0 < a j}. d i)"
         by (metis setsum_divide_distrib)
-    (* sum ?c equals to 1 *)
       hence 5: "(\<Sum>i\<in>S \<inter> {j. 0 < a j}. ?c i) = 1"
         using 2 False by force
       hence "0 \<le> KL_div (S \<inter> {j. 0 < a j}) a ?c" using
@@ -661,7 +589,6 @@ proof -
     ultimately show ?thesis by simp
 qed
 
-(* Used in many theorems... *)
 lemma sum_div_1:
   fixes f::"'b \<Rightarrow> 'c::field"
   assumes "(\<Sum>i\<in>A. f i) \<noteq> 0"
@@ -669,9 +596,6 @@ lemma sum_div_1:
 shows "(\<Sum>i\<in>A. f i / S) = 1"
     by (metis (no_types) S_def assms right_inverse_eq setsum_divide_distrib)
 
-(*
-_Kraft inequality for real codes using the McMillan theorem
-*)
 theorem rate_lower_bound :
   defines "l \<equiv> (\<lambda>i. cw_len i)"
   defines "LL \<equiv> L - {i. fi i = 0}"
