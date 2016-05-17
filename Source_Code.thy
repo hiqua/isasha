@@ -124,9 +124,6 @@ lemma kraft_sum_powr: "kraft_sum = (\<Sum>i\<in>L. 1 / b powr (cw_len i))"
     using powr_realpow b_gt_1
     by (simp add: kraft_sum_def)
 
-definition kraft_inequality :: "bool" where
-  "kraft_inequality = (kraft_sum \<le> 1)"
-
 lemma k_words_rel:
   "k_words (Suc k) = {w. (hd w \<in> L \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
 proof
@@ -393,7 +390,7 @@ shows "kraft_sum^k \<le> k * max_len"
     by (simp add: set_of_k_words_length_m_def)
 
 theorem McMillan :
-shows "kraft_inequality"
+shows "kraft_sum \<le> 1"
 proof -
     have ineq: "\<And>k. 0 < k \<Longrightarrow> kraft_sum \<le> root k k * root k max_len"
       using kraft_sum_nonnull kraft_sum_power_bound
@@ -404,8 +401,7 @@ proof -
     moreover have "\<forall>n\<ge>1. kraft_sum \<le> root n n * root n max_len"
       using ineq by simp
     moreover have "max_len = 0 \<Longrightarrow> kraft_sum \<le> 1" using ineq by fastforce
-    ultimately have "kraft_sum \<le> 1" using LIMSEQ_le_const by blast
-    thus "kraft_inequality" unfolding kraft_inequality_def by simp
+    ultimately show "kraft_sum \<le> 1" using LIMSEQ_le_const by blast
 qed
 
 lemma entropy_rewrite: "\<H>(X) = -(\<Sum>i \<in> L. fi i * log b (fi i))"
@@ -665,7 +661,7 @@ proof -
       using KL_div_pos2[OF fin_L fi_pos] by simp
     hence "log b (inverse ?c) \<le> cr - \<H>(X)" using code_ent_kl_log by simp
     moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum))"
-      using kraft_sum_nonnull unfolding kraft_inequality_def
+      using kraft_sum_nonnull
       by (simp add: b_gt_1 log_inverse_eq)
     ultimately show ?thesis by simp
 qed
