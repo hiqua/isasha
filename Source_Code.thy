@@ -408,16 +408,14 @@ lemma entropy_rewrite: "\<H>(X) = -(\<Sum>i \<in> L. fi i * log b (fi i))"
     using entropy_simple_distributed[OF distr_i]
     by (simp add: L_def)
 
+subsubsection{* Technical lemmas about the logarithm *}
 lemma log_mult_ext_not_0:
-  "0 < x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
-    using b_gt_1 distrib_left log_mult by simp
+  "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (y*z) = x * log b y + x * log b z"
+  using b_gt_1 distrib_left log_mult by auto
 
-lemma log_mult_ext_3:
-  " 0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*z*y) = x * log b (x*z) + x * log b y"
-    using log_mult_ext_not_0[of x] mult_zero_left[of "log b (0 * z * y)"] by fastforce
-
-lemma log_mult_ext2: "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * log b (x*y) = x * log b (x) + x * log b y"
-    by (metis (no_types) log_mult_ext_3 mult.right_neutral zero_less_one)
+lemma log_mult_ext2:
+  "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * log b (x*y) = x * log b x + x * log b y"
+  by(cases "x=0")(simp add: log_mult_ext_not_0)+
 
 subsubsection {* KL divergence and properties *}
 definition KL_div ::"'b set \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> real" where
@@ -610,16 +608,16 @@ proof -
     {
     fix i
     assume iL: "i \<in> L"
+    (* TODO: smt *)
     have
     "fi i * log b (fi i * ?c / (1/b powr cw_len i) * (inverse kraft_sum)) =
     fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (inverse kraft_sum)"
-      using log_mult_ext_3[OF pos_pi[OF iL]
-    positive_imp_inverse_positive[OF kraft_sum_nonnull],
-    of "kraft_sum / (1 / b powr (cw_len i))"] divide_pos_pos[OF kraft_sum_nonnull] powr_gt_zero[of b]
+      using divide_pos_pos[OF kraft_sum_nonnull] powr_gt_zero[of b]
     Orderings.order_class.order.strict_implies_not_eq[
     OF Orderings.order_class.order.strict_trans[OF zero_less_one, OF b_gt_1]
     ]
-      by (metis (no_types) divide_1 inverse_divide inverse_positive_iff_positive times_divide_eq_right)
+      by (smt divide_pos_pos iL kraft_sum_nonnull linordered_field_class.sign_simps(45)
+        log_mult_ext_not_0 pos_pi positive_imp_inverse_positive zero_less_mult_iff)
     } hence big_eq:
     "\<And>i. i \<in> L \<Longrightarrow> fi i * log b (fi i * ?c / (1/b powr cw_len i) * (1 / kraft_sum)) =
     fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (1 / kraft_sum)"
