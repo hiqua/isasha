@@ -409,13 +409,13 @@ lemma entropy_rewrite: "\<H>(X) = -(\<Sum>i \<in> L. fi i * log b (fi i))"
     by (simp add: L_def)
 
 subsubsection{* Technical lemmas about the logarithm *}
-lemma log_mult_ext_not_0:
-  "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (y*z) = x * log b y + x * log b z"
-  using b_gt_1 distrib_left log_mult by auto
+lemma log_mult_ext3:
+  "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*y*z) = x * log b (x*y) + x * log b z"
+by(cases "x=0")(simp add: log_mult_eq abs_of_pos distrib_left less_eq_real_def)+
 
 lemma log_mult_ext2:
   "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * log b (x*y) = x * log b x + x * log b y"
-  by(cases "x=0")(simp add: log_mult_ext_not_0)+
+  using log_mult_ext3[where y=1] by simp
 
 subsubsection {* KL divergence and properties *}
 definition KL_div ::"'b set \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> real" where
@@ -608,16 +608,14 @@ proof -
     {
     fix i
     assume iL: "i \<in> L"
-    (* TODO: smt *)
+    have h1: "0 \<le> fi i" using iL pos_pi by blast
+    have h2: "0 < ?c / (1/b powr cw_len i)" using b_gt_1 kraft_sum_nonnull by auto
+    have h3: "0 < inverse kraft_sum" using kraft_sum_nonnull by simp
     have
     "fi i * log b (fi i * ?c / (1/b powr cw_len i) * (inverse kraft_sum)) =
     fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (inverse kraft_sum)"
-      using divide_pos_pos[OF kraft_sum_nonnull] powr_gt_zero[of b]
-    Orderings.order_class.order.strict_implies_not_eq[
-    OF Orderings.order_class.order.strict_trans[OF zero_less_one, OF b_gt_1]
-    ]
-      by (smt divide_pos_pos iL kraft_sum_nonnull linordered_field_class.sign_simps(45)
-        log_mult_ext_not_0 pos_pi positive_imp_inverse_positive zero_less_mult_iff)
+      using log_mult_ext3[OF h1 h2 h3]
+      by (metis times_divide_eq_right)
     } hence big_eq:
     "\<And>i. i \<in> L \<Longrightarrow> fi i * log b (fi i * ?c / (1/b powr cw_len i) * (1 / kraft_sum)) =
     fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (1 / kraft_sum)"
