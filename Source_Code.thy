@@ -116,11 +116,11 @@ definition kraft_sum :: "real" where
 
 lemma pos_cw_len: "0 < 1 / b ^ cw_len i" using b_gt_1 by simp
 
-lemma kraft_sum_nonnull: "0 < kraft_sum"
+lemma kraft_sum_pos: "0 < kraft_sum"
     using emp_L fin_L pos_cw_len setsum_pos kraft_sum_def
     by metis
 
-lemma kraft_sum_powr: "kraft_sum = (\<Sum>i\<in>L. 1 / b powr (cw_len i))"
+lemma kraft_sum_pow: "kraft_sum = (\<Sum>i\<in>L. 1 / b powr cw_len i)"
     using powr_realpow b_gt_1
     by (simp add: kraft_sum_def)
 
@@ -393,7 +393,7 @@ theorem McMillan :
 shows "kraft_sum \<le> 1"
 proof -
     have ineq: "\<And>k. 0 < k \<Longrightarrow> kraft_sum \<le> root k k * root k max_len"
-      using kraft_sum_nonnull kraft_sum_power_bound
+      using kraft_sum_pos kraft_sum_power_bound
       by (metis (no_types, hide_lams) not_less of_nat_0_le_iff of_nat_mult power_strict_mono real_root_mult real_root_pos_pos_le real_root_pos_unique real_root_power)
     hence "0 < max_len \<Longrightarrow> (\<lambda>k. root k k * root k max_len) \<longlonglongrightarrow> 1"
       using LIMSEQ_root LIMSEQ_root_const tendsto_mult
@@ -637,27 +637,27 @@ proof -
       using Cartesian_Euclidean_Space.setsum_cong_aux[OF eqpi] by simp
     also from big_eq have
     "\<dots> = (\<Sum>i\<in>L. fi i * (log b (fi i * ?c / (1 / b powr (cw_len i))))) + (\<Sum>i \<in> L. fi i) * log b (1/ ?c)"
-      using kraft_sum_nonnull
+      using kraft_sum_pos
       by (simp add: setsum_left_distrib setsum.distrib)
     also have "\<dots> = (\<Sum>i\<in>L. fi i * (log b (fi i * ?c / (1 / b powr (cw_len i))))) - log b (?c)"
-      using kraft_sum_nonnull
+      using kraft_sum_pos
       by (simp add: log_inverse_eq divide_inverse sum_one_L)
     also have "\<dots> = (\<Sum> i \<in> L. fi i * log b (fi i / ?r i)) - log b (?c)"
       by (metis (mono_tags, hide_lams) divide_divide_eq_left divide_divide_eq_right)
 
     also have "\<dots> = KL_div L fi ?r + log b (inverse ?c)"
-      using b_gt_1 kraft_sum_nonnull by (simp add: log_inverse KL_div_def)
+      using b_gt_1 kraft_sum_pos by (simp add: log_inverse KL_div_def)
     finally have code_ent_kl_log: "cr -  \<H>(X) = KL_div L fi ?r + log b (inverse ?c)" by simp
     have "setsum ?r L = 1"
-      using sum_div_1[of "\<lambda>i. 1 / (b powr (cw_len i))"] kraft_sum_nonnull kraft_sum_powr
+      using sum_div_1[of "\<lambda>i. 1 / (b powr (cw_len i))"] kraft_sum_pos kraft_sum_pow
       by simp
-    moreover have "\<And>i. 0 < ?r i" using b_gt_1 kraft_sum_nonnull by simp
+    moreover have "\<And>i. 0 < ?r i" using b_gt_1 kraft_sum_pos by simp
     moreover have "(\<Sum>i\<in>L. fi i) = 1" using sum_one_L by simp
     ultimately have "0 \<le> KL_div L fi ?r"
       using KL_div_pos2[OF fin_L fi_pos] by simp
     hence "log b (inverse ?c) \<le> cr - \<H>(X)" using code_ent_kl_log by simp
     moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum))"
-      using kraft_sum_nonnull
+      using kraft_sum_pos
       by (simp add: b_gt_1 log_inverse_eq)
     ultimately show ?thesis by simp
 qed
