@@ -422,7 +422,8 @@ definition KL_div ::"'b set \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> 
 
 lemma KL_div_mul:
   assumes "0 < d" "d \<le> 1"
-  assumes "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i" "\<And>i. i\<in>S \<Longrightarrow> 0 < e i"
+  assumes "\<And>i. i\<in>S \<Longrightarrow> 0 \<le> a i"
+  assumes "\<And>i. i\<in>S \<Longrightarrow> 0 < e i"
 shows "KL_div S a e \<ge> KL_div S a (\<lambda>i. e i / d)"
     unfolding KL_div_def
 proof -
@@ -466,14 +467,13 @@ proof -
     ]
     f_pos
       by fastforce
-    also have "- log b (\<Sum>i\<in>S. a i * e i / a i) = -log b (\<Sum>i\<in>S. e i)"
+    also have "-log b (\<Sum>i\<in>S. a i * e i / a i) = -log b (\<Sum>i\<in>S. e i)"
   proof -
       from non_null(1) have "\<And>i. i \<in> S \<Longrightarrow> a i * e i / a i = e i" by force
       thus ?thesis by simp
   qed
     finally have "0 \<le> (\<Sum>i\<in>S. a i * - log b (e i / a i))"
-      using sum_c_one
-      by simp
+      by (simp add: sum_c_one)
     thus "0 \<le> (\<Sum>i\<in>S. a i * log b (a i / e i))"
       using b_gt_1 log_divide non_null
       by simp
