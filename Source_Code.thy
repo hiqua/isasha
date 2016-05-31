@@ -78,7 +78,8 @@ shows "expectation (\<lambda>a. f (X a)) = (\<Sum>x \<in> X`space M. f x * Px x)
     by (simp add: lebesgue_integral_count_space_finite[OF simple_distributed_finite[OF X]] ac_simps)
 
 lemma cr_rw:
-  "cr = (\<Sum>i \<in> X ` space M. fi i * cw_len i)" unfolding code_rate_def
+  "cr = (\<Sum>i \<in> X ` space M. fi i * cw_len i)"
+    unfolding code_rate_def
     using simp_exp_composed[OF distr_i, of "cw_len"]
     by (simp add: mult.commute)
 
@@ -110,18 +111,18 @@ lemma max_cw:
     by (simp add: max_len_def fin_L)
 
 subsection{* Related to the Kraft theorem *}
-definition kraft_sum :: "real" where
-  "kraft_sum = (\<Sum>i\<in>L. 1 / b ^ (cw_len i))"
+definition  \<K> :: "real" where
+  " \<K> = (\<Sum>i\<in>L. 1 / b ^ (cw_len i))"
 
 lemma pos_cw_len: "0 < 1 / b ^ cw_len i" using b_gt_1 by simp
 
-lemma kraft_sum_pos: "0 < kraft_sum"
-    using emp_L fin_L pos_cw_len setsum_pos kraft_sum_def
+lemma  \<K>_pos: "0 <  \<K>"
+    using emp_L fin_L pos_cw_len setsum_pos  \<K>_def
     by metis
 
-lemma kraft_sum_pow: "kraft_sum = (\<Sum>i\<in>L. 1 / b powr cw_len i)"
+lemma  \<K>_pow: " \<K> = (\<Sum>i\<in>L. 1 / b powr cw_len i)"
     using powr_realpow b_gt_1
-    by (simp add: kraft_sum_def)
+    by (simp add:  \<K>_def)
 
 lemma k_words_rel:
   "k_words (Suc k) = {w. (hd w \<in> L \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
@@ -154,7 +155,7 @@ next
 qed
 
 lemma bij_k_words:
-shows "bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (L \<times> (k_words k)) (k_words (Suc k))"
+shows "bij_betw (\<lambda>wi. Cons (fst wi) (snd wi)) (L \<times> k_words k) (k_words (Suc k))"
     unfolding bij_betw_def
 proof
     fix k
@@ -187,22 +188,22 @@ lemma cartesian_product:
   fixes g::"('d \<Rightarrow> real)"
   assumes "finite A"
   assumes "finite B"
-shows "(\<Sum>b\<in>B. g b)* (\<Sum>a\<in>A. f a) = (\<Sum>ab\<in>A\<times>B. f (fst ab) * g (snd ab))"
+shows "(\<Sum>b\<in>B. g b) * (\<Sum>a\<in>A. f a) = (\<Sum>ab\<in>A\<times>B. f (fst ab) * g (snd ab))"
     using bilinear_times bilinear_setsum[where h="(\<lambda>x y. x * y)" and f="f" and g="g"] assms
     by (metis (erased, lifting) setsum.cong split_beta' Groups.ab_semigroup_mult_class.mult.commute)
 
-lemma kraft_sum_power :
-shows "kraft_sum ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat w))"
+lemma  \<K>_power :
+shows " \<K> ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat w))"
 proof (induct k)
     case 0
     have "k_words 0 = {[]}" by auto
     thus ?case by simp
 next
     case (Suc n)
-    have "kraft_sum ^Suc n = kraft_sum ^n * kraft_sum " by simp
+    have " \<K> ^Suc n =  \<K> ^n *  \<K> " by simp
     also have "\<dots> =
   (\<Sum>w \<in> k_words n. 1 / b^cw_len_concat w) * (\<Sum>i\<in>L. 1 / b^cw_len i)"
-      using Suc.hyps kraft_sum_def by auto
+      using Suc.hyps  \<K>_def by auto
     also have
     "\<dots> =
   (\<Sum>wi \<in> L \<times> k_words n. 1/b^cw_len (fst wi) * (1 / b^cw_len_concat (snd wi)))"
@@ -220,7 +221,7 @@ next
 qed
 
 lemma bound_len_concat:
-shows "\<And>w. w \<in> k_words k \<Longrightarrow> cw_len_concat w \<le> k * max_len"
+shows "w \<in> k_words k \<Longrightarrow> cw_len_concat w \<le> k * max_len"
     using max_cw maj_fold by blast
 
 subsection{* Inequality of the kraft sum (source coding theorem, direct) *}
@@ -271,7 +272,7 @@ proof -
     ultimately show "?s1 = ?s2" by metis
 qed
 
-lemma kraft_sum_rewrite :
+lemma  \<K>_rewrite :
   "(\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat w)) = (\<Sum>m=0..<Suc (k*max_len). card (k_words k \<inter>
 ((cw_len_concat) -` {m})) * (1 / b^m))" (is "?L = ?R")
 proof -
@@ -359,7 +360,7 @@ proof(rule ccontr)
     thus "False" using x_def by simp
 qed
 
-lemma kraft_sum_rewrite2:
+lemma  \<K>_rewrite2:
   assumes "0 < k"
 shows "(\<Sum>m=0..<Suc (k*max_len). (card (set_of_k_words_length_m k m))/ b^m) \<le> (k * max_len)"
 proof -
@@ -381,25 +382,25 @@ proof -
       by (simp add: setsum_shift_lb_Suc0_0_upt split: split_if_asm)
 qed
 
-lemma kraft_sum_power_bound :
+lemma  \<K>_power_bound :
   assumes "0 < k"
-shows "kraft_sum^k \<le> k * max_len"
-    using assms kraft_sum_power kraft_sum_rewrite kraft_sum_rewrite2
+shows " \<K>^k \<le> k * max_len"
+    using assms  \<K>_power  \<K>_rewrite  \<K>_rewrite2
     by (simp add: set_of_k_words_length_m_def)
 
 theorem McMillan :
-shows "kraft_sum \<le> 1"
+shows " \<K> \<le> 1"
 proof -
-    have ineq: "\<And>k. 0 < k \<Longrightarrow> kraft_sum \<le> root k k * root k max_len"
-      using kraft_sum_pos kraft_sum_power_bound
+    have ineq: "\<And>k. 0 < k \<Longrightarrow>  \<K> \<le> root k k * root k max_len"
+      using  \<K>_pos  \<K>_power_bound
       by (metis (no_types, hide_lams) not_less of_nat_0_le_iff of_nat_mult power_strict_mono real_root_mult real_root_pos_pos_le real_root_pos_unique real_root_power)
     hence "0 < max_len \<Longrightarrow> (\<lambda>k. root k k * root k max_len) \<longlonglongrightarrow> 1"
       using LIMSEQ_root LIMSEQ_root_const tendsto_mult
       by fastforce
-    moreover have "\<forall>n\<ge>1. kraft_sum \<le> root n n * root n max_len"
+    moreover have "\<forall>n\<ge>1.  \<K> \<le> root n n * root n max_len"
       using ineq by simp
-    moreover have "max_len = 0 \<Longrightarrow> kraft_sum \<le> 1" using ineq by fastforce
-    ultimately show "kraft_sum \<le> 1" using LIMSEQ_le_const by blast
+    moreover have "max_len = 0 \<Longrightarrow>  \<K> \<le> 1" using ineq by fastforce
+    ultimately show " \<K> \<le> 1" using LIMSEQ_le_const by blast
 qed
 
 lemma entropy_rewrite: "\<H>(X) = -(\<Sum>i \<in> L. fi i * log b (fi i))"
@@ -583,7 +584,7 @@ shows "(\<Sum>i\<in>A. f i / (\<Sum>j\<in>A. f j)) = 1"
 theorem rate_lower_bound:
 shows "\<H>(X) \<le> cr"
 proof -
-    let ?c = "kraft_sum"
+    let ?c = " \<K>"
     let ?r = "(\<lambda>i. 1 / ((b powr cw_len i) * ?c))"
     have pos_pi: "\<And>i. i \<in> L \<Longrightarrow> 0 \<le> fi i" using fi_pos by simp
     {
@@ -605,19 +606,19 @@ proof -
     fix i
     assume iL: "i \<in> L"
     have h1: "0 \<le> fi i" using iL pos_pi by blast
-    have h2: "0 < ?c / (1/b powr cw_len i)" using b_gt_1 kraft_sum_pos by auto
-    have h3: "0 < inverse kraft_sum" using kraft_sum_pos by simp
+    have h2: "0 < ?c / (1/b powr cw_len i)" using b_gt_1  \<K>_pos by auto
+    have h3: "0 < inverse  \<K>" using  \<K>_pos by simp
     have
-    "fi i * log b (fi i * ?c / (1/b powr cw_len i) * (inverse kraft_sum)) =
-    fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (inverse kraft_sum)"
+    "fi i * log b (fi i * ?c / (1/b powr cw_len i) * (inverse  \<K>)) =
+    fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (inverse  \<K>)"
       using log_mult_ext3[OF h1 h2 h3]
       by (metis times_divide_eq_right)
     } hence big_eq:
-    "\<And>i. i \<in> L \<Longrightarrow> fi i * log b (fi i * ?c / (1/b powr cw_len i) * (1 / kraft_sum)) =
-    fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (1 / kraft_sum)"
+    "\<And>i. i \<in> L \<Longrightarrow> fi i * log b (fi i * ?c / (1/b powr cw_len i) * (1 /  \<K>)) =
+    fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (1 /  \<K>)"
       by (simp add: inverse_eq_divide)
     have 1: "cr - \<H>(X) = (\<Sum>i \<in> L. fi i * cw_len i) + (\<Sum>i \<in> L. fi i * log b (fi i))"
-      using kraft_sum_def entropy_rewrite cr_rw L_def by simp
+      using  \<K>_def entropy_rewrite cr_rw L_def by simp
     also have 2: "(\<Sum>i\<in>L. fi i * cw_len i) = (\<Sum>i \<in> L. fi i * (-log b (1/(b powr (cw_len i)))))"
       using b_gt_1 log_divide by simp
     also have "\<dots> = -1 * (\<Sum>i \<in> L. fi i * (log b (1/(b powr (cw_len i)))))"
@@ -633,27 +634,27 @@ proof -
       using Cartesian_Euclidean_Space.setsum_cong_aux[OF eqpi] by simp
     also from big_eq have
     "\<dots> = (\<Sum>i\<in>L. fi i * (log b (fi i * ?c / (1 / b powr (cw_len i))))) + (\<Sum>i \<in> L. fi i) * log b (1/ ?c)"
-      using kraft_sum_pos
+      using  \<K>_pos
       by (simp add: setsum_left_distrib setsum.distrib)
     also have "\<dots> = (\<Sum>i\<in>L. fi i * (log b (fi i * ?c / (1 / b powr (cw_len i))))) - log b (?c)"
-      using kraft_sum_pos
+      using  \<K>_pos
       by (simp add: log_inverse_eq divide_inverse sum_one_L)
     also have "\<dots> = (\<Sum> i \<in> L. fi i * log b (fi i / ?r i)) - log b (?c)"
       by (metis (mono_tags, hide_lams) divide_divide_eq_left divide_divide_eq_right)
 
     also have "\<dots> = KL_div L fi ?r + log b (inverse ?c)"
-      using b_gt_1 kraft_sum_pos by (simp add: log_inverse KL_div_def)
+      using b_gt_1  \<K>_pos by (simp add: log_inverse KL_div_def)
     finally have code_ent_kl_log: "cr -  \<H>(X) = KL_div L fi ?r + log b (inverse ?c)" by simp
     have "setsum ?r L = 1"
-      using sum_div_1[of "\<lambda>i. 1 / (b powr (cw_len i))"] kraft_sum_pos kraft_sum_pow
+      using sum_div_1[of "\<lambda>i. 1 / (b powr (cw_len i))"]  \<K>_pos  \<K>_pow
       by simp
-    moreover have "\<And>i. 0 < ?r i" using b_gt_1 kraft_sum_pos by simp
+    moreover have "\<And>i. 0 < ?r i" using b_gt_1  \<K>_pos by simp
     moreover have "(\<Sum>i\<in>L. fi i) = 1" using sum_one_L by simp
     ultimately have "0 \<le> KL_div L fi ?r"
       using KL_div_pos2[OF fin_L fi_pos] by simp
     hence "log b (inverse ?c) \<le> cr - \<H>(X)" using code_ent_kl_log by simp
-    moreover from McMillan assms have "0 \<le> log b (inverse (kraft_sum))"
-      using kraft_sum_pos
+    moreover from McMillan assms have "0 \<le> log b (inverse ( \<K>))"
+      using  \<K>_pos
       by (simp add: b_gt_1 log_inverse_eq)
     ultimately show ?thesis by simp
 qed
