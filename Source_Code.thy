@@ -329,19 +329,18 @@ proof -
     ultimately show ?thesis by simp
 qed
 
-lemma am_maj_aux2:
-shows "finite (cw_len_concat-`{m}) \<and> card (cw_len_concat-`{m}) \<le> b^m"
-    by (metis (no_types, lifting) am_inj_code bool_list_fin bool_lists_card card.infinite card_0_eq
-  card_image card_mono empty_iff finite_subset img_inc inf_img_fin_dom of_nat_le_iff)
-
-lemma am_maj:
+lemma set_of_k_words_bound:
 shows "card (set_of_k_words_length_m k m) \<le> b^m" (is "?c \<le> ?b")
 proof -
+    have card_w_len_m_bound: "card (cw_len_concat-`{m}) \<le> b^m"
+      by (metis (no_types, lifting) am_inj_code bool_list_fin bool_lists_card card_image card_mono
+    img_inc of_nat_le_iff)
     have "set_of_k_words_length_m k m \<subseteq> (cw_len_concat)-`{m}"
-      using set_of_k_words_length_m_def by simp
+      by (simp add: set_of_k_words_length_m_def)
     hence "card (set_of_k_words_length_m k m) \<le> card ((cw_len_concat)-`{m})"
-      using assms am_maj_aux2 card_mono by blast
-    thus ?thesis using real_code am_maj_aux2[of m] by simp
+      by (metis (no_types, lifting) am_inj_code bool_list_fin card.infinite card_0_eq
+    card_image card_mono empty_iff finite_subset img_inc inf_img_fin_dom)
+    thus ?thesis using card_w_len_m_bound by simp
 qed
 
 lemma empty_set_k_words:
