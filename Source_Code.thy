@@ -272,7 +272,7 @@ proof -
     ultimately show "?s1 = ?s2" by metis
 qed
 
-lemma \<K>_rewrite :
+lemma \<K>_rewrite:
   "(\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat w)) = (\<Sum>m=0..<Suc (k*max_len). card (k_words k \<inter>
 ((cw_len_concat) -` {m})) * (1 / b^m))" (is "?L = ?R")
 proof -
@@ -292,23 +292,11 @@ qed
 definition set_of_k_words_length_m :: "nat \<Rightarrow> nat \<Rightarrow> 'b word set" where
   "set_of_k_words_length_m k m = {xk. xk \<in> k_words k} \<inter> (cw_len_concat)-`{m}"
 
-lemma am_inj_code :
-shows "inj_on enc ((cw_len_concat)-`{m})" (is "inj_on ?enc ?s")
-proof -
-    fix x y
-    have "x \<in> ?s \<and> y \<in> ?s \<and> enc x = enc y \<longrightarrow> dec (enc x) = dec (enc y)" by auto
-    moreover have "(\<forall>x. dec (enc x) = Some x)" using real_code by blast
-    ultimately show ?thesis using inj_on_def[of "?enc" "?s"] by (metis option.inject)
-qed
+lemma am_inj_code: "inj_on enc ((cw_len_concat)-`{m})" (is "inj_on _ ?s")
+  using inj_on_def[of enc "?s"] real_code
+  by (metis option.inject)
 
-lemma img_inc:
-shows "enc`cw_len_concat-`{m} \<subseteq> {bl. length bl = m}"
-proof
-    fix y
-    assume "y \<in>enc`cw_len_concat-`{m}"
-    then obtain x where "y = enc x" "x\<in>cw_len_concat-`{m}" by auto
-    thus "y \<in> {bl. length bl = m}" using cw_len_length by simp
-qed
+lemma img_inc: "enc`cw_len_concat-`{m} \<subseteq> {bl. length bl = m}" using cw_len_length by auto
 
 lemma bool_list_fin:
   "finite {bl::bool list. length bl = m}"
