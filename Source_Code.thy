@@ -609,8 +609,8 @@ proof -
     fix i
     assume iL: "i \<in> L"
     have h1: "0 \<le> fi i" using iL pos_pi by blast
-    have h2: "0 < ?c / (1/b powr cw_len i)" using b_gt_1 kraft_sum_nonnull by auto
-    have h3: "0 < inverse kraft_sum" using kraft_sum_nonnull by simp
+    have h2: "0 < ?c / (1/b powr cw_len i)" using b_gt_1 kraft_sum_pos by auto
+    have h3: "0 < inverse kraft_sum" using kraft_sum_pos by simp
     have
     "fi i * log b (fi i * ?c / (1/b powr cw_len i) * (inverse kraft_sum)) =
     fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (inverse kraft_sum)"
