@@ -10,9 +10,6 @@ type_synonym 'b word = "'b list"
 
 type_synonym 'b encoder = "'b word \<Rightarrow> bword"
 type_synonym 'b decoder = "bword \<Rightarrow> 'b word option"
-type_synonym 'b code = "'b encoder * 'b decoder"
-
-type_synonym 'b prob = "'b \<Rightarrow> real"
 
 section{* First locale, generic to both Shannon's theorems *}
 locale source_code = information_space +
@@ -22,10 +19,12 @@ locale source_code = information_space +
   assumes distr_i: "simple_distributed M X fi"
   assumes b_val: "b = 2"
 
-  fixes c::"'b code"
-  assumes real_code : "((\<forall>x. snd c (fst c x) = Some x) \<and>
-(\<forall>w. (fst c) w = [] \<longleftrightarrow> w = []) \<and>
-(\<forall>x. x \<noteq> [] \<longrightarrow> fst c x = (fst c) [hd x] @ (fst c) (tl x)))"
+  fixes enc::"'b encoder"
+  fixes dec::"'b decoder"
+  assumes real_code:
+    "dec (enc x) = Some x"
+    "enc w = [] \<longleftrightarrow> w = []"
+    "x \<noteq> [] \<longrightarrow> enc x = enc [hd x] @ enc (tl x)"
 
 section{* Source coding theorem, direct: the entropy is a lower bound of the code rate*}
 context source_code
@@ -56,17 +55,17 @@ lemma rw_tail:
 shows "w = [] \<or> real_word (tl w)"
     by (meson assms list.set_sel(2) subset_code(1))
 
-definition code_word_length :: "'e code \<Rightarrow> 'e \<Rightarrow> nat" where
-  "code_word_length co l = length ((fst co) [l])"
+definition code_word_length :: "'e encoder \<Rightarrow> 'e \<Rightarrow> nat" where
+  "code_word_length e l = length (e [l])"
 
 abbreviation cw_len :: "'b \<Rightarrow> nat" where
-  "cw_len l \<equiv> code_word_length c l"
+  "cw_len l \<equiv> code_word_length enc l"
 
-definition code_rate :: "'e code \<Rightarrow> ('a \<Rightarrow> 'e) \<Rightarrow> real" where
-  "code_rate co Xo = expectation (\<lambda>a. (code_word_length co ((Xo) a)))"
+definition code_rate :: "'e encoder \<Rightarrow> ('a \<Rightarrow> 'e) \<Rightarrow> real" where
+  "code_rate e Xo = expectation (\<lambda>a. (code_word_length e ((Xo) a)))"
 
 abbreviation cr :: "real" where
-  "cr \<equiv> code_rate c X"
+  "cr \<equiv> code_rate enc X"
 
 lemma fi_pos: "i\<in> L \<Longrightarrow> 0 \<le> fi i"
     using simple_distributed_nonneg[OF distr_i] L_def by auto
@@ -86,7 +85,7 @@ lemma cr_rw:
 abbreviation cw_len_concat :: "'b word \<Rightarrow> nat" where
   "cw_len_concat w \<equiv> foldr (\<lambda>x s. (cw_len x) + s) w 0"
 
-lemma cw_len_length: "cw_len_concat w = length (fst c w)"
+lemma cw_len_length: "cw_len_concat w = length (enc w)"
 proof (induction w)
     case Nil
     show ?case using real_code by simp
@@ -293,21 +292,20 @@ definition set_of_k_words_length_m :: "nat \<Rightarrow> nat \<Rightarrow> 'b wo
   "set_of_k_words_length_m k m = {xk. xk \<in> k_words k} \<inter> (cw_len_concat)-`{m}"
 
 lemma am_inj_code :
-shows "inj_on (fst c) ((cw_len_concat)-`{m})" (is "inj_on ?enc ?s")
+shows "inj_on enc ((cw_len_concat)-`{m})" (is "inj_on ?enc ?s")
 proof -
     fix x y
-    let ?dec = "snd c"
-    have "x \<in> ?s \<and> y \<in> ?s \<and> ?enc x = ?enc y \<longrightarrow> ?dec (?enc x) = ?dec (?enc y)" by auto
-    moreover have "(\<forall>x. snd c (fst c x) = Some x)" using real_code by blast
+    have "x \<in> ?s \<and> y \<in> ?s \<and> enc x = enc y \<longrightarrow> dec (enc x) = dec (enc y)" by auto
+    moreover have "(\<forall>x. dec (enc x) = Some x)" using real_code by blast
     ultimately show ?thesis using inj_on_def[of "?enc" "?s"] by (metis option.inject)
 qed
 
 lemma img_inc:
-shows "(fst c)`cw_len_concat-`{m} \<subseteq> {bl. length bl = m}"
+shows "enc`cw_len_concat-`{m} \<subseteq> {bl. length bl = m}"
 proof
     fix y
-    assume "y \<in>(fst c)`cw_len_concat-`{m}"
-    then obtain x where "y = fst c x" "x\<in>cw_len_concat-`{m}" by auto
+    assume "y \<in>enc`cw_len_concat-`{m}"
+    then obtain x where "y = enc x" "x\<in>cw_len_concat-`{m}" by auto
     thus "y \<in> {bl. length bl = m}" using cw_len_length by simp
 qed
 
@@ -355,7 +353,7 @@ proof(rule ccontr)
     hence "x \<noteq> []" unfolding set_of_k_words_length_m_def using assms by auto
     moreover have "cw_len_concat (hd x#tl x) = cw_len_concat (tl x) + cw_len (hd x)"
       by (metis add.commute comp_apply foldr.simps(2))
-    moreover have "(fst c) [(hd x)] \<noteq> []" using assms real_code by blast
+    moreover have "enc [(hd x)] \<noteq> []" using assms real_code by blast
     moreover hence "0 < cw_len (hd x)" unfolding code_word_length_def by simp
     ultimately have "x \<notin> set_of_k_words_length_m k 0" by (simp add:set_of_k_words_length_m_def)
     thus "False" using x_def by simp
