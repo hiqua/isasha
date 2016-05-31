@@ -366,7 +366,7 @@ proof -
     have
     "(\<Sum>m=1..<Suc (k*max_len). card (set_of_k_words_length_m k m) / b^m)
     \<le> (\<Sum>m=1..<Suc(k * max_len). b^m / b^m)"
-      using am_maj b_val
+      using set_of_k_words_bound b_val
     Groups_Big.setsum_mono[of "{1..<Suc(k*max_len)}"
     "(\<lambda>m. (card (set_of_k_words_length_m k m))/b^m)" "\<lambda>m. b^m /b^m"]
       by simp
