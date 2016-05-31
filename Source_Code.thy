@@ -299,7 +299,7 @@ lemma am_inj_code: "inj_on enc ((cw_len_concat)-`{m})" (is "inj_on _ ?s")
 lemma img_inc: "enc`cw_len_concat-`{m} \<subseteq> {bl. length bl = m}" using cw_len_length by auto
 
 lemma bool_list_fin:
-  "finite {bl::bool list. length bl = m}"
+  "finite {bl::bool list. length bl = m}" using finite_lists_length_eq
 proof -
     have "{bl. set bl \<subseteq> {True, False} \<and> length bl = m} = {bl. length bl= m}" by auto
     moreover have "finite {bl. set bl \<subseteq> {True, False} \<and> length bl = m}"
@@ -313,7 +313,7 @@ proof -
     have "card {b. set b \<subseteq> {True,False} \<and> length b = m} = card {True,False}^m"
       using card_lists_length_eq[of "{True,False}"] by simp
     moreover have "card {True, False} = b" using b_val by simp
-    moreover have "\<And>d. d \<in> {c::(bool list). True} \<longleftrightarrow> set d \<subseteq> {True, False}" by auto
+    moreover have "\<And>d::bool list. set d \<subseteq> {True, False}" by auto
     ultimately show ?thesis by simp
 qed
 
@@ -349,18 +349,18 @@ qed
 
 lemma \<K>_rw2:
   assumes "0 < k"
-shows "(\<Sum>m=0..<Suc (k*max_len). (card (set_of_k_words_length_m k m))/ b^m) \<le> (k * max_len)"
+shows "(\<Sum>m=0..<Suc (k * max_len). card (set_of_k_words_length_m k m)/ b^m) \<le> (k * max_len)"
 proof -
     have
-    "(\<Sum>m=1..<Suc (k*max_len). card (set_of_k_words_length_m k m) / b^m)
+    "(\<Sum>m=1..<Suc (k * max_len). card (set_of_k_words_length_m k m) / b^m)
     \<le> (\<Sum>m=1..<Suc(k * max_len). b^m / b^m)"
       using set_of_k_words_bound b_val
-    Groups_Big.setsum_mono[of "{1..<Suc(k*max_len)}"
+    Groups_Big.setsum_mono[of "{1..<Suc(k * max_len)}"
     "(\<lambda>m. (card (set_of_k_words_length_m k m))/b^m)" "\<lambda>m. b^m /b^m"]
       by simp
     moreover have"(\<Sum>m=1..<Suc(k * max_len). b^m / b^m) = (\<Sum>m=1..<Suc(k *max_len). 1)"
       using b_gt_1 by simp
-    moreover have "(\<Sum>m=1..<Suc(k*max_len). 1) =(k * max_len)"
+    moreover have "(\<Sum>m=1..<Suc(k * max_len). 1) = (k * max_len)"
       by simp
     ultimately have
     "(\<Sum>m = 1..<Suc (k * max_len). card (set_of_k_words_length_m k m) / b ^ m) \<le> k * max_len"
