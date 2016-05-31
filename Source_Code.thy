@@ -593,9 +593,7 @@ proof -
     "fi i * (log b (1 / (1 / b powr (cw_len i))) + log b (fi i))
     = fi i * log b (fi i / (1 / b powr (cw_len i)))"
       using log_mult_ext2[OF pos_pi] b_gt_1
-      by (simp add:
-    `\<And>y i. \<lbrakk>i \<in> L; 0 < y\<rbrakk> \<Longrightarrow> fi i * log b (fi i * y) = fi i * log b (fi i) + fi i * log b y`
-    linordered_field_class.sign_simps(36))
+      by (simp add: linordered_field_class.sign_simps(36))
     }
     hence eqpi:
     "\<And>i. i\<in> L \<Longrightarrow> fi i * (log b (1 / (1 / b powr (cw_len i))) + log b (fi i))
