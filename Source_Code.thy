@@ -641,7 +641,6 @@ proof -
       by (simp add: log_inverse_eq divide_inverse sum_one_L)
     also have "\<dots> = (\<Sum> i \<in> L. fi i * log b (fi i / ?r i)) - log b (?c)"
       by (metis (mono_tags, hide_lams) divide_divide_eq_left divide_divide_eq_right)
-
     also have "\<dots> = KL_div L fi ?r + log b (inverse ?c)"
       using b_gt_1 \<K>_pos by (simp add: log_inverse KL_div_def)
     finally have code_ent_kl_log: "cr - \<H>(X) = KL_div L fi ?r + log b (inverse ?c)" by simp
