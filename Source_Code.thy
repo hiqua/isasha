@@ -272,7 +272,7 @@ proof -
     ultimately show "?s1 = ?s2" by metis
 qed
 
-lemma \<K>_rewrite:
+lemma \<K>_rw:
   "(\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat w)) = (\<Sum>m=0..<Suc (k*max_len). card (k_words k \<inter>
 ((cw_len_concat) -` {m})) * (1 / b^m))" (is "?L = ?R")
 proof -
@@ -347,7 +347,7 @@ proof(rule ccontr)
     thus "False" using x_def by simp
 qed
 
-lemma \<K>_rewrite2:
+lemma \<K>_rw2:
   assumes "0 < k"
 shows "(\<Sum>m=0..<Suc (k*max_len). (card (set_of_k_words_length_m k m))/ b^m) \<le> (k * max_len)"
 proof -
@@ -372,7 +372,7 @@ qed
 lemma \<K>_power_bound :
   assumes "0 < k"
 shows " \<K>^k \<le> k * max_len"
-    using assms \<K>_power \<K>_rewrite \<K>_rewrite2
+    using assms \<K>_power \<K>_rw \<K>_rw2
     by (simp add: set_of_k_words_length_m_def)
 
 theorem McMillan :
@@ -390,7 +390,7 @@ proof -
     ultimately show " \<K> \<le> 1" using LIMSEQ_le_const by blast
 qed
 
-lemma entropy_rewrite: "\<H>(X) = -(\<Sum>i \<in> L. fi i * log b (fi i))"
+lemma entropy_rw: "\<H>(X) = -(\<Sum>i \<in> L. fi i * log b (fi i))"
     using entropy_simple_distributed[OF distr_i]
     by (simp add: L_def)
 
@@ -605,7 +605,7 @@ proof -
     fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (1 / \<K>)"
       by (simp add: inverse_eq_divide)
     have 1: "cr - \<H>(X) = (\<Sum>i \<in> L. fi i * cw_len i) + (\<Sum>i \<in> L. fi i * log b (fi i))"
-      using \<K>_def entropy_rewrite cr_rw L_def by simp
+      using \<K>_def entropy_rw cr_rw L_def by simp
     also have 2: "(\<Sum>i\<in>L. fi i * cw_len i) = (\<Sum>i \<in> L. fi i * (-log b (1/(b powr (cw_len i)))))"
       using b_gt_1 log_divide by simp
     also have "\<dots> = -1 * (\<Sum>i \<in> L. fi i * (log b (1/(b powr (cw_len i)))))"
