@@ -22,9 +22,9 @@ locale source_code = information_space +
   fixes enc::"'b encoder"
   fixes dec::"'b decoder"
   assumes real_code:
-    "dec (enc x) = Some x"
-    "enc w = [] \<longleftrightarrow> w = []"
-    "x \<noteq> [] \<longrightarrow> enc x = enc [hd x] @ enc (tl x)"
+  "dec (enc x) = Some x"
+  "enc w = [] \<longleftrightarrow> w = []"
+  "x \<noteq> [] \<longrightarrow> enc x = enc [hd x] @ enc (tl x)"
 
 section{* Source coding theorem, direct: the entropy is a lower bound of the code rate*}
 context source_code
@@ -35,12 +35,12 @@ definition L :: "'b set" where
   "L \<equiv> X ` space M"
 
 lemma fin_L: "finite L"
-  using L_def distr_i
-  by auto
+    using L_def distr_i
+    by auto
 
 lemma emp_L: "L \<noteq> {}"
-  using L_def subprob_not_empty
-  by auto
+    using L_def subprob_not_empty
+    by auto
 
 subsection{* Codes and words *}
 
@@ -73,7 +73,7 @@ lemma fi_pos: "i\<in> L \<Longrightarrow> 0 \<le> fi i"
 lemma (in prob_space) simp_exp_composed:
   assumes X: "simple_distributed M X Px"
 shows "expectation (\<lambda>a. f (X a)) = (\<Sum>x \<in> X`space M. f x * Px x)"
-    (* Proof by Johannes Hölzl *)
+(* Proof by Johannes Hölzl *)
     using distributed_integral[OF simple_distributed[OF X], of f]
     by (simp add: lebesgue_integral_count_space_finite[OF simple_distributed_finite[OF X]] ac_simps)
 
@@ -111,18 +111,18 @@ lemma max_cw:
     by (simp add: max_len_def fin_L)
 
 subsection{* Related to the Kraft theorem *}
-definition  \<K> :: "real" where
-  " \<K> = (\<Sum>i\<in>L. 1 / b ^ (cw_len i))"
+definition \<K> :: "real" where
+  "\<K> = (\<Sum>i\<in>L. 1 / b ^ (cw_len i))"
 
 lemma pos_cw_len: "0 < 1 / b ^ cw_len i" using b_gt_1 by simp
 
-lemma  \<K>_pos: "0 <  \<K>"
-    using emp_L fin_L pos_cw_len setsum_pos  \<K>_def
+lemma \<K>_pos: "0 < \<K>"
+    using emp_L fin_L pos_cw_len setsum_pos \<K>_def
     by metis
 
-lemma  \<K>_pow: " \<K> = (\<Sum>i\<in>L. 1 / b powr cw_len i)"
+lemma \<K>_pow: "\<K> = (\<Sum>i\<in>L. 1 / b powr cw_len i)"
     using powr_realpow b_gt_1
-    by (simp add:  \<K>_def)
+    by (simp add: \<K>_def)
 
 lemma k_words_rel:
   "k_words (Suc k) = {w. (hd w \<in> L \<and> tl w \<in> k_words k \<and> w \<noteq> [])}"
@@ -192,7 +192,7 @@ shows "(\<Sum>b\<in>B. g b) * (\<Sum>a\<in>A. f a) = (\<Sum>ab\<in>A\<times>B. f
     using bilinear_times bilinear_setsum[where h="(\<lambda>x y. x * y)" and f="f" and g="g"] assms
     by (metis (erased, lifting) setsum.cong split_beta' Groups.ab_semigroup_mult_class.mult.commute)
 
-lemma  \<K>_power :
+lemma \<K>_power :
 shows " \<K> ^k = (\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat w))"
 proof (induct k)
     case 0
@@ -200,10 +200,10 @@ proof (induct k)
     thus ?case by simp
 next
     case (Suc n)
-    have " \<K> ^Suc n =  \<K> ^n *  \<K> " by simp
+    have " \<K> ^Suc n = \<K> ^n * \<K> " by simp
     also have "\<dots> =
   (\<Sum>w \<in> k_words n. 1 / b^cw_len_concat w) * (\<Sum>i\<in>L. 1 / b^cw_len i)"
-      using Suc.hyps  \<K>_def by auto
+      using Suc.hyps \<K>_def by auto
     also have
     "\<dots> =
   (\<Sum>wi \<in> L \<times> k_words n. 1/b^cw_len (fst wi) * (1 / b^cw_len_concat (snd wi)))"
@@ -272,7 +272,7 @@ proof -
     ultimately show "?s1 = ?s2" by metis
 qed
 
-lemma  \<K>_rewrite :
+lemma \<K>_rewrite :
   "(\<Sum>w \<in> (k_words k). 1 / b^(cw_len_concat w)) = (\<Sum>m=0..<Suc (k*max_len). card (k_words k \<inter>
 ((cw_len_concat) -` {m})) * (1 / b^m))" (is "?L = ?R")
 proof -
@@ -360,7 +360,7 @@ proof(rule ccontr)
     thus "False" using x_def by simp
 qed
 
-lemma  \<K>_rewrite2:
+lemma \<K>_rewrite2:
   assumes "0 < k"
 shows "(\<Sum>m=0..<Suc (k*max_len). (card (set_of_k_words_length_m k m))/ b^m) \<le> (k * max_len)"
 proof -
@@ -382,24 +382,24 @@ proof -
       by (simp add: setsum_shift_lb_Suc0_0_upt split: split_if_asm)
 qed
 
-lemma  \<K>_power_bound :
+lemma \<K>_power_bound :
   assumes "0 < k"
 shows " \<K>^k \<le> k * max_len"
-    using assms  \<K>_power  \<K>_rewrite  \<K>_rewrite2
+    using assms \<K>_power \<K>_rewrite \<K>_rewrite2
     by (simp add: set_of_k_words_length_m_def)
 
 theorem McMillan :
 shows " \<K> \<le> 1"
 proof -
-    have ineq: "\<And>k. 0 < k \<Longrightarrow>  \<K> \<le> root k k * root k max_len"
-      using  \<K>_pos  \<K>_power_bound
+    have ineq: "\<And>k. 0 < k \<Longrightarrow> \<K> \<le> root k k * root k max_len"
+      using \<K>_pos \<K>_power_bound
       by (metis (no_types, hide_lams) not_less of_nat_0_le_iff of_nat_mult power_strict_mono real_root_mult real_root_pos_pos_le real_root_pos_unique real_root_power)
     hence "0 < max_len \<Longrightarrow> (\<lambda>k. root k k * root k max_len) \<longlonglongrightarrow> 1"
       using LIMSEQ_root LIMSEQ_root_const tendsto_mult
       by fastforce
-    moreover have "\<forall>n\<ge>1.  \<K> \<le> root n n * root n max_len"
+    moreover have "\<forall>n\<ge>1. \<K> \<le> root n n * root n max_len"
       using ineq by simp
-    moreover have "max_len = 0 \<Longrightarrow>  \<K> \<le> 1" using ineq by fastforce
+    moreover have "max_len = 0 \<Longrightarrow> \<K> \<le> 1" using ineq by fastforce
     ultimately show " \<K> \<le> 1" using LIMSEQ_le_const by blast
 qed
 
@@ -410,11 +410,11 @@ lemma entropy_rewrite: "\<H>(X) = -(\<Sum>i \<in> L. fi i * log b (fi i))"
 subsubsection{* Technical lemmas about the logarithm *}
 lemma log_mult_ext3:
   "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> 0 < z \<Longrightarrow> x * log b (x*y*z) = x * log b (x*y) + x * log b z"
-by(cases "x=0")(simp add: log_mult_eq abs_of_pos distrib_left less_eq_real_def)+
+    by(cases "x=0")(simp add: log_mult_eq abs_of_pos distrib_left less_eq_real_def)+
 
 lemma log_mult_ext2:
   "0 \<le> x \<Longrightarrow> 0 < y \<Longrightarrow> x * log b (x*y) = x * log b x + x * log b y"
-  using log_mult_ext3[where y=1] by simp
+    using log_mult_ext3[where y=1] by simp
 
 subsubsection {* KL divergence and properties *}
 definition KL_div ::"'b set \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> ('b \<Rightarrow> real) \<Rightarrow> real" where
@@ -514,7 +514,7 @@ proof -
   next
       case False
       let ?c = "\<lambda>i. d i / (\<Sum>j \<in>(S \<inter> {i. 0 < a i}). d j)"
-          have 1: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < a i)" by simp
+      have 1: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < a i)" by simp
       have 2: "(\<And>i. i \<in> S \<inter> {i. 0 < a i} \<Longrightarrow> 0 < ?c i)"
         by (metis False IntD1 divide_pos_pos fin finite_Int non_null(2) setsum_pos)
       have 3: "(\<Sum>i\<in> (S \<inter> {i. 0 < a i}). a i) = 1"
@@ -526,8 +526,8 @@ proof -
       hence 5: "(\<Sum>i\<in>S \<inter> {j. 0 < a j}. ?c i) = 1" using 2 False by force
       hence "0 \<le> KL_div (S \<inter> {j. 0 < a j}) a ?c"
         using KL_div_pos_gen[
-        OF finite_Int[OF disjI1, of S, of "{j. 0 < a j}"], of a, of ?c
-        ] 1 2 3
+      OF finite_Int[OF disjI1, of S, of "{j. 0 < a j}"], of a, of ?c
+      ] 1 2 3
         by (metis fin)
       have fstdb: "0 < setsum d (S \<inter> {i. 0 < a i})" using non_null(2) False
         by (metis Int_Collect fin finite_Int setsum_pos)
@@ -601,24 +601,24 @@ proof -
     = fi i * log b (fi i / (1 / b powr (cw_len i)))"
       by simp
     have sum_one_L: "(\<Sum> i \<in> L. fi i) = 1"
-      using simple_distributed_setsum_space[OF distr_i]  by (simp add: L_def)
+      using simple_distributed_setsum_space[OF distr_i] by (simp add: L_def)
     {
     fix i
     assume iL: "i \<in> L"
     have h1: "0 \<le> fi i" using iL pos_pi by blast
-    have h2: "0 < ?c / (1/b powr cw_len i)" using b_gt_1  \<K>_pos by auto
-    have h3: "0 < inverse  \<K>" using  \<K>_pos by simp
+    have h2: "0 < ?c / (1/b powr cw_len i)" using b_gt_1 \<K>_pos by auto
+    have h3: "0 < inverse \<K>" using \<K>_pos by simp
     have
-    "fi i * log b (fi i * ?c / (1/b powr cw_len i) * (inverse  \<K>)) =
-    fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (inverse  \<K>)"
+    "fi i * log b (fi i * ?c / (1/b powr cw_len i) * (inverse \<K>)) =
+    fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (inverse \<K>)"
       using log_mult_ext3[OF h1 h2 h3]
       by (metis times_divide_eq_right)
     } hence big_eq:
-    "\<And>i. i \<in> L \<Longrightarrow> fi i * log b (fi i * ?c / (1/b powr cw_len i) * (1 /  \<K>)) =
-    fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (1 /  \<K>)"
+    "\<And>i. i \<in> L \<Longrightarrow> fi i * log b (fi i * ?c / (1/b powr cw_len i) * (1 / \<K>)) =
+    fi i * log b (fi i * ?c / (1/b powr cw_len i)) + fi i * log b (1 / \<K>)"
       by (simp add: inverse_eq_divide)
     have 1: "cr - \<H>(X) = (\<Sum>i \<in> L. fi i * cw_len i) + (\<Sum>i \<in> L. fi i * log b (fi i))"
-      using  \<K>_def entropy_rewrite cr_rw L_def by simp
+      using \<K>_def entropy_rewrite cr_rw L_def by simp
     also have 2: "(\<Sum>i\<in>L. fi i * cw_len i) = (\<Sum>i \<in> L. fi i * (-log b (1/(b powr (cw_len i)))))"
       using b_gt_1 log_divide by simp
     also have "\<dots> = -1 * (\<Sum>i \<in> L. fi i * (log b (1/(b powr (cw_len i)))))"
@@ -634,27 +634,27 @@ proof -
       using Cartesian_Euclidean_Space.setsum_cong_aux[OF eqpi] by simp
     also from big_eq have
     "\<dots> = (\<Sum>i\<in>L. fi i * (log b (fi i * ?c / (1 / b powr (cw_len i))))) + (\<Sum>i \<in> L. fi i) * log b (1/ ?c)"
-      using  \<K>_pos
+      using \<K>_pos
       by (simp add: setsum_left_distrib setsum.distrib)
     also have "\<dots> = (\<Sum>i\<in>L. fi i * (log b (fi i * ?c / (1 / b powr (cw_len i))))) - log b (?c)"
-      using  \<K>_pos
+      using \<K>_pos
       by (simp add: log_inverse_eq divide_inverse sum_one_L)
     also have "\<dots> = (\<Sum> i \<in> L. fi i * log b (fi i / ?r i)) - log b (?c)"
       by (metis (mono_tags, hide_lams) divide_divide_eq_left divide_divide_eq_right)
 
     also have "\<dots> = KL_div L fi ?r + log b (inverse ?c)"
-      using b_gt_1  \<K>_pos by (simp add: log_inverse KL_div_def)
-    finally have code_ent_kl_log: "cr -  \<H>(X) = KL_div L fi ?r + log b (inverse ?c)" by simp
+      using b_gt_1 \<K>_pos by (simp add: log_inverse KL_div_def)
+    finally have code_ent_kl_log: "cr - \<H>(X) = KL_div L fi ?r + log b (inverse ?c)" by simp
     have "setsum ?r L = 1"
-      using sum_div_1[of "\<lambda>i. 1 / (b powr (cw_len i))"]  \<K>_pos  \<K>_pow
+      using sum_div_1[of "\<lambda>i. 1 / (b powr (cw_len i))"] \<K>_pos \<K>_pow
       by simp
-    moreover have "\<And>i. 0 < ?r i" using b_gt_1  \<K>_pos by simp
+    moreover have "\<And>i. 0 < ?r i" using b_gt_1 \<K>_pos by simp
     moreover have "(\<Sum>i\<in>L. fi i) = 1" using sum_one_L by simp
     ultimately have "0 \<le> KL_div L fi ?r"
       using KL_div_pos2[OF fin_L fi_pos] by simp
     hence "log b (inverse ?c) \<le> cr - \<H>(X)" using code_ent_kl_log by simp
     moreover from McMillan assms have "0 \<le> log b (inverse ( \<K>))"
-      using  \<K>_pos
+      using \<K>_pos
       by (simp add: b_gt_1 log_inverse_eq)
     ultimately show ?thesis by simp
 qed
